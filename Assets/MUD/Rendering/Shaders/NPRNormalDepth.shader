@@ -1,4 +1,4 @@
-﻿Shader "Hidden/Minverse/NPRNormalDepth"
+﻿Shader "Hidden/Mud/NPRNormalDepth"
 {
 	Properties
 	{

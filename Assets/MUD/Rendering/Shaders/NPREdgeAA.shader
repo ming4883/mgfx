@@ -1,6 +1,6 @@
-Shader "Hidden/Minverse/NPREdgeAA" {
+Shader "Hidden/Mud/NPREdgeAA" {
 Properties {
-    _MainTex ("Base (RGB)", 2D) = "white" {}
+    _MainTex ("Base (RGB)", 2D) = "" {}
 }
 
 // very simple & fast AA by Emmanuel Julien
@@ -18,6 +18,7 @@ SubShader {
     #include "UnityCG.cginc"
 
     uniform sampler2D _MainTex;
+    uniform float4 _ScreenTexelSize; // global properties
     uniform float4 _MainTex_TexelSize;
 
     struct v2f {
@@ -33,8 +34,8 @@ SubShader {
         
         float w = 1.75;
                 
-        float2 up = float2(0.0, _MainTex_TexelSize.y) * w;
-        float2 right = float2(_MainTex_TexelSize.x, 0.0) * w;	
+        float2 up = float2(0.0, _ScreenTexelSize.y) * w;
+        float2 right = float2(_ScreenTexelSize.x, 0.0) * w;	
             
         o.uv[0].xy = uv - up;
         o.uv[1].xy = uv - right;
@@ -61,7 +62,7 @@ SubShader {
         if ( nl < (1.0 / 16.0) )
             outColor = tex2D( _MainTex, i.uv[4] );
         else {
-            n *= _MainTex_TexelSize.xy / nl;
+            n *= _ScreenTexelSize.xy / nl;
      
             half4 o = tex2D( _MainTex, i.uv[4]);
             half4 t0 = tex2D( _MainTex, i.uv[4] + n * 0.5) * 0.9;

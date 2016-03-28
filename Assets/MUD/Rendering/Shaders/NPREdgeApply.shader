@@ -1,8 +1,8 @@
-﻿Shader "Hidden/Minverse/NPREdgeApply"
+﻿Shader "Hidden/Mud/NPREdgeApply"
 {
     Properties
     {
-        _MainTex ("Texture", 2D) = "white" {}
+        _MainTex ("Texture", 2D) = "" {}
     }
     SubShader
     {
@@ -37,13 +37,13 @@
             }
             
             sampler2D _MainTex;
-            sampler2D _EdgeTex;
+            sampler2D _AlbedoCopyTex; // global property
 
             half4 frag (v2f i) : SV_Target
             {
-                half4 base = tex2D(_MainTex, i.uv);
-                half4 dark = pow(min(base, 1.0 - 1.0 / 16.0), 3);
-                half4 edge = tex2D(_EdgeTex, i.uv);
+                half4 base = tex2D(_AlbedoCopyTex, i.uv);
+                half4 dark = ((1.0 - base) * (1.0 - base) + base * base) * 0.5;//pow(min(base, 1.0 - 1.0 / 16.0), 3);
+                half4 edge = tex2D(_MainTex, i.uv);
                 return half4(lerp(base, dark, edge.r).rgb, base.a);
             }
             ENDCG

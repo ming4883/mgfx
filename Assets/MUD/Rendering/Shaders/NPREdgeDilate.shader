@@ -1,8 +1,8 @@
-﻿Shader "Hidden/Minverse/NPREdgeDilate"
+﻿Shader "Hidden/Mud/NPREdgeDilate"
 {
     Properties
     {
-        _MainTex ("Texture", 2D) = "white" {}
+        _MainTex ("Texture", 2D) = "" {}
     }
     SubShader
     {
@@ -40,6 +40,7 @@
             
             sampler2D _MainTex;
             float4 _MainTex_TexelSize;
+            float4 _ScreenTexelSize; // global properties
 
             fixed4 fetch(sampler2D tex, float2 uv)
             {
@@ -56,43 +57,38 @@
                 return _v * _v * _v * _v;
             }
 
-            fixed4 deilate(sampler2D tex, float2 uv)
+            fixed4 deilate(sampler2D tex, float2 uv, float4 texelSize)
             {
-                //uv = uv - _MainTex_TexelSize.xy * 0.5;
                 fixed4 t[9];
                 
-                t[0] = fetch(tex, uv + float2(-1,-1) * _MainTex_TexelSize.xy);
-                t[1] = fetch(tex, uv + float2(-1, 0) * _MainTex_TexelSize.xy);
-                t[2] = fetch(tex, uv + float2(-1, 1) * _MainTex_TexelSize.xy);
+                t[0] = fetch(tex, uv + float2(-1,-1) * texelSize.xy);
+                t[1] = fetch(tex, uv + float2(-1, 0) * texelSize.xy);
+                t[2] = fetch(tex, uv + float2(-1, 1) * texelSize.xy);
 
-                t[3] = fetch(tex, uv + float2( 0,-1) * _MainTex_TexelSize.xy);
-                t[4] = fetch(tex, uv + float2( 0, 0) * _MainTex_TexelSize.xy) * 24;
-                t[5] = fetch(tex, uv + float2( 0, 1) * _MainTex_TexelSize.xy);
+                t[3] = fetch(tex, uv + float2( 0,-1) * texelSize.xy);
+                t[4] = fetch(tex, uv + float2( 0, 0) * texelSize.xy);
+                t[5] = fetch(tex, uv + float2( 0, 1) * texelSize.xy);
 
-                t[6] = fetch(tex, uv + float2( 1,-1) * _MainTex_TexelSize.xy);
-                t[7] = fetch(tex, uv + float2( 1, 0) * _MainTex_TexelSize.xy);
-                t[8] = fetch(tex, uv + float2( 1, 1) * _MainTex_TexelSize.xy);
+                t[6] = fetch(tex, uv + float2( 1,-1) * texelSize.xy);
+                t[7] = fetch(tex, uv + float2( 1, 0) * texelSize.xy);
+                t[8] = fetch(tex, uv + float2( 1, 1) * texelSize.xy);
 
-                half4 sum = 
-                    t[0] +
-                    t[1] +
-                    t[2] +
-                    
-                    t[3] +
-                    t[4] +
-                    t[5] +
-                    
-                    t[6] +
-                    t[7] +
-                    t[8] ;
-                return 1.0 - pow2(1.0 - sum / 32.0);
+                half4 ret = max(t[0], t[1]);
+                ret = max(ret, t[2]);
+                ret = max(ret, t[3]);
+                ret = max(ret, t[4]);
+                ret = max(ret, t[5]);
+                ret = max(ret, t[6]);
+                ret = max(ret, t[7]);
+                ret = max(ret, t[8]);
+                return ret;
             }
 
             fixed4 frag (v2f i) : SV_Target
             {
-                fixed4 tap = deilate(_MainTex, i.uv);
+                fixed4 ret = deilate(_MainTex, i.uv, _ScreenTexelSize);
 
-                return tap;
+                return ret;
             }
             ENDCG
         }
