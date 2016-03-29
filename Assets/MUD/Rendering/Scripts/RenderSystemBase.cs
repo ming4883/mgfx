@@ -12,7 +12,6 @@ namespace Mud
 		{
 			public CameraEvent Event;
 			public CommandBuffer CommandBuffer;
-        
 		}
 
 		protected class EvtCmdBufList :List<EvtCmdBuf>
@@ -45,7 +44,8 @@ namespace Mud
 
 			foreach (var _pair in m_CameraCommands) {
 				foreach (var _evtCmds in _pair.Value) {
-					_pair.Key.RemoveCommandBuffer (_evtCmds.Event, _evtCmds.CommandBuffer);
+					if (_pair.Key)
+						_pair.Key.RemoveCommandBuffer (_evtCmds.Event, _evtCmds.CommandBuffer);
 				}
 			}
 
@@ -70,6 +70,7 @@ namespace Mud
 			}
 
 			var _mtl = new Material (_shader);
+			_mtl.hideFlags = HideFlags.HideAndDontSave;
 			m_Materials.Add (_id, _mtl);
 			return _mtl;
 		}

@@ -1,5 +1,5 @@
 fileFormatVersion: 2
-guid: 8a3100b35e70640cd8fe16ff22763447
+guid: 5808b8d5882581e4b824ea504de7b241
 timeCreated: 1423148169
 licenseType: Pro
 TextureImporter:
@@ -17,7 +17,7 @@ TextureImporter:
   bumpmap:
     convertToNormalMap: 1
     externalNormalMap: 1
-    heightScale: .0199999996
+    heightScale: 0.02
     normalMapFilter: 0
   isReadable: 0
   grayScaleToAlpha: 0
@@ -37,11 +37,12 @@ TextureImporter:
   lightmap: 0
   rGBM: 0
   compressionQuality: 50
+  allowsAlphaSplitting: 0
   spriteMode: 0
   spriteExtrude: 1
   spriteMeshType: 1
   alignment: 0
-  spritePivot: {x: .5, y: .5}
+  spritePivot: {x: 0.5, y: 0.5}
   spriteBorder: {x: 0, y: 0, z: 0, w: 0}
   spritePixelsToUnits: 100
   alphaIsTransparency: 0
@@ -49,6 +50,7 @@ TextureImporter:
   buildTargetSettings: []
   spriteSheet:
     sprites: []
+    outline: []
   spritePackingTag: 
   userData: 
   assetBundleName: 

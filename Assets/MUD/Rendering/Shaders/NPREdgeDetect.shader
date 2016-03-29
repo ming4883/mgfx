@@ -22,10 +22,8 @@
             sampler2D _MainTex;
             float4 _MainTex_TexelSize;
             float4 _ScreenTexelSize; // global properties
+            sampler2D_float _CameraDepthTexture;
             
-            //sampler2D _CameraDepthNormalsTexture;
-            //float4 _CameraDepthNormalsTexture_TexelSize;
-
             float4 _EdgeThreshold;
 
             struct appdata
@@ -55,9 +53,11 @@
                 return o;
             }
 
-            fixed4 fetch(sampler2D tex, float2 uv)
+            half4 fetch(sampler2D tex, float2 uv)
             {
-                return tex2D(tex, uv);
+                half3 normal =  tex2D(tex, uv).xyz * 2 - 1;
+                half depth = Linear01Depth(SAMPLE_DEPTH_TEXTURE(_CameraDepthTexture, uv));
+                return half4(normal, depth);
             }
 
             half hasContent(half4 tap)
@@ -91,15 +91,16 @@
                 // subtract by the center tap
                 isedge -= t[4];
 
-                half innerMask = 50.0;// * _EdgeThreshold.w;
-
-                return saturate (dot(isedge, float4(innerMask, innerMask, innerMask, 0)));
+                half th = 20.0 * _EdgeThreshold.x;
+                
+                half edge = saturate (dot(isedge, float4(th, th, th, th * 20)));
+                return smoothstep(_EdgeThreshold.y, _EdgeThreshold.z, edge);
                 
             }
 
             fixed4 frag (v2f i) : SV_Target
             {
-                fixed4 edge = edgeDetect2(_MainTex, _ScreenTexelSize, i.uv);
+                fixed4 edge = edgeDetect2(_MainTex, _ScreenTexelSize * 2, i.uv);
                 
                 return edge.rrrr;
 

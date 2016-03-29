@@ -8,6 +8,7 @@
     {
         // No culling or depth
         Cull Off ZWrite Off ZTest Always
+        Blend SrcAlpha OneMinusSrcAlpha
 
         Pass
         {
@@ -38,13 +39,14 @@
             
             sampler2D _MainTex;
             sampler2D _AlbedoCopyTex; // global property
+            //sampler2D _CameraGBufferTexture0;
 
             half4 frag (v2f i) : SV_Target
             {
                 half4 base = tex2D(_AlbedoCopyTex, i.uv);
-                half4 dark = ((1.0 - base) * (1.0 - base) + base * base) * 0.5;//pow(min(base, 1.0 - 1.0 / 16.0), 3);
+                half4 dark = pow(base - 1 / 32.0, 2);
                 half4 edge = tex2D(_MainTex, i.uv);
-                return half4(lerp(base, dark, edge.r).rgb, base.a);
+                return half4(dark.rgb, edge.a);
             }
             ENDCG
         }

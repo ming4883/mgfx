@@ -15,8 +15,14 @@ namespace Mud
 		public static HashID MTL_EDGE_AA = new HashID ("Hidden/Mud/NPREdgeAA");
 		public static HashID MTL_EDGE_APPLY = new HashID ("Hidden/Mud/NPREdgeApply");
 
-		[Range (1.0f / 64.0f, 2.0f)]
+		[Range (1.0f / 128.0f, 2.0f)]
 		public float edgeDetails = 1.0f;
+
+		[Range(0, 1.0f)]
+		public float edgeCutoffMin = 0.25f;
+
+		[Range(0, 1.0f)]
+		public float edgeCutoffMax = 0.75f;
 
 		public bool edgeAA = false;
 
@@ -29,8 +35,6 @@ namespace Mud
 			LoadMaterial (MTL_EDGE_DILATE);
 			LoadMaterial (MTL_EDGE_AA);
 			LoadMaterial (MTL_EDGE_APPLY);
-			GetMaterial (MTL_EDGE_DETECT).EnableKeyword ("_LARGE_KERNEL");
-       
 		}
 
 		// http://docs.unity3d.com/540/Documentation/Manual/GraphicsCommandBuffers.html
@@ -39,17 +43,21 @@ namespace Mud
 		{
 			// update material properties
 			var _screen_texelSize = new Vector4 (
-				                        1.0f / Screen.width,
-				                        1.0f / Screen.height,
-				                        1.0f * Screen.width,
-				                        1.0f * Screen.height);
-			
+				1.0f / Screen.width,
+				1.0f / Screen.height,
+				1.0f * Screen.width,
+				1.0f * Screen.height);
 
+			var _edge_threshold = new Vector4(
+				edgeDetails,
+				edgeCutoffMin,
+				edgeCutoffMax,
+				0);
 
-			//GetMaterial (MTL_EDGE_DETECT).SetVector ("_ScreenTexelSize", _screen_texelSize);
+			GetMaterial(MTL_EDGE_DETECT).SetVector("_EdgeThreshold", _edge_threshold);
 
 			// update command buffers
-			var _cmdbuf = GetCommandBufferForEvent (_cam, CameraEvent.AfterGBuffer, "NPREdge");
+			var _cmdbuf = GetCommandBufferForEvent (_cam, CameraEvent.AfterFinalPass, "NPREdge");
 			_cmdbuf.Clear ();
 
 			var _idAlbedoCopy = Shader.PropertyToID ("_AlbedoCopyTex");
@@ -66,26 +74,24 @@ namespace Mud
 
 			_cmdbuf.SetGlobalVector ("_ScreenTexelSize", _screen_texelSize);
 
-
 			_cmdbuf.Blit (BuiltinRenderTextureType.GBuffer2, _idSrcBuf, GetMaterial (MTL_EDGE_DETECT));
 
 			if (edgeAA) {
 
 				for (int _it = 0; _it < 1; ++_it) {
-					_cmdbuf.Blit (_idSrcBuf, _idDstBuf, GetMaterial (MTL_EDGE_DILATE));
-					Swap (ref _idSrcBuf, ref _idDstBuf);
+					//_cmdbuf.Blit (_idSrcBuf, _idDstBuf, GetMaterial (MTL_EDGE_DILATE));
+					//Swap (ref _idSrcBuf, ref _idDstBuf);
 
 					_cmdbuf.Blit (_idSrcBuf, _idDstBuf, GetMaterial (MTL_EDGE_AA));
 					Swap (ref _idSrcBuf, ref _idDstBuf);
 				}
 			}
 
-
 			// copy the albedo
-			_cmdbuf.Blit (BuiltinRenderTextureType.GBuffer0, _idAlbedoCopy);
+			_cmdbuf.Blit(BuiltinRenderTextureType.GBuffer0, _idAlbedoCopy, GetMaterial(MTL_EDGE_DILATE));
 
 			// apply edges to albedo
-			_cmdbuf.Blit (_idSrcBuf, BuiltinRenderTextureType.GBuffer0, GetMaterial (MTL_EDGE_APPLY));
+			_cmdbuf.Blit (_idSrcBuf, BuiltinRenderTextureType.CameraTarget, GetMaterial (MTL_EDGE_APPLY));
 
 			_cmdbuf.ReleaseTemporaryRT (_idAlbedoCopy);
 			_cmdbuf.ReleaseTemporaryRT (_idEdgeBuf1);
