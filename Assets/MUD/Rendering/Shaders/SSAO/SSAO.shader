@@ -1,4 +1,4 @@
-Shader "Hidden/SSAO" {
+Shader "Hidden/Mud/SSAO" {
 Properties {
 	_MainTex ("", 2D) = "" {}
 	_RandomTexture ("", 2D) = "" {}
@@ -259,13 +259,13 @@ v2f vert (appdata_img v)
 	return o;
 }
 
+sampler2D _CameraGBufferTexture0;
 sampler2D _MainTex;
-sampler2D _SSAO;
 
 half4 frag( v2f i ) : SV_Target
 {
-	half4 c = tex2D (_MainTex, i.uv[0]);
-	half ao = tex2D (_SSAO, i.uv[1]).r;
+	half4 c = tex2D (_CameraGBufferTexture0, i.uv[0]);
+	half ao = tex2D (_MainTex, i.uv[1]).r;
 	ao = pow (ao, _Params.w);
 	c = lerp(c * c, c, smoothstep(0.5, 0.5 + 1 / 16.0, ao));
 	return c;
