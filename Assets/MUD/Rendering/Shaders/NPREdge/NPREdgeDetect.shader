@@ -60,12 +60,7 @@
                 return half4(normal, depth);
             }
 
-            half hasContent(half4 tap)
-            {
-                return (tap.w  > 0);
-            }
-
-#define TAP_COUNT 5
+            #define TAP_COUNT 5
 
             // https://www.shadertoy.com/view/XsVGW1#
             // http://graphics.cs.cmu.edu/courses/15-463/2005_fall/www/Lectures/convolution.pdf
@@ -91,7 +86,7 @@
                 // subtract by the center tap
                 isedge -= t[4];
 
-                half th = 20.0 * _EdgeThreshold.x;
+                half th = 10.0 * _EdgeThreshold.x;
                 
                 half edge = saturate (dot(isedge, float4(th, th, th, th * 20)));
                 return smoothstep(_EdgeThreshold.y, _EdgeThreshold.z, edge);

@@ -6,10 +6,9 @@ namespace Mud
 {
 
 	[ExecuteInEditMode]
-	[AddComponentMenu ("Mud/Rendering/RenderSystemNPR")]
-	public class RenderSystemNPR : RenderSystemBase
+	[AddComponentMenu ("Mud/Rendering/Features/NPREdge")]
+	public class RenderFeatureNPREdge : RenderFeatureBase
 	{
-		public static HashID MTL_NORMAL_DEPTH = new HashID ("Hidden/Mud/NPRNormalDepth");
 		public static HashID MTL_EDGE_DETECT = new HashID ("Hidden/Mud/NPREdgeDetect");
 		public static HashID MTL_EDGE_DILATE = new HashID ("Hidden/Mud/NPREdgeDilate");
 		public static HashID MTL_EDGE_AA = new HashID ("Hidden/Mud/NPREdgeAA");
@@ -26,11 +25,15 @@ namespace Mud
 
 		public bool edgeAA = false;
 
+		public Color edgeColor = Color.black;
+
+		[Range(0, 1.0f)]
+		public float edgeAutoColorize = 0.0f;
+
 		public override void OnEnable ()
 		{
 			base.OnEnable ();
 
-			LoadMaterial (MTL_NORMAL_DEPTH);
 			LoadMaterial (MTL_EDGE_DETECT);
 			LoadMaterial (MTL_EDGE_DILATE);
 			LoadMaterial (MTL_EDGE_AA);
@@ -55,6 +58,8 @@ namespace Mud
 				0);
 
 			GetMaterial(MTL_EDGE_DETECT).SetVector("_EdgeThreshold", _edge_threshold);
+			GetMaterial(MTL_EDGE_APPLY).SetColor("_EdgeColor", edgeColor);
+			GetMaterial(MTL_EDGE_APPLY).SetFloat("_EdgeAutoColorize", edgeAutoColorize);
 
 			// update command buffers
 			var _cmdbuf = GetCommandBufferForEvent (_cam, CameraEvent.AfterFinalPass, "NPREdge");
@@ -68,7 +73,7 @@ namespace Mud
 			var _idDstBuf = _idEdgeBuf2;
 
 			//Debug.LogFormat ("_idAlbedoCopy = {0}", _idAlbedoCopy);
-			_cmdbuf.GetTemporaryRT (_idAlbedoCopy, -1, -1);
+			_cmdbuf.GetTemporaryRT(_idAlbedoCopy, -1, -1, 0, FilterMode.Bilinear);
 			_cmdbuf.GetTemporaryRT (_idEdgeBuf1, -1, -1, 0, FilterMode.Bilinear);
 			_cmdbuf.GetTemporaryRT (_idEdgeBuf2, -1, -1, 0, FilterMode.Bilinear);
 
@@ -78,13 +83,8 @@ namespace Mud
 
 			if (edgeAA) {
 
-				for (int _it = 0; _it < 1; ++_it) {
-					//_cmdbuf.Blit (_idSrcBuf, _idDstBuf, GetMaterial (MTL_EDGE_DILATE));
-					//Swap (ref _idSrcBuf, ref _idDstBuf);
-
-					_cmdbuf.Blit (_idSrcBuf, _idDstBuf, GetMaterial (MTL_EDGE_AA));
-					Swap (ref _idSrcBuf, ref _idDstBuf);
-				}
+				_cmdbuf.Blit(_idSrcBuf, _idDstBuf, GetMaterial(MTL_EDGE_AA));
+				Swap(ref _idSrcBuf, ref _idDstBuf);
 			}
 
 			// copy the albedo

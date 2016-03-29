@@ -6,7 +6,7 @@ namespace Mud
 {
 
 	[ExecuteInEditMode]
-	public class RenderSystemBase : MonoBehaviour
+	public class RenderFeatureBase : MonoBehaviour
 	{
 		protected class EvtCmdBuf
 		{
@@ -49,9 +49,13 @@ namespace Mud
 				}
 			}
 
+			m_CameraCommands.Clear();
+
 			foreach (var _pair in m_Materials) {
 				Material.DestroyImmediate (_pair.Value);
 			}
+
+			m_Materials.Clear();
 		}
 
 		protected Material LoadMaterial (HashID _id)

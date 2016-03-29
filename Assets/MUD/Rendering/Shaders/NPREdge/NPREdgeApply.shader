@@ -3,6 +3,8 @@
     Properties
     {
         _MainTex ("Texture", 2D) = "" {}
+        _EdgeColor ("EdgeColor", Color) = (0, 0, 0, 1)
+        _EdgeAutoColorize ("EdgeAutoColorize", Float) = 0
     }
     SubShader
     {
@@ -39,14 +41,18 @@
             
             sampler2D _MainTex;
             sampler2D _AlbedoCopyTex; // global property
+            float4 _EdgeColor;
+            float _EdgeAutoColorize;
             //sampler2D _CameraGBufferTexture0;
 
             half4 frag (v2f i) : SV_Target
             {
                 half4 base = tex2D(_AlbedoCopyTex, i.uv);
-                half4 dark = pow(base - 1 / 32.0, 2);
-                half4 edge = tex2D(_MainTex, i.uv);
-                return half4(dark.rgb, edge.a);
+                half4 edge = pow(base - 1 / 16.0, 2);
+                edge.rgb = lerp(_EdgeColor.rgb, edge.rgb, _EdgeAutoColorize);
+                edge.a = tex2D(_MainTex, i.uv).r * _EdgeColor.a;
+                
+                return edge;
             }
             ENDCG
         }
