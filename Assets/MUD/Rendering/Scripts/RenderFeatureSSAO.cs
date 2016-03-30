@@ -60,8 +60,12 @@ namespace Mud
 			float x = y * _cam.aspect;
 			_ssaoMaterial.SetVector ("_FarCorner", new Vector3(x,y,far));
 
-			int _ssaoWidth = Screen.width / m_Downsampling;
-			int _ssaoHeight = Screen.height / m_Downsampling;
+			int _sourceWidth = Screen.width;
+			int _sourceHeight = Screen.height;
+			int _ssaoWidth = _sourceWidth / m_Downsampling;
+			int _ssaoHeight = _sourceHeight / m_Downsampling;
+			_ssaoWidth = (_ssaoWidth / 2 + 1) * 2;
+			_ssaoHeight = (_ssaoHeight / 2 + 1) * 2;
 
 			int noiseWidth, noiseHeight;
 			if (m_RandomTexture) {
@@ -88,7 +92,7 @@ namespace Mud
 
 
             bool _doBlur = m_Blur > 0;
-			_cmdbuf.Blit (null, _rtAO, _ssaoMaterial, (int)m_SampleCount);
+			_cmdbuf.Blit (BuiltinRenderTextureType.None, _rtAO, _ssaoMaterial, (int)m_SampleCount);
 
 			/*
 			if (_doBlur)

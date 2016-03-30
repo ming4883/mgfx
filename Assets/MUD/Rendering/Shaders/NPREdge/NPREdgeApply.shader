@@ -65,9 +65,14 @@
             {
                 half3 base = tex2D(_NPREdgeAlbedoTex, i.uv).rgb;
 
+                /*
                 base = rgb2yuv(base);
                 base.r = 1.0 - base.r;
                 base = yuv2rgb(base);
+                */
+                base = (base - 1.0 / 16.0);
+                base = base * base;
+                base = base * base;
 
                 half4 edge;
                 edge.rgb = lerp(_EdgeColor.rgb, base, _EdgeAutoColoring);

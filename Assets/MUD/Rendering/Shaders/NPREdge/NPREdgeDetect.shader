@@ -87,7 +87,7 @@
                 // subtract by the center tap
                 isedge -= t[4];
 
-                half th = 10.0 * _EdgeThreshold.x;
+                half th = 5.0 * _EdgeThreshold.x;
                 
                 half edge = saturate (dot(isedge, float4(th, th, th, th * 20)));
                 return smoothstep(_EdgeThreshold.y, _EdgeThreshold.z, edge);
