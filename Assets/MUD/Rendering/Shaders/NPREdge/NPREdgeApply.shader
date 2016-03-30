@@ -4,7 +4,7 @@
     {
         _MainTex ("Texture", 2D) = "" {}
         _EdgeColor ("EdgeColor", Color) = (0, 0, 0, 1)
-        _EdgeAutoColorize ("EdgeAutoColorize", Float) = 0
+        _EdgeAutoColoring ("EdgeAutoColoring", Float) = 0
     }
     SubShader
     {
@@ -40,16 +40,37 @@
             }
             
             sampler2D _MainTex;
-            sampler2D _AlbedoCopyTex; // global property
+            sampler2D _NPREdgeAlbedoTex; // global property
             float4 _EdgeColor;
-            float _EdgeAutoColorize;
-            //sampler2D _CameraGBufferTexture0;
+            float _EdgeAutoColoring;
+
+            half3 rgb2yuv(half3 c)
+            {
+                half y = dot(c, half3(0.299, 0.587, 0.114));
+                half u = dot(c, half3(-0.14713, -0.2886, 0.436));
+                half v = dot(c, half3(0.615,-0.51499, -0.10001));
+                return (half3(y, u, v));
+            }
+
+            half3 yuv2rgb(half3 c)
+            {
+                half r = dot(c, half3(1, 0, 1.13983));
+                half g = dot(c, half3(1, -0.39465, -0.58060));
+                half b = dot(c, half3(1, 2.03211, 0));
+                return saturate(half3(r, g, b));
+            }
+
 
             half4 frag (v2f i) : SV_Target
             {
-                half4 base = tex2D(_AlbedoCopyTex, i.uv);
-                half4 edge = pow(base - 1 / 16.0, 2);
-                edge.rgb = lerp(_EdgeColor.rgb, edge.rgb, _EdgeAutoColorize);
+                half3 base = tex2D(_NPREdgeAlbedoTex, i.uv).rgb;
+
+                base = rgb2yuv(base);
+                base.r = 1.0 - base.r;
+                base = yuv2rgb(base);
+
+                half4 edge;
+                edge.rgb = lerp(_EdgeColor.rgb, base, _EdgeAutoColoring);
                 edge.a = tex2D(_MainTex, i.uv).r * _EdgeColor.a;
                 
                 return edge;

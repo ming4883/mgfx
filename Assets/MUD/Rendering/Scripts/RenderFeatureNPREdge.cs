@@ -28,7 +28,7 @@ namespace Mud
 		public Color edgeColor = Color.black;
 
 		[Range(0, 1.0f)]
-		public float edgeAutoColorize = 0.0f;
+		public float edgeAutoColoring = 0.0f;
 
 		public override void OnEnable ()
 		{
@@ -59,15 +59,15 @@ namespace Mud
 
 			GetMaterial(MTL_EDGE_DETECT).SetVector("_EdgeThreshold", _edge_threshold);
 			GetMaterial(MTL_EDGE_APPLY).SetColor("_EdgeColor", edgeColor);
-			GetMaterial(MTL_EDGE_APPLY).SetFloat("_EdgeAutoColorize", edgeAutoColorize);
+			GetMaterial(MTL_EDGE_APPLY).SetFloat("_EdgeAutoColoring", edgeAutoColoring);
 
 			// update command buffers
 			var _cmdbuf = GetCommandBufferForEvent (_cam, CameraEvent.AfterFinalPass, "NPREdge");
 			_cmdbuf.Clear ();
 
-			var _idAlbedoCopy = Shader.PropertyToID ("_AlbedoCopyTex");
-			var _idEdgeBuf1 = Shader.PropertyToID ("_EdgeBuffer1");
-			var _idEdgeBuf2 = Shader.PropertyToID ("_EdgeBuffer2");
+			var _idAlbedoCopy = Shader.PropertyToID("_NPREdgeAlbedoTex");
+			var _idEdgeBuf1 = Shader.PropertyToID ("_EdgeTex1");
+			var _idEdgeBuf2 = Shader.PropertyToID ("_EdgeTex2");
 
 			var _idSrcBuf = _idEdgeBuf1;
 			var _idDstBuf = _idEdgeBuf2;
@@ -79,7 +79,7 @@ namespace Mud
 
 			_cmdbuf.SetGlobalVector ("_ScreenTexelSize", _screen_texelSize);
 
-			_cmdbuf.Blit (BuiltinRenderTextureType.GBuffer2, _idSrcBuf, GetMaterial (MTL_EDGE_DETECT));
+			_cmdbuf.Blit (BuiltinRenderTextureType.None, _idSrcBuf, GetMaterial (MTL_EDGE_DETECT));
 
 			if (edgeAA) {
 

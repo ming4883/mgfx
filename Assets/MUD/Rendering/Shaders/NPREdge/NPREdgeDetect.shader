@@ -22,7 +22,8 @@
             sampler2D _MainTex;
             float4 _MainTex_TexelSize;
             float4 _ScreenTexelSize; // global properties
-            sampler2D_float _CameraDepthTexture;
+            sampler2D_float _CameraDepthTexture; // build in depth texture
+            sampler2D _CameraGBufferTexture2; // build in normal texture (world space)
             
             float4 _EdgeThreshold;
 
@@ -95,7 +96,7 @@
 
             fixed4 frag (v2f i) : SV_Target
             {
-                fixed4 edge = edgeDetect2(_MainTex, _ScreenTexelSize * 2, i.uv);
+                fixed4 edge = edgeDetect2(_CameraGBufferTexture2, _ScreenTexelSize * 2, i.uv);
                 
                 return edge.rrrr;
 

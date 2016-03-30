@@ -1,14 +1,20 @@
+// sampler2D_float _CameraDepthTexture; // build in depth texture
+// sampler2D _CameraGBufferTexture2; // build in normal texture (world space)
 
 half frag_ao (v2f_ao i, int sampleCount, float3 samples[INPUT_SAMPLE_COUNT])
 {
 	// read random normal from noise texture
-    half3 randN = tex2D (_RandomTexture, i.uvr).xyz * 2.0 - 1.0;    
+    half3 randN = tex2D (_RandomTexture, i.uvr).xyz * 2.0 - 1.0;
     
     // read scene depth/normal
-    float4 depthnormal = tex2D (_CameraDepthNormalsTexture, i.uv);
-    float3 viewNorm;
-    float depth;
-    DecodeDepthNormal (depthnormal, depth, viewNorm);
+    //float4 depthnormal = tex2D (_CameraDepthNormalsTexture, i.uv);
+    //float3 viewNorm;
+    //float depth;
+    //DecodeDepthNormal (depthnormal, depth, viewNorm);
+    
+    float3 viewNorm = tex2D (_CameraGBufferTexture2, i.uv).xyz * 2.0 - 1.0;
+    float depth = Linear01Depth(SAMPLE_DEPTH_TEXTURE(_CameraDepthTexture, i.uv));
+    
     depth *= _ProjectionParams.z;
     float scale = _Params.x / depth;
     
@@ -29,10 +35,14 @@ half frag_ao (v2f_ao i, int sampleCount, float3 samples[INPUT_SAMPLE_COUNT])
         float sD = depth - (randomDir.z * _Params.x);
 
 		// Sample depth at offset location
-        float4 sampleND = tex2D (_CameraDepthNormalsTexture, i.uv + offset);
-        float sampleD;
-        float3 sampleN;
-        DecodeDepthNormal (sampleND, sampleD, sampleN);
+        //float4 sampleND = tex2D (_CameraDepthNormalsTexture, i.uv + offset);
+        //float sampleD;
+        //float3 sampleN;
+        //DecodeDepthNormal (sampleND, sampleD, sampleN);
+
+        float3 sampleN = tex2D (_CameraGBufferTexture2, i.uv + offset).xyz * 2.0 - 1.0;
+        float sampleD = Linear01Depth(SAMPLE_DEPTH_TEXTURE(_CameraDepthTexture, i.uv + offset));
+
         sampleD *= _ProjectionParams.z;
         float zd = saturate(sD-sampleD);
         if (zd > _Params.y) {
