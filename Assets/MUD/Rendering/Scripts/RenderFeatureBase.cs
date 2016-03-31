@@ -40,7 +40,7 @@ namespace Mud
 
 		public virtual void Cleanup ()
 		{
-			Debug.Log ("Cleanup");
+			//Debug.Log ("Cleanup");
 
 			foreach (var _pair in m_CameraCommands) {
 				foreach (var _evtCmds in _pair.Value) {

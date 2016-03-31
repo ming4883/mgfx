@@ -86,10 +86,12 @@
 
                 // subtract by the center tap
                 isedge -= t[4];
+                // fade out with distance
+                isedge.xyz *= 1 - pow(t[4].w, 2);
 
-                half th = 5.0 * _EdgeThreshold.x;
+                half th = 2.0 * _EdgeThreshold.x;
                 
-                half edge = saturate (dot(isedge, float4(th, th, th, th * 20)));
+                half edge = saturate (dot(isedge, float4(th, th, th, th * 40)));
                 return smoothstep(_EdgeThreshold.y, _EdgeThreshold.z, edge);
                 
             }
