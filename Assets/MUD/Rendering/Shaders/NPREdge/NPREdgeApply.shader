@@ -40,9 +40,9 @@
             }
             
             sampler2D _MainTex;
-            sampler2D _NPREdgeAlbedoTex; // global property
+            //sampler2D _NPREdgeAlbedoTex; // global property
             float4 _EdgeColor;
-            float _EdgeAutoColoring;
+            //float _EdgeAutoColoring;
 
             half3 rgb2yuv(half3 c)
             {
@@ -63,19 +63,8 @@
 
             half4 frag (v2f i) : SV_Target
             {
-                half3 base = tex2D(_NPREdgeAlbedoTex, i.uv).rgb;
-
-                /*
-                base = rgb2yuv(base);
-                base.r = 1.0 - base.r;
-                base = yuv2rgb(base);
-                */
-                base = (base - 1.0 / 16.0);
-                base = base * base;
-                base = base * base;
-
                 half4 edge;
-                edge.rgb = lerp(_EdgeColor.rgb, base, _EdgeAutoColoring);
+                edge.rgb = _EdgeColor.rgb;
                 edge.a = tex2D(_MainTex, i.uv).r * _EdgeColor.a;
                 
                 return edge;

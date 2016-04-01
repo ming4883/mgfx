@@ -31,6 +31,8 @@ namespace Mud
 		public virtual void OnEnable()
 		{
 			invokeCounter = 0;
+
+			Camera.onPreRender += OnPreRenderCamera;
 		}
 
 		public void OnDisable ()
@@ -56,6 +58,8 @@ namespace Mud
 			}
 
 			m_Materials.Clear();
+
+			Camera.onPreRender -= OnPreRenderCamera;
 		}
 
 		protected Material LoadMaterial (HashID _id)
@@ -90,6 +94,30 @@ namespace Mud
 		protected virtual void OnSetupCameraEvents (Camera _cam)
 		{
 		}
+
+		private void OnPreRenderCamera(Camera _cam)
+		{
+			invokeCounter++;
+
+			var _active = gameObject.activeInHierarchy && enabled;
+			if (!_active)
+			{
+				Cleanup();
+				return;
+			}
+
+			if (null == _cam)
+				return;
+
+			_cam.depthTextureMode = DepthTextureMode.DepthNormals;
+
+			// Did we already add the command buffer on this camera? Nothing to do then.
+			if (!m_CameraCommands.ContainsKey(_cam))
+				m_CameraCommands[_cam] = new EvtCmdBufList();
+
+			OnSetupCameraEvents(_cam);
+		}
+
 
 		protected static void Swap (ref RenderTexture _a, ref RenderTexture _b)
 		{
@@ -126,6 +154,7 @@ namespace Mud
 
 		public void OnWillRenderObject ()
 		{
+			/*
 			invokeCounter++;
 
 			var _active = gameObject.activeInHierarchy && enabled;
@@ -138,11 +167,14 @@ namespace Mud
 			if (null == _cam)
 				return;
 
+			_cam.depthTextureMode = DepthTextureMode.DepthNormals;
+
 			// Did we already add the command buffer on this camera? Nothing to do then.
 			if (!m_CameraCommands.ContainsKey (_cam))
 				m_CameraCommands [_cam] = new EvtCmdBufList ();
 			
 			OnSetupCameraEvents (_cam);
+			*/
 		}
 
 	}

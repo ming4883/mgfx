@@ -1,367 +1,367 @@
-Shader "Hidden/Mud/SSAO" {
-Properties {
-    _MainTex ("", 2D) = "" {}
-    _RandomTexture ("", 2D) = "" {}
-}
-Subshader {
-    ZTest Always Cull Off ZWrite Off
-
-CGINCLUDE
-// Common code used by several SSAO passes below
-#include "UnityCG.cginc"
-struct v2f_ao {
-    float4 pos : SV_POSITION;
-    float2 uv : TEXCOORD0;
-    float2 uvr : TEXCOORD1;
-};
-
-float2 _NoiseScale;
-/*
-float4 _CameraDepthNormalsTexture_ST;
-
-v2f_ao vert_ao (appdata_img v)
+//
+// Kino/Obscurance - SSAO (screen-space ambient obscurance) effect for Unity
+//
+// Copyright (C) 2016 Keijiro Takahashi
+//
+// Permission is hereby granted, free of charge, to any person obtaining a copy
+// of this software and associated documentation files (the "Software"), to deal
+// in the Software without restriction, including without limitation the rights
+// to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+// copies of the Software, and to permit persons to whom the Software is
+// furnished to do so, subject to the following conditions:
+//
+// The above copyright notice and this permission notice shall be included in
+// all copies or substantial portions of the Software.
+//
+// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+// OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+// THE SOFTWARE.
+//
+Shader "Hidden/Mud/SSAO"
 {
-    v2f_ao o;
-    o.pos = mul (UNITY_MATRIX_MVP, v.vertex);
-    o.uv = TRANSFORM_TEX(v.texcoord, _CameraDepthNormalsTexture);
-    o.uvr = v.texcoord.xy * _NoiseScale;
-    return o;
-}
-*/
-v2f_ao vert_ao (appdata_img v)
-{
-    v2f_ao o;
-    o.pos = mul(UNITY_MATRIX_MVP, v.vertex);
-    o.uv = v.texcoord.xy;
-    o.uvr = v.texcoord.xy * _NoiseScale;
-    return o;
-}
-
-sampler2D _CameraDepthNormalsTexture;
-
-sampler2D_float _CameraDepthTexture; // build in depth texture
-sampler2D _CameraGBufferTexture2; // build in normal texture (world space)
-
-sampler2D _RandomTexture;
-float4 _Params; // x=radius, y=minz, z=attenuation power, w=SSAO power
-
-// HLSL and GLSL do not support arbitrarily sized arrays as function parameters (eg. float bla[]), whereas Cg does.
-#if !defined(UNITY_COMPILER_CG)
-
-#	define INPUT_SAMPLE_COUNT 8
-#	include "frag_ao.cginc"
-#	undef INPUT_SAMPLE_COUNT
-
-#	define INPUT_SAMPLE_COUNT 14
-#	include "frag_ao.cginc"
-#	undef INPUT_SAMPLE_COUNT
-
-#	define INPUT_SAMPLE_COUNT 26
-#	include "frag_ao.cginc"
-#	undef INPUT_SAMPLE_COUNT
-
-#	define INPUT_SAMPLE_COUNT 34
-#	include "frag_ao.cginc"
-#	undef INPUT_SAMPLE_COUNT
-
-#else
-#	define INPUT_SAMPLE_COUNT
-#	include "frag_ao.cginc"
-#endif
-
-ENDCG
-
-    // ---- SSAO pass, 8 samples
-    Pass {
-        
-CGPROGRAM
-#pragma vertex vert_ao
-#pragma fragment frag
-#pragma target 3.0
-
-
-half4 frag (v2f_ao i) : SV_Target
-{
-    #define SAMPLE_COUNT 8
-    const float3 RAND_SAMPLES[SAMPLE_COUNT] = {
-        float3(0.01305719,0.5872321,-0.119337),
-        float3(0.3230782,0.02207272,-0.4188725),
-        float3(-0.310725,-0.191367,0.05613686),
-        float3(-0.4796457,0.09398766,-0.5802653),
-        float3(0.1399992,-0.3357702,0.5596789),
-        float3(-0.2484578,0.2555322,0.3489439),
-        float3(0.1871898,-0.702764,-0.2317479),
-        float3(0.8849149,0.2842076,0.368524),
-    };
-    return frag_ao (i, SAMPLE_COUNT, RAND_SAMPLES);
-}
-ENDCG
-
-    }
-
-// ---- SSAO pass, 14 samples
-    Pass {
-        
-CGPROGRAM
-#pragma vertex vert_ao
-#pragma fragment frag
-#pragma target 3.0
-
-
-half4 frag (v2f_ao i) : SV_Target
-{
-    #define SAMPLE_COUNT 14
-    const float3 RAND_SAMPLES[SAMPLE_COUNT] = {
-        float3(0.4010039,0.8899381,-0.01751772),
-        float3(0.1617837,0.1338552,-0.3530486),
-        float3(-0.2305296,-0.1900085,0.5025396),
-        float3(-0.6256684,0.1241661,0.1163932),
-        float3(0.3820786,-0.3241398,0.4112825),
-        float3(-0.08829653,0.1649759,0.1395879),
-        float3(0.1891677,-0.1283755,-0.09873557),
-        float3(0.1986142,0.1767239,0.4380491),
-        float3(-0.3294966,0.02684341,-0.4021836),
-        float3(-0.01956503,-0.3108062,-0.410663),
-        float3(-0.3215499,0.6832048,-0.3433446),
-        float3(0.7026125,0.1648249,0.02250625),
-        float3(0.03704464,-0.939131,0.1358765),
-        float3(-0.6984446,-0.6003422,-0.04016943),
-    };
-    return frag_ao (i, SAMPLE_COUNT, RAND_SAMPLES);
-}
-ENDCG
-
-    }
-    
-// ---- SSAO pass, 26 samples
-    Pass {
-        
-CGPROGRAM
-#pragma vertex vert_ao
-#pragma fragment frag
-#pragma target 3.0
-
-
-half4 frag (v2f_ao i) : SV_Target
-{
-    #define SAMPLE_COUNT 26
-    const float3 RAND_SAMPLES[SAMPLE_COUNT] = {
-        float3(0.2196607,0.9032637,0.2254677),
-        float3(0.05916681,0.2201506,-0.1430302),
-        float3(-0.4152246,0.1320857,0.7036734),
-        float3(-0.3790807,0.1454145,0.100605),
-        float3(0.3149606,-0.1294581,0.7044517),
-        float3(-0.1108412,0.2162839,0.1336278),
-        float3(0.658012,-0.4395972,-0.2919373),
-        float3(0.5377914,0.3112189,0.426864),
-        float3(-0.2752537,0.07625949,-0.1273409),
-        float3(-0.1915639,-0.4973421,-0.3129629),
-        float3(-0.2634767,0.5277923,-0.1107446),
-        float3(0.8242752,0.02434147,0.06049098),
-        float3(0.06262707,-0.2128643,-0.03671562),
-        float3(-0.1795662,-0.3543862,0.07924347),
-        float3(0.06039629,0.24629,0.4501176),
-        float3(-0.7786345,-0.3814852,-0.2391262),
-        float3(0.2792919,0.2487278,-0.05185341),
-        float3(0.1841383,0.1696993,-0.8936281),
-        float3(-0.3479781,0.4725766,-0.719685),
-        float3(-0.1365018,-0.2513416,0.470937),
-        float3(0.1280388,-0.563242,0.3419276),
-        float3(-0.4800232,-0.1899473,0.2398808),
-        float3(0.6389147,0.1191014,-0.5271206),
-        float3(0.1932822,-0.3692099,-0.6060588),
-        float3(-0.3465451,-0.1654651,-0.6746758),
-        float3(0.2448421,-0.1610962,0.1289366),
-    };
-    return frag_ao (i, SAMPLE_COUNT, RAND_SAMPLES);
-}
-ENDCG
-
-    }
-
-// ---- Blur pass
-    Pass {
-CGPROGRAM
-#pragma vertex vert
-#pragma fragment frag
-#pragma target 3.0
-#include "UnityCG.cginc"
-
-struct v2f {
-    float4 pos : SV_POSITION;
-    float2 uv : TEXCOORD0;
-};
-
-float4 _MainTex_ST;
-
-/*
-v2f vert (appdata_img v)
-{
-    v2f o;
-    o.pos = mul (UNITY_MATRIX_MVP, v.vertex);
-    o.uv = TRANSFORM_TEX (v.texcoord, _CameraDepthNormalsTexture);
-    return o;
-}
-*/
-
-v2f vert (appdata_img v)
-{
-    v2f o;
-    o.pos = mul (UNITY_MATRIX_MVP, v.vertex);
-    o.uv = v.texcoord;
-    return o;
-}
-
-sampler2D _MainTex;
-float3 _TexelOffsetScale;
-
-
-inline half4 fetchGeom(float2 uv)
-{
-    half4 geom;
-    geom.xyz = tex2D (_CameraGBufferTexture2, uv).xyz * 2.0 - 1.0;
-    geom.w = Linear01Depth(SAMPLE_DEPTH_TEXTURE(_CameraDepthTexture, uv));
-    return geom;
-}
-
-inline half checkSame (half4 n, half4 nn)
-{
-    /*
-    // difference in normals
-    half2 diff = abs(n.xy - nn.xy);
-    half sn = (diff.x + diff.y) < 0.1;
-    // difference in depth
-    float z = DecodeFloatRG (n.zw);
-    float zz = DecodeFloatRG (nn.zw);
-    float zdiff = abs(z-zz) * _ProjectionParams.z;
-    half sz = zdiff < 0.2;
-    return sn * sz;
-    */
-
-    // difference in normals
-    half3 diff = abs(n.xyz - nn.xyz);
-    half sn = dot(diff, half3(1, 1, 1)) < 0.1;
-    // difference in depth
-    float z = n.w;
-    float zz = nn.w;
-    float zdiff = abs(z - zz) * _ProjectionParams.z;
-    half sz = zdiff < 0.2;
-    return sn * sz;
-}
-
-half4 frag( v2f i ) : SV_Target
-{
-    #define NUM_BLUR_SAMPLES 4
-    
-    float2 o = _TexelOffsetScale.xy;
-    
-    half sum = tex2D(_MainTex, i.uv).r * (NUM_BLUR_SAMPLES + 1);
-    half denom = NUM_BLUR_SAMPLES + 1;
-    
-    //half4 geom = tex2D (_CameraDepthNormalsTexture, i.uv);
-    half4 geom = fetchGeom(i.uv);
-    int s;
-
-    for (s = 0; s < NUM_BLUR_SAMPLES; ++s)
+    Properties
     {
-        float2 nuv = i.uv + o * (s+1);
-        //half4 ngeom = tex2D (_CameraDepthNormalsTexture, nuv.xy);
-        half4 ngeom = fetchGeom(nuv.xy);
-        half coef = (NUM_BLUR_SAMPLES - s) * checkSame (geom, ngeom);
-        sum += tex2D (_MainTex, nuv.xy).r * coef;
-        denom += coef;
+        _MainTex("", 2D) = ""{}
     }
-    for (s = 0; s < NUM_BLUR_SAMPLES; ++s)
+    CGINCLUDE
+
+    // --------
+    // Additional options for further customization
+    // --------
+
+    // By default, a fixed sampling pattern is used in the AO estimator.
+    // Although this gives preferable results in most cases, a completely
+    // random sampling pattern could give aesthetically good results in some
+    // cases. Comment out the line below to use the random pattern instead of
+    // the fixed one.
+    #define FIX_SAMPLING_PATTERN 1
+
+    // The constant below determines the contrast of occlusion. Altough this
+    // allows intentional over/under occlusion, currently is not exposed to the
+    // editor, because it’s thought to be rarely useful.
+    static const float kContrast = 0.6;
+
+    // The constant below controls the geometry-awareness of the blur filter.
+    // The higher value, the more sensitive it is.
+    static const float kGeometry = 50;
+
+    // The constants below are used in the AO estimator. Beta is mainly used
+    // for suppressing self-shadowing noise, and Epsilon is used to prevent
+    // calculation underflow. See the paper (Morgan 2011 http://goo.gl/2iz3P)
+    // for further details of these constants.
+    static const float kBeta = 0.002;
+    static const float kEpsilon = 1e-4;
+
+    // --------
+
+    #include "UnityCG.cginc"
+
+    // Source texture type (CameraDepthNormals or G-buffer)
+    #pragma multi_compile _SOURCE_DEPTHNORMALS _SOURCE_GBUFFER
+
+    // Sample count; given-via-uniform (default) or lowest
+    #pragma multi_compile _ _SAMPLECOUNT_LOWEST
+
+    #if _SAMPLECOUNT_LOWEST
+    static const int _SampleCount = 3;
+    #else
+    int _SampleCount;
+    #endif
+
+    // Global shader properties
+    #if _SOURCE_GBUFFER
+    sampler2D _CameraGBufferTexture2;
+    sampler2D_float _CameraDepthTexture;
+    float4x4 _WorldToCamera;
+    #else
+    sampler2D_float _CameraDepthNormalsTexture;
+    #endif
+
+    sampler2D _MainTex;
+    float4 _MainTex_TexelSize;
+
+    sampler2D _ObscuranceTexture;
+
+    // Material shader properties
+    half _Intensity;
+    float _Radius;
+    float _TargetScale;
+    float2 _BlurVector;
+
+    // Utility for sin/cos
+    float2 CosSin(float theta)
     {
-        float2 nuv = i.uv - o * (s+1);
-        //half4 ngeom = tex2D (_CameraDepthNormalsTexture, nuv.xy);
-        half4 ngeom = fetchGeom(nuv.xy);
-        half coef = (NUM_BLUR_SAMPLES - s) * checkSame (geom, ngeom);
-        sum += tex2D (_MainTex, nuv.xy).r * coef;
-        denom += coef;
-    }
-    return sum / denom;
-}
-ENDCG
-    }
-    
-    // ---- Composite pass
-    Pass {
-CGPROGRAM
-#pragma vertex vert
-#pragma fragment frag
-#include "UnityCG.cginc"
-/*
-struct v2f {
-    float4 pos : SV_POSITION;
-    float2 uv[2] : TEXCOORD0;
-};
-
-v2f vert (appdata_img v)
-{
-    v2f o;
-    o.pos = mul (UNITY_MATRIX_MVP, v.vertex);
-    o.uv[0] = MultiplyUV (UNITY_MATRIX_TEXTURE0, v.texcoord);
-    o.uv[1] = MultiplyUV (UNITY_MATRIX_TEXTURE1, v.texcoord);
-    return o;
-}
-*/
-
-struct v2f {
-    float4 pos : SV_POSITION;
-    float2 uv : TEXCOORD0;
-};
-
-float4 _MainTex_ST;
-
-v2f vert (appdata_img v)
-{
-    v2f o;
-    o.pos = mul (UNITY_MATRIX_MVP, v.vertex);
-    o.uv = v.texcoord;
-    return o;
-}
-
-sampler2D _SSAOAlbedoTex;
-sampler2D _MainTex;
-half4 _Color;
-
-half3 rgb2yuv(half3 c)
-{
-    half y = dot(c, half3(0.299, 0.587, 0.114));
-    half u = dot(c, half3(-0.14713, -0.2886, 0.436));
-    half v = dot(c, half3(0.615,-0.51499, -0.10001));
-    return (half3(y, u, v));
-}
-
-half3 yuv2rgb(half3 c)
-{
-    half r = dot(c, half3(1, 0, 1.13983));
-    half g = dot(c, half3(1, -0.39465, -0.58060));
-    half b = dot(c, half3(1, 2.03211, 0));
-    return saturate(half3(r, g, b));
-}
-
-half4 frag( v2f i ) : SV_Target
-{
-    half ao = tex2D (_MainTex, i.uv).r;
-    //ao = pow (ao, _Params.w);
-    ao = smoothstep(_Params.w, 1.0, ao * ao);
-
-    half3 clr = tex2D (_SSAOAlbedoTex, i.uv).rgb;
-    
-    clr = clr * clr;
-    clr = clr * clr;
-    clr = lerp(clr, _Color.rgb, 0.5);
-
-    return half4(clr, (1 - ao) * _Color.a);
-}
-ENDCG
-
-    Blend SrcAlpha OneMinusSrcAlpha
+        float sn, cs;
+        sincos(theta, sn, cs);
+        return float2(cs, sn);
     }
 
-}
+    // Gamma encoding function for AO value
+    // (do nothing if in the linear mode)
+    half EncodeAO(half x)
+    {
+        // Gamma encoding
+        half x_g = 1 - pow(1 - x, 1 / 2.2);
+        // ColorSpaceLuminance.w is 0 (gamma) or 1 (linear).
+        return lerp(x_g, x, unity_ColorSpaceLuminance.w);
+    }
 
-Fallback off
+    // Pseudo random number generator with 2D argument
+    float UVRandom(float u, float v)
+    {
+        float f = dot(float2(12.9898, 78.233), float2(u, v));
+        return frac(43758.5453 * sin(f));
+    }
+
+    // Interleaved gradient function from Jimenez 2014 http://goo.gl/eomGso
+    float GradientNoise(float2 uv)
+    {
+        uv = floor(uv * _ScreenParams.xy);
+        float f = dot(float2(0.06711056f, 0.00583715f), uv);
+        return frac(52.9829189f * frac(f));
+    }
+
+    // Boundary check for depth sampler
+    // (returns a very large value if it lies out of bounds)
+    float CheckBounds(float2 uv, float d)
+    {
+        float ob = any(uv < 0) + any(uv > 1) + (d >= 0.99999);
+        return ob * 1e8;
+    }
+
+    // Depth/normal sampling functions
+    float SampleDepth(float2 uv)
+    {
+    #if _SOURCE_GBUFFER
+        float d = SAMPLE_DEPTH_TEXTURE(_CameraDepthTexture, uv);
+        return LinearEyeDepth(d) + CheckBounds(uv, d);
+    #else
+        float4 cdn = tex2D(_CameraDepthNormalsTexture, uv);
+        float d = DecodeFloatRG(cdn.zw);
+        return d * _ProjectionParams.z + CheckBounds(uv, d);
+    #endif
+    }
+
+    float3 SampleNormal(float2 uv)
+    {
+    #if _SOURCE_GBUFFER
+        float3 norm = tex2D(_CameraGBufferTexture2, uv).xyz * 2 - 1;
+        return mul((float3x3)_WorldToCamera, norm);
+    #else
+        float4 cdn = tex2D(_CameraDepthNormalsTexture, uv);
+        return DecodeViewNormalStereo(cdn) * float3(1, 1, -1);
+    #endif
+    }
+
+    float SampleDepthNormal(float2 uv, out float3 normal)
+    {
+    #if _SOURCE_GBUFFER
+        normal = SampleNormal(uv);
+        return SampleDepth(uv);
+    #else
+        float4 cdn = tex2D(_CameraDepthNormalsTexture, uv);
+        normal = DecodeViewNormalStereo(cdn) * float3(1, 1, -1);
+        float d = DecodeFloatRG(cdn.zw);
+        return d * _ProjectionParams.z + CheckBounds(uv, d);
+    #endif
+    }
+
+    // Reconstruct view-space position from UV and depth.
+    // p11_22 = (unity_CameraProjection._11, unity_CameraProjection._22)
+    // p13_31 = (unity_CameraProjection._13, unity_CameraProjection._23)
+    float3 ReconstructViewPos(float2 uv, float depth, float2 p11_22, float2 p13_31)
+    {
+        return float3((uv * 2 - 1 - p13_31) / p11_22, 1) * depth;
+    }
+
+    // Normal vector comparer (for geometry-aware weighting)
+    half CompareNormal(half3 d1, half3 d2)
+    {
+        return pow((dot(d1, d2) + 1) * 0.5, kGeometry);
+    }
+
+    // Final combiner function
+    half3 CombineObscurance(half3 src, half3 ao)
+    {
+        half3 darken = (src - 1 / 16);
+        darken = darken * darken;
+        darken = darken * darken;
+        half range = 0.6;
+        half cut = (1.0 - range) * 0.5;
+        return lerp(src, darken, smoothstep(cut, 1.0 - cut, EncodeAO(ao)));
+    }
+
+    // Sample point picker
+    float3 PickSamplePoint(float2 uv, float index)
+    {
+        // Uniformaly distributed points on a unit sphere http://goo.gl/X2F1Ho
+    #if FIX_SAMPLING_PATTERN
+        float gn = GradientNoise(uv * _TargetScale);
+        float u = frac(UVRandom(0, index) + gn) * 2 - 1;
+        float theta = (UVRandom(1, index) + gn) * UNITY_PI * 2;
+    #else
+        float u = UVRandom(uv.x + _Time.x, uv.y + index) * 2 - 1;
+        float theta = UVRandom(-uv.x - _Time.x, uv.y + index) * UNITY_PI * 2;
+    #endif
+        float3 v = float3(CosSin(theta) * sqrt(1 - u * u), u);
+        // Make them distributed between [0, _Radius]
+        float l = sqrt((index + 1) / _SampleCount) * _Radius;
+        return v * l;
+    }
+
+    // Obscurance estimator function
+    float EstimateObscurance(float2 uv)
+    {
+        // Parameters used in coordinate conversion
+        float3x3 proj = (float3x3)unity_CameraProjection;
+        float2 p11_22 = float2(unity_CameraProjection._11, unity_CameraProjection._22);
+        float2 p13_31 = float2(unity_CameraProjection._13, unity_CameraProjection._23);
+
+        // View space normal and depth
+        float3 norm_o;
+        float depth_o = SampleDepthNormal(uv, norm_o);
+
+    #if _SOURCE_DEPTHNORMALS
+        // Offset the depth value to avoid precision error.
+        // (depth in the DepthNormals mode has only 16-bit precision)
+        depth_o -= _ProjectionParams.z / 65536;
+    #endif
+
+        // Reconstruct the view-space position.
+        float3 vpos_o = ReconstructViewPos(uv, depth_o, p11_22, p13_31);
+
+        // Distance-based AO estimator based on Morgan 2011 http://goo.gl/2iz3P
+        float ao = 0.0;
+
+        for (int s = 0; s < _SampleCount; s++)
+        {
+            // Sample point
+            float3 v_s1 = PickSamplePoint(uv, s);
+            v_s1 = faceforward(v_s1, -norm_o, v_s1);
+            float3 vpos_s1 = vpos_o + v_s1;
+
+            // Reproject the sample point
+            float3 spos_s1 = mul(proj, vpos_s1);
+            float2 uv_s1 = (spos_s1.xy / vpos_s1.z + 1) * 0.5;
+
+            // Depth at the sample point
+            float depth_s1 = SampleDepth(uv_s1);
+
+            // Relative position of the sample point
+            float3 vpos_s2 = ReconstructViewPos(uv_s1, depth_s1, p11_22, p13_31);
+            float3 v_s2 = vpos_s2 - vpos_o;
+
+            // Estimate the obscurance value
+            float a1 = max(dot(v_s2, norm_o) - kBeta * depth_o, 0);
+            float a2 = dot(v_s2, v_s2) + kEpsilon;
+            ao += a1 / a2;
+        }
+
+        ao *= _Radius; // intensity normalization
+
+        // Apply other parameters.
+        return pow(ao * _Intensity / _SampleCount, kContrast);
+    }
+
+    // Geometry-aware separable blur filter
+    half SeparableBlur(sampler2D tex, float2 uv, float2 delta)
+    {
+        half3 n0 = SampleNormal(uv);
+
+        half2 uv1 = uv - delta;
+        half2 uv2 = uv + delta;
+        half2 uv3 = uv - delta * 2;
+        half2 uv4 = uv + delta * 2;
+
+        half w0 = 3;
+        half w1 = CompareNormal(n0, SampleNormal(uv1)) * 2;
+        half w2 = CompareNormal(n0, SampleNormal(uv2)) * 2;
+        half w3 = CompareNormal(n0, SampleNormal(uv3));
+        half w4 = CompareNormal(n0, SampleNormal(uv4));
+
+        half s = tex2D(tex, uv).r * w0;
+        s += tex2D(tex, uv1).r * w1;
+        s += tex2D(tex, uv2).r * w2;
+        s += tex2D(tex, uv3).r * w3;
+        s += tex2D(tex, uv4).r * w4;
+
+        return s / (w0 + w1 + w2 + w3 + w4);
+    }
+
+    // Pass 0: Obscurance estimation
+    half4 frag_ao(v2f_img i) : SV_Target
+    {
+        return EstimateObscurance(i.uv);
+    }
+
+    // Pass1: Geometry-aware separable blur
+    half4 frag_blur(v2f_img i) : SV_Target
+    {
+        float2 delta = _MainTex_TexelSize.xy * _BlurVector;
+        return SeparableBlur(_MainTex, i.uv, delta);
+    }
+
+    // Pass 2: Combiner for the forward mode
+    struct v2f_multitex
+    {
+        float4 pos : SV_POSITION;
+        float2 uv0 : TEXCOORD0;
+        float2 uv1 : TEXCOORD1;
+    };
+
+    v2f_multitex vert_multitex(appdata_img v)
+    {
+        // Handles vertically-flipped case.
+        float vflip = sign(_MainTex_TexelSize.y);
+
+        v2f_multitex o;
+        o.pos = mul(UNITY_MATRIX_MVP, v.vertex);
+        o.uv0 = v.texcoord.xy;
+        o.uv1 = (v.texcoord.xy - 0.5) * float2(1, vflip) + 0.5;
+        return o;
+    }
+
+    half4 frag_combine(v2f_img i) : SV_Target
+    {
+        half4 src = tex2D(_MainTex, i.uv);
+        half ao = tex2D(_ObscuranceTexture, i.uv).r;
+        return half4(CombineObscurance(src.rgb, ao), src.a);
+    }
+
+    ENDCG
+
+    SubShader
+    {
+        Pass
+        {
+            ZTest Always Cull Off ZWrite Off
+            CGPROGRAM
+            #pragma vertex vert_img
+            #pragma fragment frag_ao
+            #pragma target 3.0
+            ENDCG
+        }
+        Pass
+        {
+            ZTest Always Cull Off ZWrite Off
+            CGPROGRAM
+            #pragma vertex vert_img
+            #pragma fragment frag_blur
+            #pragma target 3.0
+            ENDCG
+        }
+        Pass
+        {
+            ZTest Always Cull Off ZWrite Off
+            CGPROGRAM
+            #pragma vertex vert_img
+            #pragma fragment frag_combine
+            #pragma target 3.0
+            ENDCG
+        }
+    }
 }
