@@ -11,8 +11,6 @@ namespace Mud
 
 		#region Material Management
 
-		public static HashID MTL_ALBEDO = new HashID("Hidden/Mud/Albedo");
-
 		protected HashDict<Material> m_Materials = new HashDict<Material>();
 		protected Material LoadMaterial(HashID _id)
 		{
@@ -57,17 +55,14 @@ namespace Mud
 
 		protected class EvtCmdBufList :List<EvtCmdBuf>
 		{
-			public RenderTexture AlbedoBuffer;
 		}
 
-		protected class CameraCommands : Dictionary<Camera, EvtCmdBufList>
+		protected class EvtCmdBufMapping : Dictionary<Camera, EvtCmdBufList>
 		{
 
 		}
 
-		protected CameraCommands m_CameraCommands = new CameraCommands ();
-
-		private Camera m_AlbedoCamera = null;
+		protected EvtCmdBufMapping m_CameraCommands = new EvtCmdBufMapping();
 
 		protected CommandBuffer GetCommandBufferForEvent(Camera _cam, CameraEvent _event, string _name)
 		{
@@ -89,22 +84,11 @@ namespace Mud
 			return _cmdBuf;
 		}
 
-		protected RenderTexture GetAlbedoBufferForCamera(Camera _cam)
-		{
-			if (!m_CameraCommands.ContainsKey(_cam))
-				return null;
-
-			return m_CameraCommands[_cam].AlbedoBuffer;
-		}
-
 		#endregion
 
 		#region MonoBehaviour related
 		public virtual void OnEnable()
 		{
-			LoadMaterial(MTL_ALBEDO);
-
-			Camera.onPreRender += OnPreRenderCamera;
 		}
 
 		public void OnDisable ()
@@ -112,19 +96,12 @@ namespace Mud
 			Cleanup ();
 		}
 
-		public virtual void Cleanup ()
+		protected virtual void Cleanup ()
 		{
-			//Debug.Log ("Cleanup");
-			if (m_AlbedoCamera)
-				m_AlbedoCamera.targetTexture = null;
-
 			foreach (var _pair in m_CameraCommands) {
 				foreach (var _evtCmds in _pair.Value) {
 					if (_pair.Key)
 						_pair.Key.RemoveCommandBuffer (_evtCmds.Event, _evtCmds.CommandBuffer);
-
-					if (_pair.Value.AlbedoBuffer)
-						RenderTexture.DestroyImmediate(_pair.Value.AlbedoBuffer);
 				}
 			}
 
@@ -135,22 +112,10 @@ namespace Mud
 			}
 
 			m_Materials.Clear();
-
-			Camera.onPreRender -= OnPreRenderCamera;
 		}
 
-		protected virtual void OnSetupCameraEvents (Camera _cam)
+		public virtual void OnPreRenderCamera(Camera _cam, RenderSystem _system)
 		{
-		}
-
-		private void OnPreRenderCamera(Camera _cam)
-		{
-			if (null == _cam)
-				return;
-
-			if (_cam.name == gameObject.name)
-				return;
-
 			var _active = gameObject.activeInHierarchy && enabled;
 			if (!_active)
 			{
@@ -158,41 +123,18 @@ namespace Mud
 				return;
 			}
 
-
-			_cam.depthTextureMode = DepthTextureMode.DepthNormals;
-
-			// Did we already add the command buffer on this camera? Nothing to do then.
 			if (!m_CameraCommands.ContainsKey(_cam))
 			{
 				var _cmdList = new EvtCmdBufList();
-				var _albedoBuffer = new RenderTexture(_cam.pixelWidth, _cam.pixelHeight, 16, RenderTextureFormat.ARGB32);
-				_albedoBuffer.name = "MudAlbedoBuffer." + _cam.name;
-				_cmdList.AlbedoBuffer = _albedoBuffer;
 				m_CameraCommands[_cam] = _cmdList;
 			}
-			OnSetupCameraEvents(_cam);
 
-			if (!m_AlbedoCamera)
-			{
-				m_AlbedoCamera = gameObject.GetComponent<Camera>();
-				if (!m_AlbedoCamera)
-					m_AlbedoCamera = gameObject.AddComponent<Camera>();
-			}
-			m_AlbedoCamera.CopyFrom(_cam);
-			m_AlbedoCamera.depthTextureMode = DepthTextureMode.None;
-			m_AlbedoCamera.clearFlags = CameraClearFlags.Color;
-			m_AlbedoCamera.backgroundColor = new Color(0, 0, 0, 0);
-			m_AlbedoCamera.rect = new Rect(0, 0, 1, 1);
-			m_AlbedoCamera.enabled = false;
-			m_AlbedoCamera.hideFlags = HideFlags.HideInInspector;
-			
-			var _lastRT = RenderTexture.active;
-			RenderTexture.active = m_CameraCommands[_cam].AlbedoBuffer;
+			SetupCameraEvents(_cam, _system);
+		}
 
-			m_AlbedoCamera.targetTexture = m_CameraCommands[_cam].AlbedoBuffer;
-			m_AlbedoCamera.RenderWithShader(GetMaterial(MTL_ALBEDO).shader, "");
-			
-			RenderTexture.active = _lastRT;
+		public virtual void SetupCameraEvents(Camera _cam, RenderSystem _system)
+		{
+
 		}
 
 		#endregion

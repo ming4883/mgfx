@@ -32,21 +32,6 @@ namespace Mud
 			DoRim();
 			DoDiffuseLUT();
 			//DoEdge();
-
-			foreach (var _obj in _materialEditor.targets)
-			{
-				var _mtl = _obj as Material;
-				//Debug.Log(_mtl.name);
-				_mtl.SetOverrideTag("RenderType", "");
-				_mtl.SetInt("_SrcBlend", (int)UnityEngine.Rendering.BlendMode.One);
-				_mtl.SetInt("_DstBlend", (int)UnityEngine.Rendering.BlendMode.Zero);
-				_mtl.SetInt("_ZWrite", 1);
-				_mtl.DisableKeyword("_ALPHATEST_ON");
-				_mtl.DisableKeyword("_ALPHABLEND_ON");
-				_mtl.DisableKeyword("_ALPHAPREMULTIPLY_ON");
-				_mtl.renderQueue = -1;
-			}
-			
 		}
 
 		private Material currentMaterial

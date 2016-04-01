@@ -42,7 +42,7 @@
             sampler2D _MainTex;
             sampler2D _MudAlbedoBuffer; // global property
             float4 _EdgeColor;
-            //float _EdgeAutoColoring;
+            float _EdgeAutoColoring;
 
             half4 frag (v2f i) : SV_Target
             {
@@ -52,7 +52,7 @@
 
                 half4 edge;
                 edge.rgb = _EdgeColor.rgb;
-                edge.rgb = lerp(edge.rgb, base.rgb, 1.0);
+                edge.rgb = lerp(edge.rgb, base.rgb, _EdgeAutoColoring);
                 edge.a = tex2D(_MainTex, i.uv).r * _EdgeColor.a;
                 
                 return edge;

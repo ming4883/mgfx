@@ -146,7 +146,7 @@ namespace Mud
 		#region Effect Passes
 
 		// Build commands for the AO pass (used in the ambient-only mode).
-		void BuildAOCommands(Camera _cam, CommandBuffer _cmdBuf)
+		void BuildAOCommands(Camera _cam, CommandBuffer _cmdBuf, RenderSystem _system)
 		{
 			var tw = _cam.pixelWidth;
 			var th = _cam.pixelHeight;
@@ -195,7 +195,7 @@ namespace Mud
 
 			//cb.Blit(BuiltinRenderTextureType.GBuffer0, rtTemp);
 
-			_cmdBuf.SetGlobalTexture("_MudAlbedoBuffer", GetAlbedoBufferForCamera(_cam));
+			_cmdBuf.SetGlobalTexture("_MudAlbedoBuffer", _system.GetAlbedoBufferForCamera(_cam));
 			_cmdBuf.Blit(rtMask, BuiltinRenderTextureType.CameraTarget, _m, 2);
 
 			//cb.ReleaseTemporaryRT(rtTemp);
@@ -238,7 +238,7 @@ namespace Mud
 			LoadMaterial(MTL_SSAO);
 		}
 		
-		protected override void OnSetupCameraEvents(Camera _cam)
+		public override void SetupCameraEvents(Camera _cam, RenderSystem _system)
 		{
 			// update command buffers
 			var _cmdbuf = GetCommandBufferForEvent(_cam, CameraEvent.AfterForwardOpaque, "Mud.SSAO");
@@ -246,7 +246,7 @@ namespace Mud
 
 			UpdateMaterialProperties(true);
 
-			BuildAOCommands(_cam, _cmdbuf);
+			BuildAOCommands(_cam, _cmdbuf, _system);
 		}
 
 		#endregion

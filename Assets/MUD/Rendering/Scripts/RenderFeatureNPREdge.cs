@@ -22,15 +22,12 @@ namespace Mud
 		[Range (1.0f, 20.0f)]
 		public float edgeDetails = 2.0f;
 
-		[Range(0, 1.0f)]
-		public float edgeCutoffMin = 0.25f;
-
-		[Range(0, 1.0f)]
-		public float edgeCutoffMax = 0.75f;
-
 		public bool edgeAA = false;
 
 		public Color edgeColor = Color.black;
+
+		[Range(0, 1.0f)]
+		public float edgeAutoColoring = 0.5f;
 
 		#endregion
 
@@ -56,11 +53,12 @@ namespace Mud
 
 			GetMaterial(MTL_EDGE_DETECT).SetVector("_EdgeThreshold", _edge_threshold);
 			GetMaterial(MTL_EDGE_APPLY).SetColor("_EdgeColor", edgeColor);
+			GetMaterial(MTL_EDGE_APPLY).SetFloat("_EdgeAutoColoring", edgeAutoColoring);
 		}
 
 		// http://docs.unity3d.com/540/Documentation/Manual/GraphicsCommandBuffers.html
 		// http://docs.unity3d.com/540/Documentation/ScriptReference/Rendering.BuiltinRenderTextureType.html
-		protected override void OnSetupCameraEvents (Camera _cam)
+		public override void SetupCameraEvents(Camera _cam, RenderSystem _system)
 		{
 			UpdateMaterialProperties(_cam);
 
@@ -100,7 +98,7 @@ namespace Mud
 			//_cmdbuf.Blit(BuiltinRenderTextureType.GBuffer0, _idAlbedoCopy, GetMaterial(MTL_EDGE_DILATE));
 
 			// apply edges to albedo
-			_cmdbuf.SetGlobalTexture("_MudAlbedoBuffer", GetAlbedoBufferForCamera(_cam));
+			_cmdbuf.SetGlobalTexture("_MudAlbedoBuffer", _system.GetAlbedoBufferForCamera(_cam));
 			_cmdbuf.Blit(_idSrcBuf, BuiltinRenderTextureType.CameraTarget, GetMaterial (MTL_EDGE_APPLY));
 
 			//_cmdbuf.ReleaseTemporaryRT(_idAlbedoCopy);
