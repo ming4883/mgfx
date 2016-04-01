@@ -8,6 +8,45 @@ namespace Mud
 	[ExecuteInEditMode]
 	public class RenderFeatureBase : MonoBehaviour
 	{
+
+		#region Material Management
+
+		protected HashDict<Material> m_Materials = new HashDict<Material>();
+		protected Material LoadMaterial(HashID _id)
+		{
+			var _shaderName = _id.ToString();
+
+			if (m_Materials.ContainsKey(_id))
+			{
+				Debug.LogWarningFormat("possible duplicated LoadMaterial {0}", _shaderName);
+				return m_Materials[_id];
+			}
+
+			Shader _shader = Shader.Find(_shaderName);
+			if (null == _shader)
+			{
+				Debug.LogErrorFormat("shader {0} not found", _shaderName);
+				return null;
+			}
+
+			var _mtl = new Material(_shader);
+			_mtl.hideFlags = HideFlags.HideAndDontSave;
+			m_Materials.Add(_id, _mtl);
+			return _mtl;
+		}
+
+		protected Material GetMaterial(HashID _id)
+		{
+			if (!m_Materials.ContainsKey(_id))
+				return null;
+
+			return m_Materials[_id];
+		}
+
+
+		#endregion
+
+		#region Command Buffer Management
 		protected class EvtCmdBuf
 		{
 			public CameraEvent Event;
@@ -16,21 +55,40 @@ namespace Mud
 
 		protected class EvtCmdBufList :List<EvtCmdBuf>
 		{
-
 		}
 
-		protected class CameraCommands : Dictionary<Camera, EvtCmdBufList>
+		protected class EvtCmdBufMapping : Dictionary<Camera, EvtCmdBufList>
 		{
 
 		}
 
-		protected HashDict<Material> m_Materials = new HashDict<Material> ();
-		protected CameraCommands m_CameraCommands = new CameraCommands ();
-		private int invokeCounter = 0;
+		protected EvtCmdBufMapping m_CameraCommands = new EvtCmdBufMapping();
 
+		protected CommandBuffer GetCommandBufferForEvent(Camera _cam, CameraEvent _event, string _name)
+		{
+
+			var _curr = m_CameraCommands[_cam].Find((_evtbuf) =>
+			{
+				return _evtbuf.Event == _event;
+			});
+
+			if (null != _curr)
+				return _curr.CommandBuffer;
+
+			CommandBuffer _cmdBuf = new CommandBuffer();
+			_cmdBuf.name = _name;
+			_cam.AddCommandBuffer(_event, _cmdBuf);
+
+			m_CameraCommands[_cam].Add(new EvtCmdBuf { Event = _event, CommandBuffer = _cmdBuf });
+
+			return _cmdBuf;
+		}
+
+		#endregion
+
+		#region MonoBehaviour related
 		public virtual void OnEnable()
 		{
-			invokeCounter = 0;
 		}
 
 		public void OnDisable ()
@@ -38,10 +96,8 @@ namespace Mud
 			Cleanup ();
 		}
 
-		public virtual void Cleanup ()
+		protected virtual void Cleanup ()
 		{
-			Debug.Log ("Cleanup");
-
 			foreach (var _pair in m_CameraCommands) {
 				foreach (var _evtCmds in _pair.Value) {
 					if (_pair.Key)
@@ -58,39 +114,32 @@ namespace Mud
 			m_Materials.Clear();
 		}
 
-		protected Material LoadMaterial (HashID _id)
+		public virtual void OnPreRenderCamera(Camera _cam, RenderSystem _system)
 		{
-			var _shaderName = _id.ToString ();
-
-			if (m_Materials.ContainsKey (_id)) {
-				Debug.LogWarningFormat ("possible duplicated LoadMaterial {0}", _shaderName);
-				return m_Materials [_id];
+			var _active = gameObject.activeInHierarchy && enabled;
+			if (!_active)
+			{
+				Cleanup();
+				return;
 			}
 
-			Shader _shader = Shader.Find (_shaderName);
-			if (null == _shader) {
-				Debug.LogErrorFormat ("shader {0} not found", _shaderName);
-				return null;
+			if (!m_CameraCommands.ContainsKey(_cam))
+			{
+				var _cmdList = new EvtCmdBufList();
+				m_CameraCommands[_cam] = _cmdList;
 			}
 
-			var _mtl = new Material (_shader);
-			_mtl.hideFlags = HideFlags.HideAndDontSave;
-			m_Materials.Add (_id, _mtl);
-			return _mtl;
+			SetupCameraEvents(_cam, _system);
 		}
 
-		protected Material GetMaterial (HashID _id)
+		public virtual void SetupCameraEvents(Camera _cam, RenderSystem _system)
 		{
-			if (!m_Materials.ContainsKey (_id))
-				return null;
 
-			return m_Materials [_id];
 		}
 
-		protected virtual void OnSetupCameraEvents (Camera _cam)
-		{
-		}
+		#endregion
 
+		#region Utils
 		protected static void Swap (ref RenderTexture _a, ref RenderTexture _b)
 		{
 			RenderTexture _t = _a;
@@ -105,46 +154,7 @@ namespace Mud
 			_b = _t;
 		}
 
-		protected CommandBuffer GetCommandBufferForEvent (Camera _cam, CameraEvent _event, string _name)
-		{
-
-			var _curr = m_CameraCommands [_cam].Find ((_evtbuf) => {
-				return _evtbuf.Event == _event;
-			});
-
-			if (null != _curr)
-				return _curr.CommandBuffer;
-
-			CommandBuffer _cmdBuf = new CommandBuffer ();
-			_cmdBuf.name = _name;
-			_cam.AddCommandBuffer (_event, _cmdBuf);
-
-			m_CameraCommands [_cam].Add (new EvtCmdBuf { Event = _event, CommandBuffer = _cmdBuf });
-
-			return _cmdBuf;
-		}
-
-		public void OnWillRenderObject ()
-		{
-			invokeCounter++;
-
-			var _active = gameObject.activeInHierarchy && enabled;
-			if (!_active) {
-				Cleanup ();
-				return;
-			}
-
-			var _cam = Camera.current;
-			if (null == _cam)
-				return;
-
-			// Did we already add the command buffer on this camera? Nothing to do then.
-			if (!m_CameraCommands.ContainsKey (_cam))
-				m_CameraCommands [_cam] = new EvtCmdBufList ();
-			
-			OnSetupCameraEvents (_cam);
-		}
-
+		#endregion
 	}
 
 }
