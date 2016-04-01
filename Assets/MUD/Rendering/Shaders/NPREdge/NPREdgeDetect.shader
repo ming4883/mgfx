@@ -2,7 +2,7 @@
 {
     Properties
     {
-        _MainTex ("Texture", 2D) = "" {}
+        //_MainTex ("Texture", 2D) = "" {}
         //_ScreenTexelSize ("ScreenTexelSize", Vector) = (0, 0, 0, 0)
         _EdgeThreshold ("EdgeThreshold", Vector) = (0, 0, 0, 1)
     }
@@ -19,12 +19,11 @@
             
             #include "UnityCG.cginc"
 
-            sampler2D _MainTex;
-            float4 _MainTex_TexelSize;
+            //sampler2D _MainTex;
+            //float4 _MainTex_TexelSize;
             float4 _ScreenTexelSize; // global properties
             sampler2D _CameraDepthNormalsTexture;
             sampler2D_float _CameraDepthTexture; // build in depth texture
-            sampler2D _CameraGBufferTexture2; // build in normal texture (world space)
             
             float4 _EdgeThreshold;
 

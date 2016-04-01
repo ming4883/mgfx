@@ -84,13 +84,15 @@ Shader "Hidden/Mud/SSAO"
     sampler2D _MainTex;
     float4 _MainTex_TexelSize;
 
-    sampler2D _ObscuranceTexture;
+    //sampler2D _ObscuranceTexture;
+    sampler2D _MudAlbedoBuffer;
 
     // Material shader properties
     half _Intensity;
     float _Radius;
     float _TargetScale;
     float2 _BlurVector;
+    float2 _DynamicRange;
 
     // Utility for sin/cos
     float2 CosSin(float theta)
@@ -196,7 +198,7 @@ Shader "Hidden/Mud/SSAO"
     }
 
     // Sample point picker
-    float3 PickSamplePoint(float2 uv, float index)
+    float3 PickSamplePoint(float2 uv, float index, float radius)
     {
         // Uniformaly distributed points on a unit sphere http://goo.gl/X2F1Ho
     #if FIX_SAMPLING_PATTERN
@@ -209,12 +211,12 @@ Shader "Hidden/Mud/SSAO"
     #endif
         float3 v = float3(CosSin(theta) * sqrt(1 - u * u), u);
         // Make them distributed between [0, _Radius]
-        float l = sqrt((index + 1) / _SampleCount) * _Radius;
+        float l = sqrt((index + 1) / _SampleCount) * radius;
         return v * l;
     }
 
     // Obscurance estimator function
-    float EstimateObscurance(float2 uv)
+    float EstimateObscurance(float2 uv, float radius)
     {
         // Parameters used in coordinate conversion
         float3x3 proj = (float3x3)unity_CameraProjection;
@@ -240,7 +242,7 @@ Shader "Hidden/Mud/SSAO"
         for (int s = 0; s < _SampleCount; s++)
         {
             // Sample point
-            float3 v_s1 = PickSamplePoint(uv, s);
+            float3 v_s1 = PickSamplePoint(uv, s, radius);
             v_s1 = faceforward(v_s1, -norm_o, v_s1);
             float3 vpos_s1 = vpos_o + v_s1;
 
@@ -261,7 +263,7 @@ Shader "Hidden/Mud/SSAO"
             ao += a1 / a2;
         }
 
-        ao *= _Radius; // intensity normalization
+        ao *= radius; // intensity normalization
 
         // Apply other parameters.
         return pow(ao * _Intensity / _SampleCount, kContrast);
@@ -295,7 +297,9 @@ Shader "Hidden/Mud/SSAO"
     // Pass 0: Obscurance estimation
     half4 frag_ao(v2f_img i) : SV_Target
     {
-        return EstimateObscurance(i.uv);
+        float ao1 = EstimateObscurance(i.uv, _Radius);
+        float ao2 = EstimateObscurance(i.uv, _Radius * 0.5);
+        return ao1 + (ao2 * ao2);
     }
 
     // Pass1: Geometry-aware separable blur
@@ -327,9 +331,13 @@ Shader "Hidden/Mud/SSAO"
 
     half4 frag_combine(v2f_img i) : SV_Target
     {
-        half4 src = tex2D(_MainTex, i.uv);
-        half ao = tex2D(_ObscuranceTexture, i.uv).r;
-        return half4(CombineObscurance(src.rgb, ao), src.a);
+        half ao = tex2D(_MainTex, i.uv).r;
+        half4 src = tex2D(_MudAlbedoBuffer, i.uv);
+        src = src - 1.0 / 16.0;
+        src = src * src;
+        
+        //return half4(CombineObscurance(src.rgb, ao), src.a);
+        return half4(src.rgb, smoothstep(_DynamicRange.x, _DynamicRange.y, EncodeAO(ao).r));
     }
 
     ENDCG
@@ -357,6 +365,7 @@ Shader "Hidden/Mud/SSAO"
         Pass
         {
             ZTest Always Cull Off ZWrite Off
+            Blend SrcAlpha OneMinusSrcAlpha
             CGPROGRAM
             #pragma vertex vert_img
             #pragma fragment frag_combine

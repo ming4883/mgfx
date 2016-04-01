@@ -40,31 +40,19 @@
             }
             
             sampler2D _MainTex;
-            //sampler2D _NPREdgeAlbedoTex; // global property
+            sampler2D _MudAlbedoBuffer; // global property
             float4 _EdgeColor;
             //float _EdgeAutoColoring;
 
-            half3 rgb2yuv(half3 c)
-            {
-                half y = dot(c, half3(0.299, 0.587, 0.114));
-                half u = dot(c, half3(-0.14713, -0.2886, 0.436));
-                half v = dot(c, half3(0.615,-0.51499, -0.10001));
-                return (half3(y, u, v));
-            }
-
-            half3 yuv2rgb(half3 c)
-            {
-                half r = dot(c, half3(1, 0, 1.13983));
-                half g = dot(c, half3(1, -0.39465, -0.58060));
-                half b = dot(c, half3(1, 2.03211, 0));
-                return saturate(half3(r, g, b));
-            }
-
-
             half4 frag (v2f i) : SV_Target
             {
+                half4 base = tex2D(_MudAlbedoBuffer, i.uv);
+                base.rgb = base.rgb - 1.0 / 16.0;
+                base.rgb = base.rgb * base.rgb;
+
                 half4 edge;
                 edge.rgb = _EdgeColor.rgb;
+                edge.rgb = lerp(edge.rgb, base.rgb, 1.0);
                 edge.a = tex2D(_MainTex, i.uv).r * _EdgeColor.a;
                 
                 return edge;

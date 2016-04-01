@@ -60,6 +60,17 @@ namespace Mud
 			"Radius of sample points, which affects extent of darkened areas.")]
 		float _radius = 0.3f;
 
+		/// Degree of darkness produced by the effect.
+		public float sharpness
+		{
+			get { return _sharpness; }
+			set { _sharpness = value; }
+		}
+
+		[SerializeField, Range(0, 1), Tooltip(
+			"Degree of sharpness produced by the effect.")]
+		float _sharpness = 0;
+
 		/// Number of sample points, which affects quality and performance.
 		public SampleCount sampleCount
 		{
@@ -135,10 +146,10 @@ namespace Mud
 		#region Effect Passes
 
 		// Build commands for the AO pass (used in the ambient-only mode).
-		void BuildAOCommands(Camera cam, CommandBuffer cb)
+		void BuildAOCommands(Camera _cam, CommandBuffer _cmdBuf)
 		{
-			var tw = cam.pixelWidth;
-			var th = cam.pixelHeight;
+			var tw = _cam.pixelWidth;
+			var th = _cam.pixelHeight;
 			var format = RenderTextureFormat.R8;
 			var rwMode = RenderTextureReadWrite.Linear;
 
@@ -151,97 +162,46 @@ namespace Mud
 			// AO buffer
 			var _m = aoMaterial;
 			var rtMask = Shader.PropertyToID("_ObscuranceTexture");
-			cb.GetTemporaryRT(
+			_cmdBuf.GetTemporaryRT(
 				rtMask, tw, th, 0, FilterMode.Bilinear, format, rwMode
 			);
 
 			// AO estimation
-			cb.Blit(BuiltinRenderTextureType.None, rtMask, _m, 0);
+			_cmdBuf.Blit(BuiltinRenderTextureType.None, rtMask, _m, 0);
 
 			if (blurIterations > 0)
 			{
 				// Blur buffer
 				var rtBlur = Shader.PropertyToID("_ObscuranceBlurTexture");
-				cb.GetTemporaryRT(
+				_cmdBuf.GetTemporaryRT(
 					rtBlur, tw, th, 0, FilterMode.Bilinear, format, rwMode
 				);
 
 				// Blur iterations
 				for (var i = 0; i < blurIterations; i++)
 				{
-					cb.SetGlobalVector("_BlurVector", Vector2.right);
-					cb.Blit(rtMask, rtBlur, _m, 1);
+					_cmdBuf.SetGlobalVector("_BlurVector", Vector2.right);
+					_cmdBuf.Blit(rtMask, rtBlur, _m, 1);
 
-					cb.SetGlobalVector("_BlurVector", Vector2.up);
-					cb.Blit(rtBlur, rtMask, _m, 1);
+					_cmdBuf.SetGlobalVector("_BlurVector", Vector2.up);
+					_cmdBuf.Blit(rtBlur, rtMask, _m, 1);
 				}
 
-				cb.ReleaseTemporaryRT(rtBlur);
+				_cmdBuf.ReleaseTemporaryRT(rtBlur);
 			}
 
-			var rtTemp = Shader.PropertyToID("_ObscuranceAlbedoTexture");
-			cb.GetTemporaryRT(rtTemp, -1, -1, 0, FilterMode.Bilinear, RenderTextureFormat.ARGB32);
+			//var rtTemp = Shader.PropertyToID("_ObscuranceAlbedoTexture");
+			//cb.GetTemporaryRT(rtTemp, -1, -1, 0, FilterMode.Bilinear, RenderTextureFormat.ARGB32);
 
-			cb.Blit(BuiltinRenderTextureType.GBuffer0, rtTemp);
+			//cb.Blit(BuiltinRenderTextureType.GBuffer0, rtTemp);
 
-			cb.SetGlobalTexture("_ObscuranceTexture", rtMask);
-			cb.Blit(rtTemp, BuiltinRenderTextureType.GBuffer0, _m, 2);
+			_cmdBuf.SetGlobalTexture("_MudAlbedoBuffer", GetAlbedoBufferForCamera(_cam));
+			_cmdBuf.Blit(rtMask, BuiltinRenderTextureType.CameraTarget, _m, 2);
 
-			cb.ReleaseTemporaryRT(rtTemp);
-			cb.ReleaseTemporaryRT(rtMask);
+			//cb.ReleaseTemporaryRT(rtTemp);
+			_cmdBuf.ReleaseTemporaryRT(rtMask);
 		}
-
-		// Execute the AO pass immediately (used in the forward mode).
-		void ExecuteAOPass(RenderTexture source, RenderTexture destination)
-		{
-			Debug.Log("ExecuteAOPass");
-			var tw = source.width;
-			var th = source.height;
-			var format = RenderTextureFormat.R8;
-			var rwMode = RenderTextureReadWrite.Linear;
-
-			if (downsampling)
-			{
-				tw /= 2;
-				th /= 2;
-			}
-
-			// AO buffer
-			var m = aoMaterial;
-			var rtMask = RenderTexture.GetTemporary(
-				tw, th, 0, format, rwMode
-			);
-
-			// AO estimation
-			Graphics.Blit(null, rtMask, m, 0);
-
-			if (blurIterations > 0)
-			{
-				// Blur buffer
-				var rtBlur = RenderTexture.GetTemporary(
-					tw, th, 0, format, rwMode
-				);
-
-				// Blur iterations
-				for (var i = 0; i < blurIterations; i++)
-				{
-					m.SetVector("_BlurVector", Vector2.right);
-					Graphics.Blit(rtMask, rtBlur, m, 1);
-
-					m.SetVector("_BlurVector", Vector2.up);
-					Graphics.Blit(rtBlur, rtMask, m, 1);
-				}
-
-				RenderTexture.ReleaseTemporary(rtBlur);
-			}
-
-			// Combine AO with the source.
-			m.SetTexture("_ObscuranceTexture", rtMask);
-			Graphics.Blit(source, destination, m, 2);
-
-			RenderTexture.ReleaseTemporary(rtMask);
-		}
-
+		
 		// Update the common material properties.
 		void UpdateMaterialProperties(bool _useGBuffer)
 		{
@@ -252,9 +212,12 @@ namespace Mud
 			m.SetFloat("_Radius", radius);
 			m.SetFloat("_TargetScale", downsampling ? 0.5f : 1);
 
+			float _cutoff = _sharpness * 0.5f;
+			m.SetVector("_DynamicRange", new Vector2(_cutoff, 1.0f - _cutoff));
+
 			// Use G-buffer if available.
 			//if (IsGBufferAvailable)
-			m.EnableKeyword("_SOURCE_GBUFFER");
+			//m.EnableKeyword("_SOURCE_GBUFFER");
 
 			// Sample count
 			if (sampleCount == SampleCount.Lowest)
@@ -278,7 +241,7 @@ namespace Mud
 		protected override void OnSetupCameraEvents(Camera _cam)
 		{
 			// update command buffers
-			var _cmdbuf = GetCommandBufferForEvent(_cam, CameraEvent.AfterGBuffer, "SSAO");
+			var _cmdbuf = GetCommandBufferForEvent(_cam, CameraEvent.AfterForwardOpaque, "Mud.SSAO");
 			_cmdbuf.Clear();
 
 			UpdateMaterialProperties(true);

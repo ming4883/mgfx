@@ -72,7 +72,7 @@ namespace Mud
 				1.0f * _cam.pixelHeight);
 
 			// update command buffers
-			var _cmdbuf = GetCommandBufferForEvent (_cam, CameraEvent.AfterForwardOpaque, "NPREdge");
+			var _cmdbuf = GetCommandBufferForEvent (_cam, CameraEvent.AfterForwardOpaque, "Mud.NPREdge");
 			_cmdbuf.Clear ();
 
 			//var _idAlbedoCopy = Shader.PropertyToID("_NPREdgeAlbedoTex");
@@ -83,8 +83,8 @@ namespace Mud
 			var _idDstBuf = _idEdgeBuf2;
 
 			//_cmdbuf.GetTemporaryRT(_idAlbedoCopy, -1, -1, 0, FilterMode.Bilinear);
-			_cmdbuf.GetTemporaryRT(_idEdgeBuf1, -1, -1, 0, FilterMode.Bilinear);
-			_cmdbuf.GetTemporaryRT(_idEdgeBuf2, -1, -1, 0, FilterMode.Bilinear);
+			_cmdbuf.GetTemporaryRT(_idEdgeBuf1, -1, -1, 0, FilterMode.Bilinear, RenderTextureFormat.R8);
+			_cmdbuf.GetTemporaryRT(_idEdgeBuf2, -1, -1, 0, FilterMode.Bilinear, RenderTextureFormat.R8);
 
 			_cmdbuf.SetGlobalVector("_ScreenTexelSize", _screen_texelSize);
 
@@ -100,6 +100,7 @@ namespace Mud
 			//_cmdbuf.Blit(BuiltinRenderTextureType.GBuffer0, _idAlbedoCopy, GetMaterial(MTL_EDGE_DILATE));
 
 			// apply edges to albedo
+			_cmdbuf.SetGlobalTexture("_MudAlbedoBuffer", GetAlbedoBufferForCamera(_cam));
 			_cmdbuf.Blit(_idSrcBuf, BuiltinRenderTextureType.CameraTarget, GetMaterial (MTL_EDGE_APPLY));
 
 			//_cmdbuf.ReleaseTemporaryRT(_idAlbedoCopy);
