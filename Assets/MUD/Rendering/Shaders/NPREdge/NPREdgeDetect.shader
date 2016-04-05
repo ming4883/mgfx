@@ -67,7 +67,12 @@
                 float4 cdn = tex2D(_CameraDepthNormalsTexture, uv);
                 normal = DecodeViewNormalStereo(cdn) * float3(1, 1, -1);
                 float d = DecodeFloatRG(cdn.zw);
-                return d * _ProjectionParams.z + CheckBounds(uv, d);
+                d = d * _ProjectionParams.z + CheckBounds(uv, d);
+
+                // Offset the depth value to avoid precision error.
+                // (depth in the _CameraDepthNormalsTexture has only 16-bit precision)
+                d -= _ProjectionParams.z / 65536;
+                return d;
             }
 
             half4 Fetch(float2 uv)

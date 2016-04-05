@@ -193,30 +193,24 @@ namespace Mud
 				_cmdBuf.ReleaseTemporaryRT(rtBlur);
 			}
 
-			//var rtTemp = Shader.PropertyToID("_ObscuranceAlbedoTexture");
-			//cb.GetTemporaryRT(rtTemp, -1, -1, 0, FilterMode.Bilinear, RenderTextureFormat.ARGB32);
-
-			//cb.Blit(BuiltinRenderTextureType.GBuffer0, rtTemp);
-
 			_cmdBuf.SetGlobalTexture("_MudAlbedoBuffer", _system.GetAlbedoBufferForCamera(_cam));
 			_cmdBuf.Blit(rtMask, BuiltinRenderTextureType.CameraTarget, _m, 2);
 
-			//cb.ReleaseTemporaryRT(rtTemp);
 			_cmdBuf.ReleaseTemporaryRT(rtMask);
 		}
 		
 		// Update the common material properties.
 		void UpdateMaterialProperties(bool _useGBuffer)
 		{
-			var m = aoMaterial;
-			m.shaderKeywords = null;
+			var _mtl = aoMaterial;
+			_mtl.shaderKeywords = null;
 
-			m.SetFloat("_Intensity", intensity);
-			m.SetFloat("_Radius", radius);
-			m.SetFloat("_TargetScale", downsampling ? 0.5f : 1);
+			_mtl.SetFloat("_Intensity", intensity);
+			_mtl.SetFloat("_Radius", radius);
+			_mtl.SetFloat("_TargetScale", downsampling ? 0.5f : 1);
 
 			float _cutoff = _sharpness * 0.5f;
-			m.SetVector("_DynamicRange", new Vector2(_cutoff, 1.0f - _cutoff));
+			_mtl.SetVector("_DynamicRange", new Vector2(_cutoff, 1.0f - _cutoff));
 
 			// Use G-buffer if available.
 			//if (IsGBufferAvailable)
@@ -224,9 +218,9 @@ namespace Mud
 
 			// Sample count
 			if (sampleCount == SampleCount.Lowest)
-				m.EnableKeyword("_SAMPLECOUNT_LOWEST");
+				_mtl.EnableKeyword("_SAMPLECOUNT_LOWEST");
 			else
-				m.SetInt("_SampleCount", sampleCountValue);
+				_mtl.SetInt("_SampleCount", sampleCountValue);
 		}
 		
 

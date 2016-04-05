@@ -44,14 +44,15 @@ namespace Mud
 
 		public void UpdateMaterialProperties(Camera _cam)
 		{
-			var _edge_details = edgeDetails;
-			var _edge_threshold = new Vector4(
-				_edge_details,
-				_edge_details,
-				_edge_details,
-				_edge_details * 200 / (_cam.farClipPlane - _cam.nearClipPlane));
+			var _viewRange = _cam.farClipPlane - _cam.nearClipPlane;
 
-			GetMaterial(MTL_EDGE_DETECT).SetVector("_EdgeThreshold", _edge_threshold);
+			var _edgeThreshold = new Vector4(
+				edgeDetails,
+				edgeDetails,
+				edgeDetails,
+				edgeDetails * 200 / (_viewRange * 0.5f));
+
+			GetMaterial(MTL_EDGE_DETECT).SetVector("_EdgeThreshold", _edgeThreshold);
 			GetMaterial(MTL_EDGE_APPLY).SetColor("_EdgeColor", edgeColor);
 			GetMaterial(MTL_EDGE_APPLY).SetFloat("_EdgeAutoColoring", edgeAutoColoring);
 		}
@@ -73,14 +74,12 @@ namespace Mud
 			var _cmdbuf = GetCommandBufferForEvent (_cam, CameraEvent.AfterForwardOpaque, "Mud.NPREdge");
 			_cmdbuf.Clear ();
 
-			//var _idAlbedoCopy = Shader.PropertyToID("_NPREdgeAlbedoTex");
 			var _idEdgeBuf1 = Shader.PropertyToID("_EdgeTex1");
 			var _idEdgeBuf2 = Shader.PropertyToID("_EdgeTex2");
 
 			var _idSrcBuf = _idEdgeBuf1;
 			var _idDstBuf = _idEdgeBuf2;
 
-			//_cmdbuf.GetTemporaryRT(_idAlbedoCopy, -1, -1, 0, FilterMode.Bilinear);
 			_cmdbuf.GetTemporaryRT(_idEdgeBuf1, -1, -1, 0, FilterMode.Bilinear, RenderTextureFormat.R8);
 			_cmdbuf.GetTemporaryRT(_idEdgeBuf2, -1, -1, 0, FilterMode.Bilinear, RenderTextureFormat.R8);
 
@@ -94,14 +93,10 @@ namespace Mud
 				Swap(ref _idSrcBuf, ref _idDstBuf);
 			}
 
-			// copy the albedo
-			//_cmdbuf.Blit(BuiltinRenderTextureType.GBuffer0, _idAlbedoCopy, GetMaterial(MTL_EDGE_DILATE));
-
 			// apply edges to albedo
 			_cmdbuf.SetGlobalTexture("_MudAlbedoBuffer", _system.GetAlbedoBufferForCamera(_cam));
 			_cmdbuf.Blit(_idSrcBuf, BuiltinRenderTextureType.CameraTarget, GetMaterial (MTL_EDGE_APPLY));
 
-			//_cmdbuf.ReleaseTemporaryRT(_idAlbedoCopy);
 			_cmdbuf.ReleaseTemporaryRT(_idEdgeBuf1);
 			_cmdbuf.ReleaseTemporaryRT(_idEdgeBuf2);
 		}

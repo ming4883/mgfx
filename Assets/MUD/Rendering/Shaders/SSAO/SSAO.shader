@@ -70,9 +70,9 @@ Shader "Hidden/Mud/SSAO"
     #pragma multi_compile _ _SAMPLECOUNT_LOWEST
 
     #if _SAMPLECOUNT_LOWEST
-    static const int _SampleCount = 3;
+    static const uint _SampleCount = 3;
     #else
-    int _SampleCount;
+    uint _SampleCount;
     #endif
 
     // Global shader properties
@@ -139,39 +139,39 @@ Shader "Hidden/Mud/SSAO"
     }
 
     // Depth/normal sampling functions
-    float SampleDepth(float2 uv)
+    float SampleDepth(float4 uv)
     {
     #if _SOURCE_GBUFFER
-        float d = SAMPLE_DEPTH_TEXTURE(_CameraDepthTexture, uv);
-        return LinearEyeDepth(d) + CheckBounds(uv, d);
+        float d = SAMPLE_DEPTH_TEXTURE(_CameraDepthTexture, uv.xy);
+        return LinearEyeDepth(d) + CheckBounds(uv.xy, d);
     #else
-        float4 cdn = tex2D(_CameraDepthNormalsTexture, uv);
+        float4 cdn = tex2Dlod(_CameraDepthNormalsTexture, uv);
         float d = DecodeFloatRG(cdn.zw);
-        return d * _ProjectionParams.z + CheckBounds(uv, d);
+        return d * _ProjectionParams.z + CheckBounds(uv.xy, d);
     #endif
     }
 
-    float3 SampleNormal(float2 uv)
+    float3 SampleNormal(float4 uv)
     {
     #if _SOURCE_GBUFFER
-        float3 norm = tex2D(_CameraGBufferTexture2, uv).xyz * 2 - 1;
+        float3 norm = tex2Dlod(_CameraGBufferTexture2, uv).xyz * 2 - 1;
         return mul((float3x3)unity_WorldToCamera, norm);
     #else
-        float4 cdn = tex2D(_CameraDepthNormalsTexture, uv);
+        float4 cdn = tex2Dlod(_CameraDepthNormalsTexture, uv);
         return DecodeViewNormalStereo(cdn) * float3(1, 1, -1);
     #endif
     }
 
-    float SampleDepthNormal(float2 uv, out float3 normal)
+    float SampleDepthNormal(float4 uv, out float3 normal)
     {
     #if _SOURCE_GBUFFER
         normal = SampleNormal(uv);
         return SampleDepth(uv);
     #else
-        float4 cdn = tex2D(_CameraDepthNormalsTexture, uv);
+        float4 cdn = tex2Dlod(_CameraDepthNormalsTexture, uv);
         normal = DecodeViewNormalStereo(cdn) * float3(1, 1, -1);
         float d = DecodeFloatRG(cdn.zw);
-        return d * _ProjectionParams.z + CheckBounds(uv, d);
+        return d * _ProjectionParams.z + CheckBounds(uv.xy, d);
     #endif
     }
 
@@ -218,69 +218,111 @@ Shader "Hidden/Mud/SSAO"
         return v * l;
     }
 
-    // Obscurance estimator function
-    float EstimateObscurance(float2 uv, float radius)
+    struct EstimateObscuranceState
     {
-        // Parameters used in coordinate conversion
-        float3x3 proj = (float3x3)unity_CameraProjection;
-        float2 p11_22 = float2(unity_CameraProjection._11, unity_CameraProjection._22);
-        float2 p13_31 = float2(unity_CameraProjection._13, unity_CameraProjection._23);
-
-        // View space normal and depth
+        uint sampleCnt;
+        float radius;
+        float2 uv;
         float3 norm_o;
-        float depth_o = SampleDepthNormal(uv, norm_o);
+        float depth_o;
+        float3 vpos_o;
+        
+        float3x3 proj;
+        float2 p11_22;
+        float2 p13_31;
+    };
 
-    #if _SOURCE_DEPTHNORMALS
-        // Offset the depth value to avoid precision error.
-        // (depth in the DepthNormals mode has only 16-bit precision)
-        depth_o -= _ProjectionParams.z / 65536;
-    #endif
-
-        // Reconstruct the view-space position.
-        float3 vpos_o = ReconstructViewPos(uv, depth_o, p11_22, p13_31);
-
-        // Distance-based AO estimator based on Morgan 2011 http://goo.gl/2iz3P
-        float ao = 0.0;
-
-        for (int s = 0; s < _SampleCount; s++)
+    uint EstimateObscuranceLoop(
+        inout float ao, uint s_off, EstimateObscuranceState state)
+    {
+        uint s_beg = s_off;
+        uint s_end = s_off + state.sampleCnt;
+        for (uint s = s_beg; s < s_end; s++)
         {
             // Sample point
-            float3 v_s1 = PickSamplePoint(uv, s, radius);
-            v_s1 = faceforward(v_s1, -norm_o, v_s1);
-            float3 vpos_s1 = vpos_o + v_s1;
+            float3 v_s1 = PickSamplePoint(state.uv, s, state.radius);
+            v_s1 = faceforward(v_s1, -state.norm_o, v_s1);
+            float3 vpos_s1 = state.vpos_o + v_s1;
 
             // Reproject the sample point
-            float3 spos_s1 = mul(proj, vpos_s1);
+            float3 spos_s1 = mul(state.proj, vpos_s1);
             float2 uv_s1 = (spos_s1.xy / vpos_s1.z + 1) * 0.5;
 
             // Depth at the sample point
-            float depth_s1 = SampleDepth(uv_s1);
+            float depth_s1 = SampleDepth(float4(uv_s1, 0, 0));
 
             // Relative position of the sample point
-            float3 vpos_s2 = ReconstructViewPos(uv_s1, depth_s1, p11_22, p13_31);
-            float3 v_s2 = vpos_s2 - vpos_o;
+            float3 vpos_s2 = ReconstructViewPos(uv_s1, depth_s1, state.p11_22, state.p13_31);
+            float3 v_s2 = vpos_s2 - state.vpos_o;
 
             // Estimate the obscurance value
-            float a1 = max(dot(v_s2, norm_o) - kBeta * depth_o, 0);
+            float a1 = max(dot(v_s2, state.norm_o) - kBeta * state.depth_o, 0);
             float a2 = dot(v_s2, v_s2) + kEpsilon;
             ao += a1 / a2;
         }
 
-        ao *= radius; // intensity normalization
+        return state.sampleCnt;
+    }
+
+    // Obscurance estimator function
+    float EstimateObscurance(float2 uv)
+    {
+        EstimateObscuranceState state;
+
+        state.uv = uv;
+        state.sampleCnt = _SampleCount / 4;
+
+        // Parameters used in coordinate conversion
+        state.proj = (float3x3)unity_CameraProjection;
+        state.p11_22 = float2(unity_CameraProjection._11, unity_CameraProjection._22);
+        state.p13_31 = float2(unity_CameraProjection._13, unity_CameraProjection._23);
+        
+        // View space normal and depth
+        state.depth_o = SampleDepthNormal(float4(uv, 0, 0), state.norm_o);
+
+    #if _SOURCE_DEPTHNORMALS
+        // Offset the depth value to avoid precision error.
+        // (depth in the DepthNormals mode has only 16-bit precision)
+        state.depth_o -= _ProjectionParams.z / 65536;
+    #endif
+
+        // Reconstruct the view-space position.
+        state.vpos_o = ReconstructViewPos(state.uv, state.depth_o, state.p11_22, state.p13_31);
+
+        // Distance-based AO estimator based on Morgan 2011 http://goo.gl/2iz3P
+        float ao = 0.0;
+        float ao_norm = 0.0;
+
+        state.radius = _Radius;
+        
+        ao_norm += EstimateObscuranceLoop(ao, 0, state);
+
+        if (state.depth_o < 0.5)
+            ao_norm += EstimateObscuranceLoop(ao, state.sampleCnt, state);
+
+        state.radius = _Radius * 0.5;
+        if (state.depth_o < 0.25)
+            ao_norm += EstimateObscuranceLoop(ao, state.sampleCnt * 2, state);
+
+        state.radius = _Radius * 0.25;
+        if (state.depth_o < 0.125)
+            ao_norm += EstimateObscuranceLoop(ao, state.sampleCnt * 3, state);
+
+        ao *= _Radius; // intensity normalization
 
         // Apply other parameters.
-        return pow(ao * _Intensity / _SampleCount, kContrast);
+        return pow(ao * _Intensity / ao_norm, kContrast);
     }
 
     // Geometry-aware separable blur filter
     half SeparableBlur(sampler2D tex, float2 uv, float2 delta)
     {
-        half3 n0 = SampleNormal(uv);
+        half3 n0 = SampleNormal(half4(uv, 0, 0));
 
-        half2 uv1 = uv - delta;
-        half2 uv2 = uv + delta;
-        half2 uv3 = uv - delta * 2;
-        half2 uv4 = uv + delta * 2;
+        half4 uv1 = half4(uv - delta, 0, 0);
+        half4 uv2 = half4(uv + delta, 0, 0);
+        half4 uv3 = half4(uv - delta * 2, 0, 0);
+        half4 uv4 = half4(uv + delta * 2, 0, 0);
 
         half w0 = 3;
         half w1 = CompareNormal(n0, SampleNormal(uv1)) * 2;
@@ -288,11 +330,11 @@ Shader "Hidden/Mud/SSAO"
         half w3 = CompareNormal(n0, SampleNormal(uv3));
         half w4 = CompareNormal(n0, SampleNormal(uv4));
 
-        half s = tex2D(tex, uv).r * w0;
-        s += tex2D(tex, uv1).r * w1;
-        s += tex2D(tex, uv2).r * w2;
-        s += tex2D(tex, uv3).r * w3;
-        s += tex2D(tex, uv4).r * w4;
+        half s = tex2Dlod(tex, half4(uv, 0, 0)).r * w0;
+        s += tex2Dlod(tex, uv1).r * w1;
+        s += tex2Dlod(tex, uv2).r * w2;
+        s += tex2Dlod(tex, uv3).r * w3;
+        s += tex2Dlod(tex, uv4).r * w4;
 
         return s / (w0 + w1 + w2 + w3 + w4);
     }
@@ -300,9 +342,7 @@ Shader "Hidden/Mud/SSAO"
     // Pass 0: Obscurance estimation
     half4 frag_ao(v2f_img i) : SV_Target
     {
-        float ao1 = EstimateObscurance(i.uv, _Radius);
-        //float ao2 = EstimateObscurance(i.uv, _Radius * 0.5);
-        return ao1 ;//+ (ao2 * ao2);
+        return EstimateObscurance(i.uv);
     }
 
     // Pass1: Geometry-aware separable blur
