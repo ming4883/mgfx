@@ -308,7 +308,8 @@ Shader "Hidden/Mud/SSAO"
     // Pass1: Geometry-aware separable blur
     half4 frag_blur(v2f_img i) : SV_Target
     {
-        float2 delta = _MainTex_TexelSize.xy * _BlurVector;
+        //float2 delta = _MainTex_TexelSize.xy * _BlurVector;
+        float2 delta = _BlurVector;
         return SeparableBlur(_MainTex, i.uv, delta);
     }
 
@@ -340,7 +341,9 @@ Shader "Hidden/Mud/SSAO"
         src = src * src;
         
         //return half4(CombineObscurance(src.rgb, ao), src.a);
-        return half4(src.rgb, smoothstep(_DynamicRange.x, _DynamicRange.y, EncodeAO(ao).r));
+        ao = EncodeAO(ao).r;
+        ao = 1 - (1-ao) * (1-ao);
+        return half4(src.rgb, smoothstep(_DynamicRange.x, _DynamicRange.y, ao));
     }
 
     ENDCG

@@ -177,13 +177,16 @@ namespace Mud
 					rtBlur, tw, th, 0, FilterMode.Bilinear, format, rwMode
 				);
 
+				var _blurRight = new Vector2(1.0f / tw, 0);
+				var _blurUp = new Vector2(0, 1.0f / th);
+
 				// Blur iterations
 				for (var i = 0; i < blurIterations; i++)
 				{
-					_cmdBuf.SetGlobalVector("_BlurVector", Vector2.right);
+					_cmdBuf.SetGlobalVector("_BlurVector", _blurRight);
 					_cmdBuf.Blit(rtMask, rtBlur, _m, 1);
 
-					_cmdBuf.SetGlobalVector("_BlurVector", Vector2.up);
+					_cmdBuf.SetGlobalVector("_BlurVector", _blurUp);
 					_cmdBuf.Blit(rtBlur, rtMask, _m, 1);
 				}
 
