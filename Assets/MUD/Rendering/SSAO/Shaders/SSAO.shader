@@ -89,6 +89,7 @@ Shader "Hidden/Mud/SSAO"
 
     //sampler2D _ObscuranceTexture;
     sampler2D _MudAlbedoBuffer;
+    float4 _MudAlbedoBuffer_TexelSize;
 
     // Material shader properties
     half _Intensity;
@@ -297,14 +298,15 @@ Shader "Hidden/Mud/SSAO"
         
         ao_norm += EstimateObscuranceLoop(ao, 0, state);
 
+        state.radius = _Radius * 0.5;
         if (state.depth_o < 0.5)
             ao_norm += EstimateObscuranceLoop(ao, state.sampleCnt, state);
 
-        state.radius = _Radius * 0.5;
+        state.radius = _Radius * 0.25;
         if (state.depth_o < 0.25)
             ao_norm += EstimateObscuranceLoop(ao, state.sampleCnt * 2, state);
 
-        state.radius = _Radius * 0.25;
+        state.radius = _Radius * 0.125;
         if (state.depth_o < 0.125)
             ao_norm += EstimateObscuranceLoop(ao, state.sampleCnt * 3, state);
 
@@ -364,7 +366,7 @@ Shader "Hidden/Mud/SSAO"
     v2f_multitex vert_multitex(appdata_img v)
     {
         // Handles vertically-flipped case.
-        float vflip = sign(_MainTex_TexelSize.y);
+        float vflip = sign(_MudAlbedoBuffer_TexelSize.y);
 
         v2f_multitex o;
         o.pos = mul(UNITY_MATRIX_MVP, v.vertex);
@@ -373,14 +375,13 @@ Shader "Hidden/Mud/SSAO"
         return o;
     }
 
-    half4 frag_combine(v2f_img i) : SV_Target
+    half4 frag_combine(v2f_multitex i) : SV_Target
     {
-        half ao = tex2D(_MainTex, i.uv).r;
-        half4 src = tex2D(_MudAlbedoBuffer, i.uv);
-        src = src - 1.0 / 16.0;
+        half ao = tex2D(_MainTex, i.uv0).r;
+        half4 src = tex2D(_MudAlbedoBuffer, i.uv1);
+        src = src - 1.0 / 32.0;
         src = src * src;
         
-        //return half4(CombineObscurance(src.rgb, ao), src.a);
         ao = EncodeAO(ao).r;
         ao = 1 - (1-ao) * (1-ao);
         return half4(src.rgb, smoothstep(_DynamicRange.x, _DynamicRange.y, ao));
@@ -413,7 +414,7 @@ Shader "Hidden/Mud/SSAO"
             ZTest Always Cull Off ZWrite Off
             Blend SrcAlpha OneMinusSrcAlpha
             CGPROGRAM
-            #pragma vertex vert_img
+            #pragma vertex vert_multitex
             #pragma fragment frag_combine
             #pragma target 3.0
             ENDCG

@@ -74,15 +74,18 @@ namespace Mud
 			var _cmdbuf = GetCommandBufferForEvent (_cam, CameraEvent.AfterForwardOpaque, "Mud.NPREdge");
 			_cmdbuf.Clear ();
 
+			var _idCurr = Shader.PropertyToID("_CurrTexture");
 			var _idEdgeBuf1 = Shader.PropertyToID("_EdgeTex1");
 			var _idEdgeBuf2 = Shader.PropertyToID("_EdgeTex2");
 
 			var _idSrcBuf = _idEdgeBuf1;
 			var _idDstBuf = _idEdgeBuf2;
 
+			_cmdbuf.GetTemporaryRT(_idCurr, -1, -1);
 			_cmdbuf.GetTemporaryRT(_idEdgeBuf1, -1, -1, 0, FilterMode.Bilinear, RenderTextureFormat.R8);
 			_cmdbuf.GetTemporaryRT(_idEdgeBuf2, -1, -1, 0, FilterMode.Bilinear, RenderTextureFormat.R8);
 
+			_cmdbuf.Blit(BuiltinRenderTextureType.CameraTarget, _idCurr);
 			_cmdbuf.SetGlobalVector("_ScreenTexelSize", _screen_texelSize);
 
 			_cmdbuf.Blit (BuiltinRenderTextureType.None, _idSrcBuf, GetMaterial (MTL_EDGE_DETECT));
@@ -94,9 +97,11 @@ namespace Mud
 			}
 
 			// apply edges to albedo
-			_cmdbuf.SetGlobalTexture("_MudAlbedoBuffer", _system.GetAlbedoBufferForCamera(_cam));
+			_cmdbuf.SetGlobalTexture("_MudAlbedoBuffer", _idCurr);
+			_cmdbuf.SetGlobalVector("_MudAlbedoBuffer_TexelSize", new Vector4(1, -1, 1, 1)); // currently hardcoded to flipped the y
 			_cmdbuf.Blit(_idSrcBuf, BuiltinRenderTextureType.CameraTarget, GetMaterial (MTL_EDGE_APPLY));
 
+			_cmdbuf.ReleaseTemporaryRT(_idCurr);
 			_cmdbuf.ReleaseTemporaryRT(_idEdgeBuf1);
 			_cmdbuf.ReleaseTemporaryRT(_idEdgeBuf2);
 		}

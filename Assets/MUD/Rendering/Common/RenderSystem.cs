@@ -123,7 +123,7 @@ namespace Mud
 
 			_cam.depthTextureMode = DepthTextureMode.DepthNormals;
 
-			RenderAlbedoBuffer(_cam);
+			//RenderAlbedoBuffer(_cam);
 			
 			foreach(var _feature in GetComponents<RenderFeatureBase>())
 			{

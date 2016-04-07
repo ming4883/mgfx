@@ -161,13 +161,16 @@ namespace Mud
 
 			// AO buffer
 			var _m = aoMaterial;
-			var rtMask = Shader.PropertyToID("_ObscuranceTexture");
-			_cmdBuf.GetTemporaryRT(
-				rtMask, tw, th, 0, FilterMode.Bilinear, format, rwMode
-			);
+			var _idMask = Shader.PropertyToID("_ObscuranceTexture");
+			var _idCurr = Shader.PropertyToID("_CurrTexture");
+			
+			_cmdBuf.GetTemporaryRT(_idMask, tw, th, 0, FilterMode.Bilinear, format, rwMode);
+			_cmdBuf.GetTemporaryRT(_idCurr, -1, -1);
+
+			_cmdBuf.Blit(BuiltinRenderTextureType.CameraTarget, _idCurr);
 
 			// AO estimation
-			_cmdBuf.Blit(BuiltinRenderTextureType.None, rtMask, _m, 0);
+			_cmdBuf.Blit(BuiltinRenderTextureType.None, _idMask, _m, 0);
 
 			if (blurIterations > 0)
 			{
@@ -184,19 +187,22 @@ namespace Mud
 				for (var i = 0; i < blurIterations; i++)
 				{
 					_cmdBuf.SetGlobalVector("_BlurVector", _blurRight);
-					_cmdBuf.Blit(rtMask, rtBlur, _m, 1);
+					_cmdBuf.Blit(_idMask, rtBlur, _m, 1);
 
 					_cmdBuf.SetGlobalVector("_BlurVector", _blurUp);
-					_cmdBuf.Blit(rtBlur, rtMask, _m, 1);
+					_cmdBuf.Blit(rtBlur, _idMask, _m, 1);
 				}
 
 				_cmdBuf.ReleaseTemporaryRT(rtBlur);
 			}
 
-			_cmdBuf.SetGlobalTexture("_MudAlbedoBuffer", _system.GetAlbedoBufferForCamera(_cam));
-			_cmdBuf.Blit(rtMask, BuiltinRenderTextureType.CameraTarget, _m, 2);
+			//_cmdBuf.SetGlobalTexture("_MudAlbedoBuffer", _system.GetAlbedoBufferForCamera(_cam));
+			_cmdBuf.SetGlobalTexture("_MudAlbedoBuffer", _idCurr);
+			_cmdBuf.SetGlobalVector("_MudAlbedoBuffer_TexelSize", new Vector4(1, -1, 1, 1)); // currently hardcoded to flipped the y
+			_cmdBuf.Blit(_idMask, BuiltinRenderTextureType.CameraTarget, _m, 2);
 
-			_cmdBuf.ReleaseTemporaryRT(rtMask);
+			_cmdBuf.ReleaseTemporaryRT(_idMask);
+			_cmdBuf.ReleaseTemporaryRT(_idCurr);
 		}
 		
 		// Update the common material properties.
