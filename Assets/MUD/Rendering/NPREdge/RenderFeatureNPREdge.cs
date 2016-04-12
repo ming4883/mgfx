@@ -29,6 +29,9 @@ namespace Mud
 		[Range(0, 1.0f)]
 		public float edgeAutoColoring = 0.5f;
 
+		[Range(0.1f, 4.0f)]
+		public float edgeAutoColorFactor = 0.5f;
+
 		#endregion
 
 		#region Implemetations
@@ -55,6 +58,7 @@ namespace Mud
 			GetMaterial(MTL_EDGE_DETECT).SetVector("_EdgeThreshold", _edgeThreshold);
 			GetMaterial(MTL_EDGE_APPLY).SetColor("_EdgeColor", edgeColor);
 			GetMaterial(MTL_EDGE_APPLY).SetFloat("_EdgeAutoColoring", edgeAutoColoring);
+			GetMaterial(MTL_EDGE_APPLY).SetFloat("_EdgeAutoColorFactor", edgeAutoColorFactor);
 		}
 
 		// http://docs.unity3d.com/540/Documentation/Manual/GraphicsCommandBuffers.html
@@ -97,9 +101,8 @@ namespace Mud
 			}
 
 			// apply edges to albedo
-			_cmdbuf.SetGlobalTexture("_MudAlbedoBuffer", _idCurr);
-			_cmdbuf.SetGlobalVector("_MudAlbedoBuffer_TexelSize", new Vector4(1, -1, 1, 1)); // currently hardcoded to flipped the y
-			_cmdbuf.Blit(_idSrcBuf, BuiltinRenderTextureType.CameraTarget, GetMaterial (MTL_EDGE_APPLY));
+			_cmdbuf.SetGlobalTexture("_EdgeTex", _idSrcBuf);
+			_cmdbuf.Blit(_idCurr, BuiltinRenderTextureType.CameraTarget, GetMaterial (MTL_EDGE_APPLY));
 
 			_cmdbuf.ReleaseTemporaryRT(_idCurr);
 			_cmdbuf.ReleaseTemporaryRT(_idEdgeBuf1);

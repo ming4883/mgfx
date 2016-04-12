@@ -87,9 +87,7 @@ Shader "Hidden/Mud/SSAO"
     sampler2D _MainTex;
     float4 _MainTex_TexelSize;
 
-    //sampler2D _ObscuranceTexture;
-    sampler2D _MudAlbedoBuffer;
-    float4 _MudAlbedoBuffer_TexelSize;
+    sampler2D _ObscuranceTexture;
 
     // Material shader properties
     half _Intensity;
@@ -366,7 +364,7 @@ Shader "Hidden/Mud/SSAO"
     v2f_multitex vert_multitex(appdata_img v)
     {
         // Handles vertically-flipped case.
-        float vflip = sign(_MudAlbedoBuffer_TexelSize.y);
+        float vflip = -1;//sign(_MainTex_TexelSize.y);
 
         v2f_multitex o;
         o.pos = mul(UNITY_MATRIX_MVP, v.vertex);
@@ -377,8 +375,8 @@ Shader "Hidden/Mud/SSAO"
 
     half4 frag_combine(v2f_multitex i) : SV_Target
     {
-        half ao = tex2D(_MainTex, i.uv0).r;
-        half4 src = tex2D(_MudAlbedoBuffer, i.uv1);
+        half ao = tex2D(_ObscuranceTexture, i.uv0).r;
+        half4 src = tex2D(_MainTex, i.uv1);
         src = src - 1.0 / 32.0;
         src = src * src;
         

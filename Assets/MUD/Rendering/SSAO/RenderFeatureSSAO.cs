@@ -196,10 +196,8 @@ namespace Mud
 				_cmdBuf.ReleaseTemporaryRT(rtBlur);
 			}
 
-			//_cmdBuf.SetGlobalTexture("_MudAlbedoBuffer", _system.GetAlbedoBufferForCamera(_cam));
-			_cmdBuf.SetGlobalTexture("_MudAlbedoBuffer", _idCurr);
-			_cmdBuf.SetGlobalVector("_MudAlbedoBuffer_TexelSize", new Vector4(1, -1, 1, 1)); // currently hardcoded to flipped the y
-			_cmdBuf.Blit(_idMask, BuiltinRenderTextureType.CameraTarget, _m, 2);
+			_cmdBuf.SetGlobalTexture("_ObscuranceTexture", _idMask);
+			_cmdBuf.Blit(_idCurr, BuiltinRenderTextureType.CameraTarget, _m, 2);
 
 			_cmdBuf.ReleaseTemporaryRT(_idMask);
 			_cmdBuf.ReleaseTemporaryRT(_idCurr);
