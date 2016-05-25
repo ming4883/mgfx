@@ -12,6 +12,8 @@
     #include "UnityCG.cginc"
     #include "Lighting.cginc"
     #include "MGFXAutoLight.cginc"
+    #include "MGFXNoise.cginc"
+
     struct v2f
     {
         float2 uv : TEXCOORD0;
@@ -35,33 +37,32 @@
 
     sampler2D _MainTex;
     sampler2D _DiffuseLUTTex;
-    sampler2D _BayerTex;
 
     half dither(in v2f i)
     {
-    	return tex2D(_BayerTex, ComputeScreenPos(i.pos).xy / 8.0).r;
+    	half d1 = Bayer(i.pos.xy);
+    	half d2 = InterleavedGradientNoise(i.pos.xy);
+
+    	return (d1 + d2) * 0.5;
     }
 
     half shadowTerm(in v2f i)
     {
-    	fixed d = dither(i);
-    	half s = SHADOW_ATTENUATION(i); 
-    	s = s * (s + (1 - s) * d);
+    	half s = SHADOW_ATTENUATION(i);
+    	//fixed d = dither(i);
+    	//s = s * (s + (1 - s) * d);
     	return s;
     }
 
     void fade(in v2f i, fixed facing)
     {
+
     	half viewZ = i.worldPosAndZ.w;
-    	//half viewZ = -mul( UNITY_MATRIX_V, float4(i.worldPosAndZ.xyz, 1.0) ).z;
     	half d = dither(i);
 
-    	half f = 1 - smoothstep(_ProjectionParams.y, _ProjectionParams.y * 4, viewZ);
-
-    	if((facing < 1))
-    		f = max(f, 0.75);
-    	clip(d - f);
-
+    	half f = 1 - smoothstep(_ProjectionParams.y * 2, _ProjectionParams.y * 4, viewZ);
+    	f = f * (f + (1 - f) * d);
+    	clip(-(f - 0.5));
     }
 
     ENDCG
@@ -73,7 +74,7 @@
         	"RenderType"="Opaque"
         }
 
-        Cull Off
+        //Cull Off
 
         Pass
         {
@@ -81,6 +82,8 @@
             {
             	"LightMode"="ForwardBase"
             }
+
+            //Blend SrcAlpha OneMinusSrcAlpha
 
             CGPROGRAM
             #pragma vertex vert
@@ -101,8 +104,7 @@
                 half ndotl = dot(worldNormal, _WorldSpaceLightPos0.xyz);
                 ndotl = tex2D(_DiffuseLUTTex, saturate(ndotl * 0.5 + 0.5) * shadow).r;
 
-                col.rgb = lerp(pow(col, 4.0), col, ndotl) * _LightColor0.rgb;
-                //col.rgb = float3(facing, facing, facing);
+                col.rgb = lerp(pow(col * 0.9, 2.0), col, ndotl) * _LightColor0.rgb;
                 return col;
             }
             ENDCG
@@ -138,9 +140,8 @@
                 half ndotl = dot(worldNormal, _WorldSpaceLightPos0.xyz);
                 ndotl = tex2D(_DiffuseLUTTex, saturate(ndotl * 0.5 + 0.5) * shadow).r;
 
-                col.rgb = lerp(pow(col, 4.0), col, ndotl) * _LightColor0.rgb;
+                col.rgb = lerp(pow(col * 0.9, 2.0), col, ndotl) * _LightColor0.rgb;
                 col.rgb *= lightAtten;
-
                 return col;
             }
             ENDCG
