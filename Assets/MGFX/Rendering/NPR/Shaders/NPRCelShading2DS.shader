@@ -1,4 +1,4 @@
-﻿Shader "MGFX/NPRCelShading2"
+﻿Shader "MGFX/NPRCelShading2DS"
 {
     Properties
     {
@@ -17,6 +17,8 @@
     	{ 
         	"RenderType"="Opaque"
         }
+		
+		Cull Off
 
         Pass
         {
