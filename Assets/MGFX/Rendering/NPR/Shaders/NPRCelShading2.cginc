@@ -1,4 +1,6 @@
-﻿#include "UnityCG.cginc"
+﻿// Upgrade NOTE: replaced '_Object2World' with 'unity_ObjectToWorld'
+
+#include "UnityCG.cginc"
 #include "Lighting.cginc"
 #include "MGFXAutoLight.cginc"
 #include "MGFXNoise.cginc"
@@ -21,7 +23,7 @@ v2f vert (appdata_base v)
     o.pos = mul(UNITY_MATRIX_MVP, v.vertex);
     o.uv = v.texcoord;
     o.worldNormal = UnityObjectToWorldNormal(v.normal);
-    o.worldPosAndZ.xyz = mul(_Object2World, v.vertex).xyz;
+    o.worldPosAndZ.xyz = mul(unity_ObjectToWorld, v.vertex).xyz;
     COMPUTE_EYEDEPTH(o.worldPosAndZ.w);
     // compute shadows data
     TRANSFER_SHADOW(o)
