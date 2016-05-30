@@ -72,8 +72,11 @@ half shadowTerm(in v2f i)
 half shadowTermWithDither(in v2f i)
 {
 	half s = SHADOW_ATTENUATION(i);
-	fixed d = InterleavedGradientNoise(i.pos.xy * 0.5 + iGlobalTime);
-	s = s * (s + (1 - s) * d);
+	half d = InterleavedGradientNoise(i.pos.xy * 0.5 + iGlobalTime);
+	s = clamp(s * (s + 0.25 * d), 0, 1);
+	//d = d * 0.5 + 0.5;
+	//d = (1-cos(d * d * 3.1415926)) / 2;
+	//s = lerp(1 - pow(1-s, 2), s, d);
 	return s;
 }
 
@@ -161,7 +164,7 @@ half4 frag_add (v2f i, fixed vface : VFACE) : SV_Target
 {
 	fade(i, vface);
 
-    fixed shadow = shadowTermWithDither(i);
+    fixed shadow = shadowTerm(i);
 
     half3 worldNormal = normalize(i.worldNormal) * vface;
 
