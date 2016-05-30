@@ -31,8 +31,17 @@ v2f vert (appdata_base v)
 ///
 /// Fragment
 ///
-sampler2D _MainTex;
-sampler2D _DiffuseLUTTex;
+uniform sampler2D _MainTex;
+uniform sampler2D _DiffuseLUTTex;
+
+#if _DIM_ON
+uniform sampler2D _DimTex;
+#endif
+
+#if _RIM_ON
+uniform sampler2D _RimLUTTex;
+uniform float _RimIntensity;
+#endif
 
 half dither(in v2f i)
 {
@@ -40,16 +49,23 @@ half dither(in v2f i)
 	half d2 = InterleavedGradientNoise(i.pos.xy);
 
 	//return clamp(d2 + d1 * 0.5, -1, 1);
-	return clamp(d1 + d2 * 0.0625, -1, 1);
+	//return clamp(d1 + d2 * 0.0625, -1, 1);
 	//return (d1 + d2) * 0.5;
-	//return d1;
+	return d1;
+	//return d2;
 }
 
 half shadowTerm(in v2f i)
 {
 	half s = SHADOW_ATTENUATION(i);
-	fixed d = dither(i);
-	//s = s * (s + (1 - s) * d);
+	return s;
+}
+
+half shadowTermWithDither(in v2f i)
+{
+	half s = SHADOW_ATTENUATION(i);
+	fixed d = InterleavedGradientNoise(i.pos.xy * 0.5 + iGlobalTime);
+	s = s * (s + (1 - s) * d);
 	return s;
 }
 
@@ -70,10 +86,27 @@ void fade(in v2f i, fixed vface)
 	clip(f);
 }
 
+half3 lighting(in v2f i, in half3 albedo, in half ndotl, in half shadow)
+{
+#if _DIM_ON
+	half3 dark = tex2D(_DimTex, i.uv);
+#else
+	half3 dark = pow(albedo * 0.9, 2.0);
+#endif
+
+	ndotl = tex2D(_DiffuseLUTTex, saturate(ndotl * 0.5 + 0.5) * shadow).r;
+	
+	return lerp(dark, albedo, ndotl) * _LightColor0.rgb;
+}
+
+void darkout(inout half3 col, fixed vface)
+{
+	if (vface < 0)
+    	col *= 0.25;
+}
+
 half4 frag_base (v2f i, fixed vface : VFACE) : SV_Target
 {
-    half4 col = tex2D(_MainTex, i.uv);
-
    	fade(i, vface);
 
     fixed shadow = shadowTerm(i);
@@ -81,34 +114,45 @@ half4 frag_base (v2f i, fixed vface : VFACE) : SV_Target
     half3 worldNormal = normalize(i.worldNormal) * vface;
 
     half ndotl = dot(worldNormal, _WorldSpaceLightPos0.xyz);
-    ndotl = tex2D(_DiffuseLUTTex, saturate(ndotl * 0.5 + 0.5) * shadow).r;
 
-    col.rgb = lerp(pow(col * 0.9, 2.0), col, ndotl) * _LightColor0.rgb;
+    half4 albedo = tex2D(_MainTex, i.uv);
 
-    if (vface < 0)
-    	col.rgb = lerp(0, col.rgb, 0.25);
-    return col;
+    half3 col = lighting(i, albedo, ndotl, shadow);
+
+#if _RIM_ON
+	half3 worldViewDir = normalize(_WorldSpaceCameraPos.xyz - i.worldPosAndZ.xyz);
+
+	half vdotl = dot(worldNormal, worldViewDir);
+	vdotl = tex2D(_RimLUTTex, saturate(vdotl * 0.5 + 0.5)).r;
+
+	col += vdotl * albedo * _RimIntensity;
+
+#endif
+
+    darkout(col, vface);
+
+    return half4(col, 1);
 }
 
 
 half4 frag_add (v2f i, fixed vface : VFACE) : SV_Target
 {
-    half4 col = tex2D(_MainTex, i.uv);
+	fade(i, vface);
 
-    fade(i, vface);
-
-    MGFX_LIGHT_ATTENUATION(lightAtten, i, i.worldPosAndZ.xyz);
-    fixed shadow = shadowTerm(i);
+    fixed shadow = shadowTermWithDither(i);
 
     half3 worldNormal = normalize(i.worldNormal) * vface;
 
     half ndotl = dot(worldNormal, _WorldSpaceLightPos0.xyz);
-    ndotl = tex2D(_DiffuseLUTTex, saturate(ndotl * 0.5 + 0.5) * shadow).r;
 
-    col.rgb = lerp(pow(col * 0.9, 2.0), col, ndotl) * _LightColor0.rgb;
-    col.rgb *= lightAtten;
+    half4 albedo = tex2D(_MainTex, i.uv);
 
-    if (vface < 0)
-    	col.rgb = lerp(0, col.rgb, 0.25);
-    return col;
+    half3 col = lighting(i, albedo, ndotl, shadow);
+
+    darkout(col, vface);
+
+    MGFX_LIGHT_ATTENUATION(lightAtten, i, i.worldPosAndZ.xyz);
+    col *= lightAtten;
+
+    return half4(col, 1);
 }

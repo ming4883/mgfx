@@ -1,4 +1,5 @@
-sampler2D _BayerTex;
+uniform sampler2D _BayerTex;
+uniform float4 _BayerTex_TexelSize;
 
 #define F1 float
 #define F2 float2
@@ -68,6 +69,6 @@ F1 InterleavedGradientNoise( F2 uv )
 
 F1 Bayer( F2 uv )
 {
-	return (tex2D(_BayerTex, uv / 16.0).r) * 2.0 - 1.0;
+	return (tex2D(_BayerTex, uv * _BayerTex_TexelSize.xy).r) * 2.0 - 1.0;
 }
 // ====
