@@ -5,6 +5,7 @@ using System.Collections.Generic;
 namespace MGFX
 {
 	[ExecuteInEditMode]
+	[AddComponentMenu("Rendering/MGFX/VolumetricLine")]
 	public class VolumetricLine : MonoBehaviour
 	{
 		public float m_Radius = 0.25f;

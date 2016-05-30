@@ -5,11 +5,13 @@ using System.Collections;
 namespace MGFX
 {
 	[ExecuteInEditMode]
-	[AddComponentMenu("Rendering/MGFX/VolumetricLine")]
+	[AddComponentMenu("Rendering/MGFX/VolumetricLineRenderer")]
 	public class RenderFeatureVolumetricLine : RenderFeatureBase
 	{
 		[Material("MGFX/VolumetricLine")]
-		private Material m_MaterialLine;
+		private Material m_MaterialVolLine;
+
+		public Mesh m_CubeMesh;
 
 		public override void OnEnable ()
 		{
@@ -24,7 +26,35 @@ namespace MGFX
 
 		public override void SetupCameraEvents (Camera _cam, RenderSystem _system)
 		{
-			
+			{
+				var _cmdBuf = GetCommandBufferForEvent(_cam, CameraEvent.AfterForwardOpaque, "Minv.VolLine");
+				_cmdBuf.Clear();
+
+				var system = VolumetricLineSystem.instance;
+
+				var propPt0 = Shader.PropertyToID("_VolLinePoint0");
+				var propPt1 = Shader.PropertyToID("_VolLinePoint1");
+				var propCol = Shader.PropertyToID("_VolLineColor");
+				Vector3 valPt0 = Vector3.zero;
+				Vector3 valPt1 = Vector3.zero;
+				Color valCol = Color.white;
+				Matrix4x4 trs = Matrix4x4.identity;
+
+				// construct command buffer to draw lights and compute illumination on the scene
+				foreach(var _line in system.m_Lines)
+				{
+					valPt0 = _line.m_BegPt;
+					valPt1 = _line.m_EndPt;
+					valCol = _line.GetLinearColor();
+
+					// light parameters we'll use in the shader
+					_cmdBuf.SetGlobalVector(propPt0, valPt0);
+					_cmdBuf.SetGlobalVector(propPt1, valPt1);
+					_cmdBuf.SetGlobalColor(propCol, valCol);
+
+					_cmdBuf.DrawMesh(m_CubeMesh, trs, m_MaterialVolLine, 0, 0);
+				}
+			}
 		}
 		/*
 		public void OnWillRenderObject ()
