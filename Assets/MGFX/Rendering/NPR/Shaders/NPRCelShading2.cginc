@@ -1,25 +1,29 @@
-﻿#include "UnityCG.cginc"
-#include "Lighting.cginc"
-#include "MGFXAutoLight.cginc"
-#include "MGFXNoise.cginc"
-
-///
+﻿///
 /// Vertex
 ///
+struct appdata
+{
+    float4 vertex : POSITION;
+    float3 normal : NORMAL;
+    float2 texcoord : TEXCOORD0;
+    float2 texcoord1 : TEXCOORD1;
+};
+
 struct v2f
 {
-    float2 uv : TEXCOORD0;
+    float4 uv : TEXCOORD0;
     SHADOW_COORDS(1) // put shadows data into TEXCOORD1
     float3 worldNormal : TEXCOORD2;
     float4 worldPosAndZ : TEXCOORD3;
     float4 pos : SV_POSITION;
 };
 
-v2f vert (appdata_base v)
+v2f vert (appdata v)
 {
     v2f o;
     o.pos = mul(UNITY_MATRIX_MVP, v.vertex);
-    o.uv = v.texcoord;
+    o.uv.xy = v.texcoord;
+    o.uv.zw = v.texcoord1;
     o.worldNormal = UnityObjectToWorldNormal(v.normal);
     o.worldPosAndZ.xyz = mul(_Object2World, v.vertex).xyz;
     COMPUTE_EYEDEPTH(o.worldPosAndZ.w);
@@ -93,7 +97,7 @@ void fade(in v2f i, fixed vface)
 half3 lighting(in v2f i, in half3 albedo, in half ndotl, in half shadow)
 {
 #if _DIM_ON
-	half3 dark = tex2D(_DimTex, i.uv);
+	half3 dark = tex2D(_DimTex, i.uv.xy);
 #else
 	half3 dark = pow(albedo * 0.9, 2.0);
 #endif
@@ -109,6 +113,20 @@ void darkout(inout half3 col, fixed vface)
     	col *= 0.25;
 }
 
+half4 fetchAlbedo(v2f i)
+{
+	half4 albedo = tex2D(_MainTex, i.uv.xy);
+#if _OVERLAY_ON
+	half4 overlay = tex2D(_OverlayTex, i.uv.zw);
+
+	half t = overlay.a;
+	t = (1-cos(t*3.1415926)) / 2;
+
+	albedo.rgb = lerp(albedo.rgb, overlay.rgb, t);
+#endif
+	return albedo;
+}
+
 half4 frag_base (v2f i, fixed vface : VFACE) : SV_Target
 {
    	fade(i, vface);
@@ -119,7 +137,7 @@ half4 frag_base (v2f i, fixed vface : VFACE) : SV_Target
 
     half ndotl = dot(worldNormal, _WorldSpaceLightPos0.xyz);
 
-    half4 albedo = tex2D(_MainTex, i.uv);
+    half4 albedo = fetchAlbedo(i);
 
     half3 col = lighting(i, albedo, ndotl, shadow);
 
@@ -149,7 +167,7 @@ half4 frag_add (v2f i, fixed vface : VFACE) : SV_Target
 
     half ndotl = dot(worldNormal, _WorldSpaceLightPos0.xyz);
 
-    half4 albedo = tex2D(_MainTex, i.uv);
+    half4 albedo = fetchAlbedo(i);
 
     half3 col = lighting(i, albedo, ndotl, shadow);
 

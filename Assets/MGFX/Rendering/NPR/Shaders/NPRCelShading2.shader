@@ -20,6 +20,10 @@
     }
 
     CGINCLUDE
+    #include "UnityCG.cginc"
+	#include "Lighting.cginc"
+	#include "MGFXAutoLight.cginc"
+	#include "MGFXNoise.cginc"
     #include "NPRCelShading2.cginc"
     ENDCG
 
@@ -44,6 +48,7 @@
             #pragma target 3.0
 
             #pragma shader_feature _DIM_ON
+            #pragma shader_feature _OVERLAY_ON
             #pragma shader_feature _RIM_ON
 
             ENDCG
@@ -66,6 +71,7 @@
             #pragma target 3.0
 
             #pragma shader_feature _DIM_ON
+            #pragma shader_feature _OVERLAY_ON
 
             ENDCG
         }
