@@ -1,6 +1,4 @@
-﻿// Upgrade NOTE: replaced '_Object2World' with 'unity_ObjectToWorld'
-
-Shader "MGFX/VolumetricLine"
+﻿Shader "MGFX/VolumetricLine"
 {
     Properties
     {
@@ -37,7 +35,7 @@ Shader "MGFX/VolumetricLine"
                 v2f o;
                 o.vertex = mul(UNITY_MATRIX_MVP, v.vertex);
                 o.uv = v.texcoord;
-                o.worldPos = mul(unity_ObjectToWorld, v.vertex);
+                o.worldPos = mul(_Object2World, v.vertex);
                 return o;
             }
 

@@ -2,6 +2,10 @@
 
 #include "AutoLight.cginc"
 
+#if UNITY_VERSION < 540
+#define unity_WorldToLight _LightMatrix0 
+#endif
+
 #ifdef POINT
 #define MGFX_LIGHT_ATTENUATION(destName, input, worldPos) \
 	unityShadowCoord3 lightCoord = mul(unity_WorldToLight, unityShadowCoord4(worldPos, 1)).xyz; \
