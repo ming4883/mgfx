@@ -32,7 +32,8 @@ namespace MGFX
 	{
 		#region Material Identifiers
 
-		public static HashID MTL_SSAO = new HashID("Hidden/MGFX/SSAO");
+		[Material("Hidden/MGFX/SSAO")]
+		private Material MaterialSSAO;
 		
 		#endregion
 
@@ -130,25 +131,15 @@ namespace MGFX
 		
 		#endregion
 
-		#region Private Properties
-
-		// AO shader material
-		Material aoMaterial
-		{
-			get
-			{
-				return GetMaterial(MTL_SSAO);
-			}
-		}
-
-		#endregion
-
 		#region Effect Passes
 		
 		// Update the common material properties.
 		void UpdateMaterialProperties(bool _useGBuffer)
 		{
-			var _mtl = aoMaterial;
+			var _mtl = MaterialSSAO;
+			if (null == _mtl)
+				return;
+			
 			_mtl.shaderKeywords = null;
 
 			_mtl.EnableKeyword ("_SOURCE_DEPTHNORMALS");
@@ -179,8 +170,8 @@ namespace MGFX
 		public override void OnEnable()
 		{
 			base.OnEnable();
-
-			LoadMaterial(MTL_SSAO);
+			LoadMaterials (this);
+			//LoadMaterial(MTL_SSAO);
 		}
 		
 		public override void SetupCameraEvents(Camera _cam, RenderSystem _system)
@@ -209,7 +200,7 @@ namespace MGFX
 				th = ((th / 4) + 1) * 4;
 
 				// AO buffer
-				var _m = aoMaterial;
+				var _m = MaterialSSAO;
 
 				_cmdBuf.GetTemporaryRT (_idMask, tw, th, 0, FilterMode.Bilinear, format, rwMode);
 				//var _idCurr = Shader.PropertyToID("_CurrTexture");
