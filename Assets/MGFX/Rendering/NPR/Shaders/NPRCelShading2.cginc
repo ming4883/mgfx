@@ -34,6 +34,10 @@ v2f vert (appdata_base v)
 uniform sampler2D _MainTex;
 uniform sampler2D _DiffuseLUTTex;
 
+#if _OVERLAY_ON
+uniform sampler2D _OverlayTex;
+#endif
+
 #if _DIM_ON
 uniform sampler2D _DimTex;
 #endif

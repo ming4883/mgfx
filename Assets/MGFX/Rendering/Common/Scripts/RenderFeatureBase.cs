@@ -9,7 +9,6 @@ namespace MGFX
 	[RequireComponent (typeof(RenderSystem))]
 	public class RenderFeatureBase : MonoBehaviour
 	{
-
 		#region Material Management
 
 		[System.AttributeUsage (System.AttributeTargets.Field)]
@@ -26,9 +25,9 @@ namespace MGFX
 		public static int LoadMaterials (RenderFeatureBase _inst)
 		{
 			int _cnt = 0;
-			var _flags = System.Reflection.BindingFlags.Public 
+			var _flags = System.Reflection.BindingFlags.Instance 
 				| System.Reflection.BindingFlags.NonPublic
-				| System.Reflection.BindingFlags.Instance;
+				| System.Reflection.BindingFlags.Public;
 			
 			foreach (var _field in _inst.GetType ().GetFields (_flags))
 			{

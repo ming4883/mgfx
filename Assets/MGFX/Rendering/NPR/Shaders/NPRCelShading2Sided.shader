@@ -1,22 +1,22 @@
 ﻿Shader "MGFX/NPRCelShading (2 Sided)" {
     Properties {
-        _MainTex ("Main (RGB)", 2D) = "white" {}
+        [NoScaleOffset] _MainTex ("Main (RGB)", 2D) = "white" {}
 
         [Toggle(_DIM_ON)] _DimOn("Enable Dim", Int) = 0
-        _DimTex ("Dim (RGB)", 2D) = "black" {}
+        [NoScaleOffset] _DimTex ("Dim (RGB)", 2D) = "black" {}
 
         [Toggle(_NORMAL_MAP_ON)] _NormalMapOn("Enable NormalMap", Int) = 0
-        _NormalMapTex ("Normal Map", 2D) = "black" {}
+        [NoScaleOffset] _NormalMapTex ("Normal Map", 2D) = "black" {}
         
         [Toggle(_OVERLAY_ON)] _OverlayOn("Enable Overlay", Int) = 0
-        _OverlayTex ("Overlay (RGBA)", 2D) = "black" {}
+        [NoScaleOffset] _OverlayTex ("Overlay (RGBA)", 2D) = "black" {}
         
         [Toggle(_RIM_ON)] _RimOn("Enable Rim", Int) = 0
         _RimSize ("RimSize", Range(0,1)) = 0.25
         _RimIntensity ("RimIntensity", Range(0,1)) = 1.0
 
         [Toggle(_DIFFUSE_LUT_ON)] _DiffuseLUTOn("Enable Diffuse LUT", Int) = 0
-        _DiffuseLUTTex ("Diffuse LUT (R)", 2D) = "white" {}
+        [NoScaleOffset] _DiffuseLUTTex ("Diffuse LUT (R)", 2D) = "white" {}
         
         [Toggle(_EDGE_ON)] _EdgeOn("Enable Edges", Int) = 0
         _EdgeColor ("EdgeColor", Color) = (0, 0, 0, 1)
