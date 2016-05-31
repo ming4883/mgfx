@@ -64,13 +64,13 @@ namespace MGFX
 			}
 		}
 
-		[MenuItem ("Mud/Camera/Add 1st-Person Control", false, 2000)]
+		[MenuItem ("MGFX/Camera/Add 1st-Person Control", false, 2000)]
 		public static void MenuItem ()
 		{
 			AddControl (CameraControlWithInput.ControlStyles.FirstPerson);
 		}
 
-		[MenuItem ("Mud/Camera/Add 3rd-Person Control", false, 2001)]
+		[MenuItem ("MGFX/Camera/Add 3rd-Person Control", false, 2001)]
 		public static void MenuItem3rd ()
 		{
 			AddControl (CameraControlWithInput.ControlStyles.ThirdPerson);

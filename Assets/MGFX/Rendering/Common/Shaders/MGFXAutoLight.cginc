@@ -1,5 +1,3 @@
-// Upgrade NOTE: replaced '_LightMatrix0' with 'unity_WorldToLight'
-
 #include "AutoLight.cginc"
 
 #if UNITY_VERSION < 540

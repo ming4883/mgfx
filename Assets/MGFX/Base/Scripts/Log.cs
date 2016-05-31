@@ -33,10 +33,15 @@ namespace MGFX
             
             return _clsName ?? "";
         }
+
+        public static string ToString(object _obj)
+        {
+            return (_obj == null) ? "(null)" : _obj.ToString();
+        }
         
         public static void I(object _obj)
         {
-			UnityEngine.Debug.logger.Log(GetPrefix(null), _obj.ToString());
+            UnityEngine.Debug.logger.Log(GetPrefix(null), ToString(_obj));
         }
         
         public static void I(string _fmt, object _arg0)
@@ -56,7 +61,7 @@ namespace MGFX
         
         public static void E(object _obj)
         {
-			UnityEngine.Debug.logger.LogError(GetPrefix(null), _obj.ToString());
+            UnityEngine.Debug.logger.LogError(GetPrefix(null), ToString(_obj));
         }
         
         public static void E(string _fmt, object _arg0)

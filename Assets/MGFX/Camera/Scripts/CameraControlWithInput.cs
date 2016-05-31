@@ -4,7 +4,7 @@ using System;
 namespace MGFX
 {
 	[RequireComponent (typeof(Camera))]
-	[AddComponentMenu ("Mud/Camera/ContolWithInput")]
+	[AddComponentMenu ("MGFX/Camera/ContolWithInput")]
 	public class CameraControlWithInput : MonoBehaviour
 	{
 		public class DragState

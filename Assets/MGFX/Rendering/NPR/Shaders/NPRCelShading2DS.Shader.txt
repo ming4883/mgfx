@@ -1,0 +1,21 @@
+﻿Shader "MGFX/NPRCelShading2"
+{
+    Properties
+    {
+{% unityasset Assets/MGFX/Rendering/NPR/Shaders/NPRCelShading2.Properties.txt %}
+    }
+
+    CGINCLUDE
+#include "UnityCG.cginc"
+#include "Lighting.cginc"
+{% unityasset Assets/MGFX/Rendering/Common/Shaders/MGFXAutoLight.cginc %}
+{% unityasset Assets/MGFX/Rendering/Common/Shaders/MGFXNoise.cginc %}
+{% unityasset Assets/MGFX/Rendering/NPR/Shaders/NPRCelShading2.CGinc.txt %}
+    ENDCG
+
+    SubShader
+    {
+Cull Off
+{% unityasset Assets/MGFX/Rendering/NPR/Shaders/NPRCelShading2.SubShader.txt %}
+    }
+}
