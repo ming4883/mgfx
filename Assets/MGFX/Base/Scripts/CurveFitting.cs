@@ -1,32 +1,58 @@
 using System;
 using System.Diagnostics;
+using System.Collections.Generic;
 using UnityEngine;
 
 namespace MGFX
 {
-    public static class CurveFitting
-    {
-        public static Vector3 CatmullRom(Vector3 previous, Vector3 start, Vector3 end, Vector3 next, 
-                                  float elapsedTime, float duration)
-        {
-            // References used:
-            // p.266 GemsV1
-            //
-            // tension is often set to 0.5 but you can use any reasonable value:
-            // http://www.cs.cmu.edu/~462/projects/assn2/assn2/catmullRom.pdf
-            //
-            // bias and tension controls:
-            // http://local.wasp.uwa.edu.au/~pbourke/miscellaneous/interpolation/
- 
-            float percentComplete = elapsedTime / duration;
-            float percentCompleteSquared = percentComplete * percentComplete;
-            float percentCompleteCubed = percentCompleteSquared * percentComplete;
- 
-            return previous * (-0.5f * percentCompleteCubed + percentCompleteSquared - 0.5f * percentComplete) 
-                + start * (1.5f * percentCompleteCubed + -2.5f * percentCompleteSquared + 1.0f) 
-                + end * (-1.5f * percentCompleteCubed + 2.0f * percentCompleteSquared + 0.5f * percentComplete)
-                + next * (0.5f * percentCompleteCubed - 0.5f * percentCompleteSquared);
-        }
-        
-    }
+	public static class CurveFitting
+	{
+        public class CentripetalCatmullRom
+		{
+            // https://en.wikipedia.org/wiki/Centripetal_Catmull%E2%80%93Rom_spline
+            public static void FindTs(out float _t0, out float _t1, out float _t2, out float _t3,
+                float _alpha, Vector3 _P0, Vector3 _P1, Vector3 _P2, Vector3 _P3)
+            {
+                float _halfAlpha = _alpha * 0.5f;
+                _t0 = 0;
+                _t1 = Mathf.Pow((_P1 - _P0).sqrMagnitude, _halfAlpha) + _t0;
+                _t2 = Mathf.Pow((_P2 - _P1).sqrMagnitude, _halfAlpha) + _t1;
+                _t3 = Mathf.Pow((_P3 - _P2).sqrMagnitude, _halfAlpha) + _t2;
+            }
+
+            public static Vector3 Intrpl(float _w, float _w1, float _w2, Vector3 _C1, Vector3 _C2)
+            {
+                return ((_w2 - _w) * _C1 + (_w - _w1) * _C2) / (_w2 - _w1);
+            }
+
+            public static Vector3 Intrpl(float _t,
+                float _t0, float _t1, float _t2, float _t3, 
+                Vector3 _P0, Vector3 _P1, Vector3 _P2, Vector3 _P3)
+            {
+                Vector3 _A3 = Intrpl(_t, _t2, _t3, _P2, _P3);
+                Vector3 _A2 = Intrpl(_t, _t1, _t2, _P1, _P2);
+                Vector3 _A1 = Intrpl(_t, _t0, _t1, _P0, _P1);
+
+                Vector3 _B2 = Intrpl(_t, _t1, _t3, _A2, _A3);
+                Vector3 _B1 = Intrpl(_t, _t0, _t2, _A1, _A2);
+
+                return Intrpl(_t, _t1, _t2, _B1, _B2);
+            }
+
+            public static void Intrpl(List<Vector3> _ret, int _numOfSegments, float _alpha, Vector3 _P0, Vector3 _P1, Vector3 _P2, Vector3 _P3)
+            {
+                float _t0, _t1, _t2, _t3;
+                FindTs(out _t0, out _t1, out _t2, out _t3, _alpha, _P0, _P1, _P2, _P3);
+                float _dt = (_t2 - _t1) / _numOfSegments;
+                float _t = _t1 + _dt;
+
+                // do not include _P0 and _P3 
+                for (int _i = 1; _i < _numOfSegments; ++_i)
+                {
+                    _ret.Add(Intrpl(_t, _t0, _t1, _t2, _t3, _P0, _P1, _P2, _P3));
+                    _t += _dt;
+                }
+            }
+		}
+	}
 }
