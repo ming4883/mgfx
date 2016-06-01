@@ -7,14 +7,25 @@ struct appdata
     float3 normal : NORMAL;
     float2 texcoord : TEXCOORD0;
     float2 texcoord1 : TEXCOORD1;
+
+#if _NORMAL_MAP_ON
+	float4 tangent : TANGENT;
+#endif
 };
 
 struct v2f
 {
     float4 uv : TEXCOORD0;
     SHADOW_COORDS(1) // put shadows data into TEXCOORD1
-    float3 worldNormal : TEXCOORD2;
-    float4 worldPosAndZ : TEXCOORD3;
+    float4 worldPosAndZ : TEXCOORD2;
+
+#if _NORMAL_MAP_ON
+	float4 tanSpace0 : TEXCOORD3;
+	float4 tanSpace1 : TEXCOORD4;
+	float4 tanSpace2 : TEXCOORD5;
+#else
+	float3 worldNormal : TEXCOORD3;
+#endif
     float4 pos : SV_POSITION;
 };
 
@@ -24,8 +35,21 @@ v2f vert (appdata v)
     o.pos = mul(UNITY_MATRIX_MVP, v.vertex);
     o.uv.xy = v.texcoord;
     o.uv.zw = v.texcoord1;
-    o.worldNormal = UnityObjectToWorldNormal(v.normal);
+    float3 worldNormal = UnityObjectToWorldNormal(v.normal);
+
+#if _NORMAL_MAP_ON
+	float3 worldTangent = UnityObjectToWorldDir(v.tangent.xyz);
+	float tangentSign = v.tangent.w * unity_WorldTransformParams.w;
+	float3 worldBinormal = cross(worldNormal, worldTangent) * tangentSign;
+	o.tanSpace0 = float4(worldTangent.x, worldBinormal.x, worldNormal.x, 0);
+	o.tanSpace1 = float4(worldTangent.y, worldBinormal.y, worldNormal.y, 0);
+	o.tanSpace2 = float4(worldTangent.z, worldBinormal.z, worldNormal.z, 0);
+#else
+	o.worldNormal = worldNormal;
+#endif
+
     o.worldPosAndZ.xyz = mul(_Object2World, v.vertex).xyz;
+
     COMPUTE_EYEDEPTH(o.worldPosAndZ.w);
     // compute shadows data
     TRANSFER_SHADOW(o)
@@ -37,6 +61,10 @@ v2f vert (appdata v)
 ///
 uniform sampler2D _MainTex;
 uniform sampler2D _DiffuseLUTTex;
+
+#if _NORMAL_MAP_ON
+uniform sampler2D _NormalMapTex;
+#endif
 
 #if _OVERLAY_ON
 uniform sampler2D _OverlayTex;
@@ -50,6 +78,20 @@ uniform sampler2D _DimTex;
 uniform sampler2D _RimLUTTex;
 uniform float _RimIntensity;
 #endif
+
+half3 decodeWorldNormal(in v2f i, in fixed vface)
+{
+#if _NORMAL_MAP_ON
+	half3 tanNormal = UnpackNormal(tex2D(_NormalMapTex, i.uv.xy));
+	half3 worldNormal;
+	worldNormal.x = dot(i.tanSpace0.xyz, tanNormal);
+	worldNormal.y = dot(i.tanSpace1.xyz, tanNormal);
+	worldNormal.z = dot(i.tanSpace2.xyz, tanNormal);
+	return normalize(worldNormal) * vface;
+#else
+	return normalize(i.worldNormal) * vface;
+#endif
+}
 
 half dither(in v2f i)
 {
@@ -136,7 +178,7 @@ half4 frag_base (v2f i, fixed vface : VFACE) : SV_Target
 
     fixed shadow = shadowTerm(i);
 
-    half3 worldNormal = normalize(i.worldNormal) * vface;
+    half3 worldNormal = decodeWorldNormal(i, vface);
 
     half ndotl = dot(worldNormal, _WorldSpaceLightPos0.xyz);
 
@@ -166,7 +208,7 @@ half4 frag_add (v2f i, fixed vface : VFACE) : SV_Target
 
     fixed shadow = shadowTerm(i);
 
-    half3 worldNormal = normalize(i.worldNormal) * vface;
+    half3 worldNormal = decodeWorldNormal(i, vface);
 
     half ndotl = dot(worldNormal, _WorldSpaceLightPos0.xyz);
 

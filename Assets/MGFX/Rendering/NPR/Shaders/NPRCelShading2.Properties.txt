@@ -1,5 +1,8 @@
 ﻿[NoScaleOffset] _MainTex ("Texture", 2D) = "white" {}
 
+[Toggle(_NORMAL_MAP_ON)] _NormalMapOn("Enable NormalMap", Int) = 0
+[NoScaleOffset] _NormalMapTex ("Normal Map", 2D) = "black" {}
+
 [Toggle(_DIM_ON)] _DimOn("Enable Dim", Int) = 0
 [NoScaleOffset] _DimTex ("Dim (RGB)", 2D) = "white" {}
 
