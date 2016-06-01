@@ -8,11 +8,7 @@ namespace MGFX
 	[AddComponentMenu("Rendering/MGFX/VolumetricLine")]
 	public class VolumetricLine : MonoBehaviour
 	{
-		public float m_Radius = 0.25f;
-		public Vector3 m_BegPt = new Vector3(0, 1, 0);
-		public Vector3 m_EndPt = new Vector3(0, -1, 0);
 		public Color m_Color = Color.white;
-		public float m_Intensity = 1.0f;
 
 		public void OnEnable ()
 		{
@@ -29,19 +25,50 @@ namespace MGFX
 			VolumetricLineSystem.instance.Remove(this);
 		}
 
+        public float GetRenderMatrics(out Matrix4x4 _mesh, out Matrix4x4 _points)
+        {
+            Quaternion _rot = transform.rotation;
+            Vector3 _pos = transform.position;
+            Vector3 _scl = transform.lossyScale;
+            float _radius = _scl.x;
+            float _radius2x = _radius * 2.0f;
+            float _meshSize = 0.5f;
+
+            _mesh = Matrix4x4.TRS(_pos, _rot, new Vector3(_radius2x, _scl.y + _radius2x, _radius2x));
+            _mesh = _mesh * Matrix4x4.TRS(new Vector3(0, _meshSize - _radius, 0), Quaternion.identity, Vector3.one);
+            _points = Matrix4x4.TRS(_pos, _rot, new Vector3(_radius2x, _scl.y, _radius2x));
+            return _radius;
+        }
+
+        public void GetPoints(Matrix4x4 _mat, out Vector3 _beg, out Vector3 _end)
+        {
+            _beg = _mat.MultiplyPoint(new Vector3(0, 0.0f, 0));
+            _end = _mat.MultiplyPoint(new Vector3(0, 1.0f, 0));
+        }
+
 		public Color GetLinearColor ()
 		{
 			return new Color(
-				Mathf.GammaToLinearSpace(m_Color.r * m_Intensity),
-				Mathf.GammaToLinearSpace(m_Color.g * m_Intensity),
-				Mathf.GammaToLinearSpace(m_Color.b * m_Intensity),
-				1.0f
+                Mathf.GammaToLinearSpace(m_Color.r),
+				Mathf.GammaToLinearSpace(m_Color.g),
+				Mathf.GammaToLinearSpace(m_Color.b),
+                m_Color.a
 			);
 		}
 
 		public void OnDrawGizmos ()
 		{
-			Gizmos.DrawLine(m_BegPt, m_EndPt);
+            Matrix4x4 _m, _p;
+            GetRenderMatrics(out _m, out _p);
+
+            Vector3 _beg, _end;
+            GetPoints(_p, out _beg, out _end);
+            Gizmos.color = Color.red;
+            Gizmos.DrawLine(_beg, _end);
+
+            Gizmos.matrix = _m;
+            Gizmos.color = Color.white;
+            Gizmos.DrawWireCube(Vector3.zero, new Vector3(0.5f, 1.0f, 0.5f));
 		}
 	}
 

@@ -2,11 +2,7 @@
 {
     Properties
     {
-        _Color ("Color", Color) = (1, 1, 1, 1)
-        _Radius ("Radius", Float) = 0.05
         _DynamicRange ("Dynamic Range", Range(0.1, 1.0)) = 1.0
-        _Point0 ("Point0", Vector) = (0.25, 0.25, 0.25)
-        _Point1 ("Point1", Vector) = (-0.25, -0.25, -0.25)
     }
     SubShader
     {
@@ -39,11 +35,11 @@
                 return o;
             }
 
-            uniform float4 _Color;
-            uniform float _Radius;
+            uniform float _VolLineRadius;
             uniform float _DynamicRange;
-            uniform float3 _Point0;
-            uniform float3 _Point1;
+            uniform float4 _VolLineColor;
+            uniform float3 _VolLinePoint0;
+            uniform float3 _VolLinePoint1;
 
             struct Ray
             {
@@ -95,9 +91,8 @@
                 ray.dir = i.worldPos - _WorldSpaceCameraPos.xyz;
                 ray.dir = normalize(ray.dir);
 
-                float3 a = _Point0;
-                float3 b = _Point1;
-                float r = _Radius;
+                float3 a = _VolLinePoint0;
+                float3 b = _VolLinePoint1;
                 float dr = (1 - _DynamicRange) * 0.5;
 
                 float3 d1 = DistanceLine(ray, a, b);
@@ -105,11 +100,10 @@
                 float3 d3 = DistancePoint(ray, b);
 
                 float dm = min(min(d1.x, d2.x), d3.x);
-                float s = saturate(dm / r);
+                float s = saturate(dm / _VolLineRadius);
                 s = 1 - s;
                 s = smoothstep(dr, 1 - dr, s);
-                s *= _Color.a;
-                return float4(_Color.rgb * s, s);
+                return float4(_VolLineColor.rgb * s * _VolLineColor.a, s);
             }
             ENDCG
         }
