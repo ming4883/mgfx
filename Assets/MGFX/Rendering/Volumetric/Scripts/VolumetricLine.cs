@@ -56,20 +56,33 @@ namespace MGFX
 			);
 		}
 
-		public void OnDrawGizmos ()
-		{
+        private static Color m_LineColor = new Color(1, 0, 0, 0.25f);
+        private static Color m_BoxColor = new Color(1, 1, 1, 0.5f);
+        public void OnDrawGizmos ()
+        {
             Matrix4x4 _m, _p;
             GetRenderMatrics(out _m, out _p);
+            float _r = 0.5f;
 
             Vector3 _beg, _end;
             GetPoints(_p, out _beg, out _end);
-            Gizmos.color = Color.red;
+
+            Gizmos.matrix = Matrix4x4.identity;
+            Gizmos.color = m_LineColor;
             Gizmos.DrawLine(_beg, _end);
+            Gizmos.DrawLine(_beg, _beg + _p.MultiplyVector(Vector3.right) * _r);
+            Gizmos.DrawLine(_beg, _beg + _p.MultiplyVector(Vector3.forward) * _r);
+        }
+
+        public void OnDrawGizmosSelected ()
+        {
+            Matrix4x4 _m, _p;
+            GetRenderMatrics(out _m, out _p);
 
             Gizmos.matrix = _m;
-            Gizmos.color = Color.white;
-            Gizmos.DrawWireCube(Vector3.zero, new Vector3(0.5f, 1.0f, 0.5f));
-		}
+            Gizmos.color = m_BoxColor;
+            Gizmos.DrawWireCube(Vector3.zero, new Vector3(1, 1, 1));
+        }
 	}
 
 
