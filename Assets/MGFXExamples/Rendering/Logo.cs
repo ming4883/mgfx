@@ -8,30 +8,44 @@ namespace MGFX
     {
         List<Vector3> m_Tessellated = new List<Vector3>();
         public List<Vector3> m_Path = new List<Vector3>();
+        public Vector3 m_Dot1;
+        public Vector3 m_Dot2;
 
         public void OnEnable()
         {
             m_Path.Clear();
-            m_Path.Add(new Vector3(1, 0, 0));
-            m_Path.Add(new Vector3(1, 2, 0));
-            m_Path.Add(new Vector3(2, 1.5f, 0));
-            m_Path.Add(new Vector3(3, 2, 0));
-            m_Path.Add(new Vector3(3,-1, 0));
-            m_Path.Add(new Vector3(2.5f,-1, 0));
-            m_Path.Add(new Vector3(2, -0.5f, 0));
-            m_Path.Add(new Vector3(3.5f, 0.5f, 0));
+            m_Path.Add(new Vector3(-1, 0, 0));
+            m_Path.Add(m_Dot1 = new Vector3(-1, 2, 0));
+            m_Path.Add(new Vector3(0, 1.5f, 0));
+            m_Path.Add(m_Dot2 = new Vector3(1, 2, 0));
+            m_Path.Add(new Vector3(1, -1, 0));
+            m_Path.Add(new Vector3(0.5f, -1, 0));
+            m_Path.Add(new Vector3(0, -0.5f, 0));
+            m_Path.Add(new Vector3(2.0f, 1.0f, 0));
+
+            m_Dot1.y += 0.5f;
+            m_Dot2.y += 0.5f;
 
             m_Tessellated.Clear();
-            CurveFitting.CentripetalCatmullRom.Tessellate(m_Tessellated, 4, 0.5f, m_Path);
+            CurveFitting.CentripetalCatmullRom.Tessellate(m_Tessellated, 16, 0.5f, m_Path);
 
             if (m_Tessellated.Count > 0)
                 CreateVolLines();
         }
+
+        public static Color m_CageColor = new Color(0, 1, 0, 0.5f);
+        public static Color m_CurveColor = new Color(0, 1, 1, 0.5f);
+
+        public void FixedUpdate()
+        {
+            transform.Rotate(new Vector3(0, 1.0f, 0));
+        }
+
         public void OnDrawGizmos()
         {
             var _m = transform.localToWorldMatrix;
             // Draw Cage
-            Gizmos.color = new Color(0, 1, 0, 0.5f);
+            Gizmos.color = m_CageColor;
             var _last = _m.MultiplyPoint(m_Path[0]);
             for (int _i = 1; _i < m_Path.Count; ++_i)
             {
@@ -40,7 +54,7 @@ namespace MGFX
                 _last = _curr;
             }
         }
-        /*
+
         public void OnDrawGizmosSelected()
         {
             // Draw tessellated full path
@@ -54,11 +68,10 @@ namespace MGFX
                 }
             }
         }
-        */
 
         private void CreateVolLines()
         {
-            foreach(var _old in this.GetComponentsInChildren<VolumetricLine>())
+            foreach (var _old in this.GetComponentsInChildren<VolumetricLine>())
             {
                 if (!Application.isPlaying)
                     GameObject.DestroyImmediate(_old.gameObject);
@@ -70,24 +83,27 @@ namespace MGFX
             {
                 CreateVolLine(_i); 
             }
+
+            CreateVolLine(m_Dot1, m_Dot1, "Dot001");
+            CreateVolLine(m_Dot2, m_Dot2, "Dot002");
         }
 
-        Color m_LineColor = new Color(0.25f, 0.25f, 1.0f, 0.5f);
+        Color m_LineColor = new Color(0.25f, 0.5f, 1.0f, 0.5f);
 
         private void CreateVolLine(int _i)
         {
             var _beg = m_Tessellated[_i - 1];
             var _end = m_Tessellated[_i];
 
-            var _gobj = new GameObject("Seg" + _i.ToString("D3"));
+            CreateVolLine(_beg, _end, "Seg" + _i.ToString("D3"));
+        }
+
+        private void CreateVolLine(Vector3 _beg, Vector3 _end, string _name)
+        {
+            var _gobj = new GameObject(_name);
             var _line = _gobj.AddComponent<VolumetricLine>();
             _line.m_Color = m_LineColor;
-            _line.transform.position = _beg;
-            //_line.transform.LookAt(_end);
-
-            Vector3 _scl = new Vector3(0.1f, 0.1f, (_end - _beg).magnitude * 0.25f);
-            _line.transform.localScale = _scl;
-
+            _line.SetupTransform(_beg, _end, 0.25f);
             _gobj.transform.SetParent(transform);
         }
     }

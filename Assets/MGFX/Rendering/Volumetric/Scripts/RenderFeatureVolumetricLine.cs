@@ -4,28 +4,28 @@ using System.Collections;
 
 namespace MGFX
 {
-	[ExecuteInEditMode]
-	[AddComponentMenu("Rendering/MGFX/VolumetricLineRenderer")]
-	public class RenderFeatureVolumetricLine : RenderFeatureBase
-	{
-		[Material("MGFX/VolumetricLine")]
-		private Material m_MaterialVolLine;
+    [ExecuteInEditMode]
+    [AddComponentMenu("Rendering/MGFX/VolumetricLineRenderer")]
+    public class RenderFeatureVolumetricLine : RenderFeatureBase
+    {
+        [Material("MGFX/VolumetricLine")]
+        private Material m_MaterialVolLine;
 
-		public Mesh m_CubeMesh;
+        public Mesh m_CubeMesh;
 
-		public override void OnEnable ()
-		{
-			base.OnEnable();
-			LoadMaterials(this);
-		}
+        public override void OnEnable()
+        {
+            base.OnEnable();
+            LoadMaterials(this);
+        }
 
-		public void UpdateMaterialProperties (Camera _cam, VolumetricLine _line)
-		{
+        public void UpdateMaterialProperties(Camera _cam, VolumetricLine _line)
+        {
 			
-		}
+        }
 
-		public override void SetupCameraEvents (Camera _cam, RenderSystem _system)
-		{
+        public override void SetupCameraEvents(Camera _cam, RenderSystem _system)
+        {
             var _evt = CameraEvent.AfterForwardAlpha;
             var _cmdBuf = GetCommandBufferForEvent(_cam, _evt, "Minv.VolLine");
             _cmdBuf.Clear();
@@ -42,7 +42,7 @@ namespace MGFX
             float valRad = 0;
             Matrix4x4 _m, _p;
 
-            foreach(var _line in system.m_Lines)
+            foreach (var _line in system.m_Lines)
             {
                 valRad = _line.GetRenderMatrics(out _m, out _p);
                 _line.GetPoints(_p, out valPt0, out valPt1);
@@ -55,6 +55,6 @@ namespace MGFX
 
                 _cmdBuf.DrawMesh(m_CubeMesh, _m, m_MaterialVolLine, 0, 0);
             }
-		}
-	}
+        }
+    }
 }

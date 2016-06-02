@@ -4,26 +4,26 @@ using System.Collections.Generic;
 
 namespace MGFX
 {
-	[ExecuteInEditMode]
-	[AddComponentMenu("Rendering/MGFX/VolumetricLine")]
-	public class VolumetricLine : MonoBehaviour
-	{
-		public Color m_Color = Color.white;
+    [ExecuteInEditMode]
+    [AddComponentMenu("Rendering/MGFX/VolumetricLine")]
+    public class VolumetricLine : MonoBehaviour
+    {
+        public Color m_Color = Color.white;
 
-		public void OnEnable ()
-		{
-			VolumetricLineSystem.instance.Add(this);
-		}
+        public void OnEnable()
+        {
+            VolumetricLineSystem.instance.Add(this);
+        }
 
-		public void Start ()
-		{
-			VolumetricLineSystem.instance.Add(this);
-		}
+        public void Start()
+        {
+            VolumetricLineSystem.instance.Add(this);
+        }
 
-		public void OnDisable ()
-		{
-			VolumetricLineSystem.instance.Remove(this);
-		}
+        public void OnDisable()
+        {
+            VolumetricLineSystem.instance.Remove(this);
+        }
 
         public float GetRenderMatrics(out Matrix4x4 _mesh, out Matrix4x4 _points)
         {
@@ -32,33 +32,32 @@ namespace MGFX
             Vector3 _scl = transform.lossyScale;
             float _radius = _scl.x;
             float _radius2x = _radius * 2.0f;
-            float _meshSize = 0.5f;
 
-            _mesh = Matrix4x4.TRS(_pos, _rot, new Vector3(_radius2x, _scl.y + _radius2x, _radius2x));
-            _mesh = _mesh * Matrix4x4.TRS(new Vector3(0, _meshSize - _radius, 0), Quaternion.identity, Vector3.one);
-            _points = Matrix4x4.TRS(_pos, _rot, new Vector3(_radius2x, _scl.y, _radius2x));
+            _mesh = Matrix4x4.TRS(_pos, _rot, new Vector3(_radius2x, _radius2x, _scl.y + _radius2x));
+            _points = Matrix4x4.TRS(_pos, _rot, new Vector3(_radius2x, _radius2x, _scl.y));
             return _radius;
         }
 
         public void GetPoints(Matrix4x4 _mat, out Vector3 _beg, out Vector3 _end)
         {
-            _beg = _mat.MultiplyPoint(new Vector3(0, 0.0f, 0));
-            _end = _mat.MultiplyPoint(new Vector3(0, 1.0f, 0));
+            _beg = _mat.MultiplyPoint(new Vector3(0, 0, -0.5f));
+            _end = _mat.MultiplyPoint(new Vector3(0, 0, 0.5f));
         }
 
-		public Color GetLinearColor ()
-		{
-			return new Color(
+        public Color GetLinearColor()
+        {
+            return new Color(
                 Mathf.GammaToLinearSpace(m_Color.r),
-				Mathf.GammaToLinearSpace(m_Color.g),
-				Mathf.GammaToLinearSpace(m_Color.b),
+                Mathf.GammaToLinearSpace(m_Color.g),
+                Mathf.GammaToLinearSpace(m_Color.b),
                 m_Color.a
-			);
-		}
+            );
+        }
 
         private static Color m_LineColor = new Color(1, 0, 0, 0.25f);
         private static Color m_BoxColor = new Color(1, 1, 1, 0.5f);
-        public void OnDrawGizmos ()
+
+        public void OnDrawGizmos()
         {
             Matrix4x4 _m, _p;
             GetRenderMatrics(out _m, out _p);
@@ -71,10 +70,10 @@ namespace MGFX
             Gizmos.color = m_LineColor;
             Gizmos.DrawLine(_beg, _end);
             Gizmos.DrawLine(_beg, _beg + _p.MultiplyVector(Vector3.right) * _r);
-            Gizmos.DrawLine(_beg, _beg + _p.MultiplyVector(Vector3.forward) * _r);
+            Gizmos.DrawLine(_beg, _beg + _p.MultiplyVector(Vector3.up) * _r);
         }
 
-        public void OnDrawGizmosSelected ()
+        public void OnDrawGizmosSelected()
         {
             Matrix4x4 _m, _p;
             GetRenderMatrics(out _m, out _p);
@@ -83,33 +82,41 @@ namespace MGFX
             Gizmos.color = m_BoxColor;
             Gizmos.DrawWireCube(Vector3.zero, new Vector3(1, 1, 1));
         }
-	}
 
+        public void SetupTransform(Vector3 _beg, Vector3 _end, float _radius)
+        {
+            Vector3 _scl = new Vector3(_radius, (_end - _beg).magnitude, 1.0f);
+            transform.localScale = _scl;
+            transform.position = (_beg + _end) * 0.5f;
+            transform.LookAt(_end);
+        }
+    }
 
-	public class VolumetricLineSystem
-	{
-		static VolumetricLineSystem m_Instance;
+    public class VolumetricLineSystem
+    {
+        static VolumetricLineSystem m_Instance;
 
-		static public VolumetricLineSystem instance {
-			get
-			{
-				if(m_Instance == null)
-					m_Instance = new VolumetricLineSystem();
-				return m_Instance;
-			}
-		}
+        static public VolumetricLineSystem instance
+        {
+            get
+            {
+                if (m_Instance == null)
+                    m_Instance = new VolumetricLineSystem();
+                return m_Instance;
+            }
+        }
 
-		internal HashSet<VolumetricLine> m_Lines = new HashSet<VolumetricLine>();
+        internal HashSet<VolumetricLine> m_Lines = new HashSet<VolumetricLine>();
 
-		public void Add (VolumetricLine o)
-		{
-			Remove(o);
-			m_Lines.Add(o);
-		}
+        public void Add(VolumetricLine o)
+        {
+            Remove(o);
+            m_Lines.Add(o);
+        }
 
-		public void Remove (VolumetricLine o)
-		{
-			m_Lines.Remove(o);
-		}
-	}
+        public void Remove(VolumetricLine o)
+        {
+            m_Lines.Remove(o);
+        }
+    }
 }
