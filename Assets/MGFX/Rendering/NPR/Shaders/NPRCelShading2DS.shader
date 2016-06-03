@@ -421,7 +421,7 @@ half4 frag_add (v2f i, fixed vface : VFACE) : SV_Target
     darkout(col, vface);
 
     MGFX_LIGHT_ATTENUATION(lightAtten, i, i.worldPosAndZ.xyz);
-    col *= lightAtten;
+    col *= lightAtten * shadow;
 
     return half4(col, 1);
 }
@@ -465,6 +465,7 @@ Pass
 	}
 
 	ZWrite Off
+	ZTest LEqual
 	Blend One One
 
 	CGPROGRAM

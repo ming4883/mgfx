@@ -33,6 +33,7 @@ Pass
 	}
 
 	ZWrite Off
+	ZTest LEqual
 	Blend One One
 
 	CGPROGRAM
