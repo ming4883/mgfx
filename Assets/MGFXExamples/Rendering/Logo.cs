@@ -15,9 +15,11 @@ namespace MGFX
         {
             m_Path.Clear();
             m_Path.Add(new Vector3(-1, 0, 0));
+            m_Path.Add(new Vector3(-1, 1, 0));
             m_Path.Add(m_Dot1 = new Vector3(-1, 2, 0));
             m_Path.Add(new Vector3(0, 1.5f, 0));
             m_Path.Add(m_Dot2 = new Vector3(1, 2, 0));
+            m_Path.Add(new Vector3(1.2f, 0, 0));
             m_Path.Add(new Vector3(1, -1, 0));
             m_Path.Add(new Vector3(0.5f, -1, 0));
             m_Path.Add(new Vector3(0, -0.5f, 0));
@@ -69,6 +71,10 @@ namespace MGFX
             }
         }
 
+
+        Color m_VolLineColor = new Color(0.25f, 0.5f, 1.0f, 0.5f);
+        Color m_VolDotColor = new Color(0.25f, 0.5f, 1.0f, 1.0f);
+
         private void CreateVolLines()
         {
             foreach (var _old in this.GetComponentsInChildren<VolumetricLine>())
@@ -84,25 +90,23 @@ namespace MGFX
                 CreateVolLine(_i); 
             }
 
-            CreateVolLine(m_Dot1, m_Dot1, "Dot001");
-            CreateVolLine(m_Dot2, m_Dot2, "Dot002");
+            CreateVolLine("Dot001", m_Dot1, m_Dot1, m_VolDotColor);
+            CreateVolLine("Dot002", m_Dot2, m_Dot2, m_VolDotColor);
         }
-
-        Color m_LineColor = new Color(0.25f, 0.5f, 1.0f, 0.5f);
 
         private void CreateVolLine(int _i)
         {
             var _beg = m_Tessellated[_i - 1];
             var _end = m_Tessellated[_i];
 
-            CreateVolLine(_beg, _end, "Seg" + _i.ToString("D3"));
+            CreateVolLine("Seg" + _i.ToString("D3"), _beg, _end, m_VolLineColor);
         }
 
-        private void CreateVolLine(Vector3 _beg, Vector3 _end, string _name)
+        private void CreateVolLine(string _name, Vector3 _beg, Vector3 _end, Color _color)
         {
             var _gobj = new GameObject(_name);
             var _line = _gobj.AddComponent<VolumetricLine>();
-            _line.m_Color = m_LineColor;
+            _line.m_Color = _color;
             _line.SetupTransform(_beg, _end, 0.25f);
             _gobj.transform.SetParent(transform);
         }

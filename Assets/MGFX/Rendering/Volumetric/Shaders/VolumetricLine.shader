@@ -2,7 +2,6 @@
 {
     Properties
     {
-        _DynamicRange ("Dynamic Range", Range(0.1, 1.0)) = 1.0
     }
     SubShader
     {
@@ -36,7 +35,6 @@
             }
 
             uniform float _VolLineRadius;
-            uniform float _DynamicRange;
             uniform float4 _VolLineColor;
             uniform float3 _VolLinePoint0;
             uniform float3 _VolLinePoint1;
@@ -93,16 +91,13 @@
 
                 float3 a = _VolLinePoint0;
                 float3 b = _VolLinePoint1;
-                float dr = (1 - _DynamicRange) * 0.5;
 
                 float3 d1 = DistanceLine(ray, a, b);
                 float3 d2 = DistancePoint(ray, a);
                 float3 d3 = DistancePoint(ray, b);
 
                 float dm = min(min(d1.x, d2.x), d3.x);
-                float s = saturate(dm / _VolLineRadius);
-                s = 1 - s;
-                s = smoothstep(dr, 1 - dr, s);
+                float s = 1 - saturate(dm / _VolLineRadius);
                 return float4(_VolLineColor.rgb * s * _VolLineColor.a, s);
             }
             ENDCG
