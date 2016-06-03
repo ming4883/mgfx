@@ -11,8 +11,9 @@ Shader "MGFX/NPRCelShading2"
 [NoScaleOffset] _DimTex ("Dim (RGB)", 2D) = "white" {}
 
 [Toggle(_OVERLAY_ON)] _OverlayOn("Enable Overlay", Int) = 0
-_OverlayTex ("Overlay (RGBA)", 2D) = "white" {}
+[NoScaleOffset] _OverlayTex ("Overlay (RGBA)", 2D) = "white" {}
 
+[Toggle(_DIFFUSE_LUT_ON)] _DiffuseLUTOn("Enable Diffuse LUT", Int) = 0
 [NoScaleOffset] _DiffuseLUTTex ("Diffuse LUT (R)", 2D) = "white" {}
 
 [NoScaleOffset] _BayerTex ("Bayer Matrix", 2D) = "white" {}
@@ -142,7 +143,27 @@ struct appdata
     float4 vertex : POSITION;
     float3 normal : NORMAL;
     float2 texcoord : TEXCOORD0;
+#if _OVERLAY_ON
     float2 texcoord1 : TEXCOORD1;
+
+	#ifndef LIGHTMAP_OFF
+	float2 lmapcoord : TEXCOORD2;
+	#endif
+
+	#ifndef DYNAMICLIGHTMAP_OFF
+	float2 dlmapcoord : TEXCOORD3;
+	#endif
+
+#else
+	#ifndef LIGHTMAP_OFF
+	float2 lmapcoord : TEXCOORD1;
+	#endif
+
+	#ifndef DYNAMICLIGHTMAP_OFF
+	float2 dlmapcoord : TEXCOORD2;
+	#endif
+
+#endif
 
 #if _NORMAL_MAP_ON
 	float4 tangent : TANGENT;
@@ -162,6 +183,11 @@ struct v2f
 #else
 	float3 worldNormal : TEXCOORD3;
 #endif
+
+#ifndef LIGHTMAP_OFF
+	float4 lmap : TEXCOORD6;
+#endif
+
     float4 pos : SV_POSITION;
 };
 
@@ -169,8 +195,10 @@ v2f vert (appdata v)
 {
     v2f o;
     o.pos = mul(UNITY_MATRIX_MVP, v.vertex);
-    o.uv.xy = v.texcoord;
+    o.uv = v.texcoord.xyxy;
+#if _OVERLAY_ON
     o.uv.zw = v.texcoord1;
+#endif
     float3 worldNormal = UnityObjectToWorldNormal(v.normal);
 
 #if _NORMAL_MAP_ON
@@ -186,6 +214,14 @@ v2f vert (appdata v)
 
     o.worldPosAndZ.xyz = mul(_Object2World, v.vertex).xyz;
 
+#ifndef LIGHTMAP_OFF
+	o.lmap = v.lmapcoord.xyxy * unity_LightmapST.xyxy + unity_LightmapST.zwzw;
+#endif
+
+#ifndef DYNAMICLIGHTMAP_OFF
+	o.lmap.zw = v.dlmapcoord.xy;
+#endif
+
     COMPUTE_EYEDEPTH(o.worldPosAndZ.w);
     // compute shadows data
     TRANSFER_SHADOW(o)
@@ -196,18 +232,21 @@ v2f vert (appdata v)
 /// Fragment
 ///
 uniform sampler2D _MainTex;
-uniform sampler2D _DiffuseLUTTex;
 
 #if _NORMAL_MAP_ON
 uniform sampler2D _NormalMapTex;
+#endif
+
+#if _DIM_ON
+uniform sampler2D _DimTex;
 #endif
 
 #if _OVERLAY_ON
 uniform sampler2D _OverlayTex;
 #endif
 
-#if _DIM_ON
-uniform sampler2D _DimTex;
+#if _DIFFUSE_LUT_ON
+uniform sampler2D _DiffuseLUTTex;
 #endif
 
 #if _RIM_ON
@@ -283,10 +322,27 @@ half3 lighting(in v2f i, in half3 albedo, in half ndotl, in half shadow)
 	half3 dark = pow(albedo * 0.9, 2.0);
 #endif
 
+#if _DIFFUSE_LUT_ON
 	ndotl = tex2D(_DiffuseLUTTex, saturate(ndotl * 0.5 + 0.5) * shadow).r;
-	
+#else
+	ndotl = saturate(ndotl) * shadow;
+#endif
 	return lerp(dark, albedo, ndotl) * _LightColor0.rgb;
 }
+
+#ifndef LIGHTMAP_OFF
+half3 lightmapping(in v2f i, in half3 albedo, in half shadow)
+{
+#if _DIM_ON
+	half3 dark = tex2D(_DimTex, i.uv.xy);
+#else
+	half3 dark = pow(albedo * 0.9, 2.0);
+#endif
+	half3 lmap = DecodeLightmap (UNITY_SAMPLE_TEX2D(unity_Lightmap, i.lmap.xy));
+	half lum = Luminance(lmap) * shadow;
+	return lerp(dark, albedo, lum) * lmap;
+}
+#endif
 
 void darkout(inout half3 col, fixed vface)
 {
@@ -320,7 +376,16 @@ half4 frag_base (v2f i, fixed vface : VFACE) : SV_Target
 
     half4 albedo = fetchAlbedo(i);
 
-    half3 col = lighting(i, albedo, ndotl, shadow);
+    half3 col = 0;
+
+
+#ifndef LIGHTMAP_OFF
+	col = lightmapping(i, albedo, shadow);
+#else
+	col = lighting(i, albedo, ndotl, shadow);
+#endif
+
+    
 
 #if _RIM_ON
 	half3 worldViewDir = normalize(_WorldSpaceCameraPos.xyz - i.worldPosAndZ.xyz);
@@ -331,6 +396,7 @@ half4 frag_base (v2f i, fixed vface : VFACE) : SV_Target
 	col += vdotl * albedo * _RimIntensity;
 
 #endif
+
 
     darkout(col, vface);
 
@@ -378,12 +444,13 @@ Pass
 	CGPROGRAM
 	#pragma vertex vert
 	#pragma fragment frag_base
-	#pragma multi_compile_fwdbase nolightmap nodynlightmap novertexlight
+	#pragma multi_compile_fwdbase novertexlight LIGHTMAP_OFF LIGHTMAP_ON
 	#pragma target 3.0
 
 	#pragma shader_feature _NORMAL_MAP_ON
 	#pragma shader_feature _DIM_ON
 	#pragma shader_feature _OVERLAY_ON
+	#pragma shader_feature _DIFFUSE_LUT_ON
 	#pragma shader_feature _RIM_ON
 
 	ENDCG
@@ -408,6 +475,7 @@ Pass
 	#pragma shader_feature _NORMAL_MAP_ON
 	#pragma shader_feature _DIM_ON
 	#pragma shader_feature _OVERLAY_ON
+	#pragma shader_feature _DIFFUSE_LUT_ON
 
 	ENDCG
 }

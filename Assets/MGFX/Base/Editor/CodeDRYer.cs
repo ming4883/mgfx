@@ -117,8 +117,8 @@ namespace MGFX
         {
             CodeDRYerWindow _window = EditorWindow.CreateInstance <CodeDRYerWindow>();
             _window.titleContent = new GUIContent("CodeDRYer");
-            _window.minSize = new Vector2(450, 150);
-            _window.Show();
+            _window.minSize = new Vector2(450, 180);
+            _window.ShowUtility();
         }
 
         public TextAsset[] m_LastAssets = new TextAsset[]{ null };
@@ -151,6 +151,8 @@ namespace MGFX
                 else
                     DoTest();
             }
+
+            EditorGUILayout.Separator();
         }
 
         void OnGUIHelp()
@@ -178,6 +180,8 @@ namespace MGFX
             {
                 Application.OpenURL("https://github.com/Shopify/liquid/wiki/Liquid-for-Designers");
             }
+
+            EditorGUILayout.Separator();
         }
 
         void DoRender()
