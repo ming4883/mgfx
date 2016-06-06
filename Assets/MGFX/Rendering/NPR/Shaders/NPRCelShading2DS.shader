@@ -488,4 +488,6 @@ Pass
 // shadow casting support
 UsePass "Legacy Shaders/VertexLit/SHADOWCASTER"
     }
+
+    CustomEditor "MGFX.NPRCelShading2UI"
 }

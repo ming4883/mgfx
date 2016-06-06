@@ -17,4 +17,6 @@
     {
 {% unityasset Assets/MGFX/Rendering/NPR/Shaders/NPRCelShading2.SubShader.txt %}
     }
+
+    CustomEditor "MGFX.NPRCelShading2UI"
 }
