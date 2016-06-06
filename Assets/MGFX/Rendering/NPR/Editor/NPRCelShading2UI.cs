@@ -10,6 +10,9 @@ namespace MGFX
 		[MaterialProperty("_MainTex")]
 		MaterialProperty m_MainTex;
 
+        [MaterialProperty("_BayerTex")]
+        MaterialProperty m_BayerTex;
+
 		[MaterialProperty("_DimOn", "_DIM_ON")]
 		MaterialProperty m_DimOn;
 
@@ -82,6 +85,8 @@ namespace MGFX
 				return;
 
 			_materialEditor.TextureProperty(m_MainTex, "Main Texture (RGB)");
+
+            _materialEditor.TextureProperty(m_BayerTex, "Differ Matrix");
 
 			if (DoKeyword (_materialEditor, m_DimOn, "Use Dim Texture"))
 			{
