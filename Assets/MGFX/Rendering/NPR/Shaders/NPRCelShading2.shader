@@ -21,6 +21,11 @@ Shader "MGFX/NPRCelShading2"
 [Toggle(_RIM_ON)] _RimOn("Enable Rim", Int) = 0
 [NoScaleOffset] _RimLUTTex ("Rim LUT (R)", 2D) = "white" {}
 _RimIntensity ("RimIntensity", Range(0,1)) = 1.0
+
+[Toggle(_EDGE_ON)] _EdgeOn("Enable Edges", Int) = 0
+_EdgeColor ("EdgeColor", Color) = (0, 0, 0, 1)
+_EdgeAutoColor ("EdgeAutoColor", Range(0,1)) = 0.25
+_EdgeAutoColorFactor ("EdgeAutoColorFactor", Range(0.125,4)) = 0.25
     }
 
     CGINCLUDE
@@ -257,6 +262,14 @@ uniform sampler2D _RimLUTTex;
 uniform float _RimIntensity;
 #endif
 
+#if _EDGE_ON
+uniform sampler2D _MudNPREdgeTex; // global property
+uniform float4 _MudNPREdgeTex_TexelSize;
+uniform float4 _EdgeColor;
+uniform float _EdgeAutoColor;
+uniform float _EdgeAutoColorFactor;
+#endif
+
 half3 decodeWorldNormal(in v2f i, in fixed vface)
 {
 #if _NORMAL_MAP_ON
@@ -364,7 +377,23 @@ half4 fetchAlbedo(v2f i)
 
 	albedo.rgb = lerp(albedo.rgb, overlay.rgb, t);
 #endif
+
 	return albedo;
+}
+
+void applyEdge(inout half3 col, in v2f i)
+{
+
+#if _EDGE_ON
+	half2 screenuv = i.pos.xy * _ScreenParams.zw - i.pos.xy;
+	half isedge = tex2D(_MudNPREdgeTex, screenuv).r;
+
+	half3 edgeColor = pow(col.rgb, _EdgeAutoColorFactor);
+	edgeColor = lerp(_EdgeColor, edgeColor, _EdgeAutoColor);
+
+	col.rgb = lerp(col.rgb, edgeColor, saturate(isedge * _EdgeColor.a * 4));
+#endif
+
 }
 
 half4 frag_base (v2f i, fixed vface : VFACE) : SV_Target
@@ -388,8 +417,6 @@ half4 frag_base (v2f i, fixed vface : VFACE) : SV_Target
 	col = lighting(i, albedo, ndotl, shadow);
 #endif
 
-    
-
 #if _RIM_ON
 	half3 worldViewDir = normalize(_WorldSpaceCameraPos.xyz - i.worldPosAndZ.xyz);
 
@@ -400,8 +427,9 @@ half4 frag_base (v2f i, fixed vface : VFACE) : SV_Target
 
 #endif
 
-
     darkout(col, vface);
+
+    applyEdge(col, i);
 
     return half4(col, 1);
 }
@@ -455,6 +483,7 @@ Pass
 	#pragma shader_feature _OVERLAY_ON
 	#pragma shader_feature _DIFFUSE_LUT_ON
 	#pragma shader_feature _RIM_ON
+	#pragma shader_feature _EDGE_ON
 
 	ENDCG
 }

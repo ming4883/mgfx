@@ -17,3 +17,8 @@
 [Toggle(_RIM_ON)] _RimOn("Enable Rim", Int) = 0
 [NoScaleOffset] _RimLUTTex ("Rim LUT (R)", 2D) = "white" {}
 _RimIntensity ("RimIntensity", Range(0,1)) = 1.0
+
+[Toggle(_EDGE_ON)] _EdgeOn("Enable Edges", Int) = 0
+_EdgeColor ("EdgeColor", Color) = (0, 0, 0, 1)
+_EdgeAutoColor ("EdgeAutoColor", Range(0,1)) = 0.25
+_EdgeAutoColorFactor ("EdgeAutoColorFactor", Range(0.125,4)) = 0.25

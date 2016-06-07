@@ -46,8 +46,7 @@ namespace MGFX
 		[MaterialProperty("_DiffuseLUTTex")]
 		MaterialProperty m_DiffuseLUTTex;
 
-        /*
-		[MaterialProperty("_EdgeOn", "_EDGE_ON")]
+        [MaterialProperty("_EdgeOn", "_EDGE_ON")]
 		MaterialProperty m_EdgeOn;
 
 		[MaterialProperty("_EdgeColor")]
@@ -59,6 +58,7 @@ namespace MGFX
 		[MaterialProperty("_EdgeAutoColorFactor")]
 		MaterialProperty m_EdgeAutoColorFactor;
 
+        /*
 		[MaterialProperty("_SsaoOn", "_SSAO_ON")]
 		MaterialProperty m_SsaoOn;
 
@@ -153,15 +153,13 @@ namespace MGFX
 		{
 			if (!BeginGroup("Edge"))
 				return;
-
-            /*
+            
 			if (DoKeyword (_materialEditor, m_EdgeOn, "Use Edges"))
 			{
 				_materialEditor.ShaderProperty (m_EdgeColor, "Edge Color");
 				_materialEditor.ShaderProperty (m_EdgeAutoColor, "Edge Auto Color");
 				_materialEditor.ShaderProperty (m_EdgeAutoColorFactor, "Edge Auto Color Factor");
 			}
-            */         
 
 			EndGroup();
 		}

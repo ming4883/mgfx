@@ -57,21 +57,21 @@
                 return _v * _v * _v * _v;
             }
 
-            fixed4 deilate(sampler2D tex, float2 uv, float4 texelSize)
+            fixed4 deilate(sampler2D tex, float2 uv, float4 texelSize, float s)
             {
                 fixed4 t[9];
                 
-                t[0] = fetch(tex, uv + float2(-1,-1) * texelSize.xy);
-                t[1] = fetch(tex, uv + float2(-1, 0) * texelSize.xy);
-                t[2] = fetch(tex, uv + float2(-1, 1) * texelSize.xy);
+                t[0] = fetch(tex, uv + float2(-s,-s) * texelSize.xy);
+                t[1] = fetch(tex, uv + float2(-s, 0) * texelSize.xy);
+                t[2] = fetch(tex, uv + float2(-s, s) * texelSize.xy);
 
-                t[3] = fetch(tex, uv + float2( 0,-1) * texelSize.xy);
+                t[3] = fetch(tex, uv + float2( 0,-s) * texelSize.xy);
                 t[4] = fetch(tex, uv + float2( 0, 0) * texelSize.xy);
-                t[5] = fetch(tex, uv + float2( 0, 1) * texelSize.xy);
+                t[5] = fetch(tex, uv + float2( 0, s) * texelSize.xy);
 
-                t[6] = fetch(tex, uv + float2( 1,-1) * texelSize.xy);
-                t[7] = fetch(tex, uv + float2( 1, 0) * texelSize.xy);
-                t[8] = fetch(tex, uv + float2( 1, 1) * texelSize.xy);
+                t[6] = fetch(tex, uv + float2( s,-s) * texelSize.xy);
+                t[7] = fetch(tex, uv + float2( s, 0) * texelSize.xy);
+                t[8] = fetch(tex, uv + float2( s, s) * texelSize.xy);
 
                 half4 ret = max(t[0], t[1]);
                 ret = max(ret, t[2]);
@@ -84,9 +84,47 @@
                 return ret;
             }
 
+            #define TAP_COUNT 5
+
+            // deilation by detecting the edge of edges
+            fixed4 deilate2(sampler2D tex, float2 uv, float4 texelSize)
+            {
+                //           x x
+                // fetch the  o  patterns
+                //           x x
+            	half2 tuv[TAP_COUNT];
+            	tuv[0] = uv + float2( 1, 1) * texelSize.xy;
+            	tuv[1] = uv + float2(-1,-1) * texelSize.xy;
+            	tuv[2] = uv + float2(-1, 1) * texelSize.xy;
+            	tuv[3] = uv + float2( 1,-1) * texelSize.xy;
+            	tuv[4] = uv + float2( 0, 0) * texelSize.xy;
+
+                half4 t[TAP_COUNT];
+                t[0] = fetch(tex, tuv[0]);
+                t[1] = fetch(tex, tuv[1]);
+                t[2] = fetch(tex, tuv[2]);
+                t[3] = fetch(tex, tuv[3]);
+                t[4] = fetch(tex, tuv[4]);
+
+                // blur
+                half4 isedge = (t[0] + t[1] + t[2] + t[3]) * 0.25;
+
+                // average with center tap
+                isedge += t[4];
+                isedge *= 0.5;
+
+                // subtract by the center tap
+                isedge -= t[4];
+
+                half edge = saturate(isedge.r > 0.01);
+
+                // combine with the original edge
+                return edge + t[4].r;
+            }
+
             fixed4 frag (v2f i) : SV_Target
             {
-                fixed4 ret = deilate(_MainTex, i.uv, _ScreenTexelSize);
+                fixed4 ret = deilate2(_MainTex, i.uv, _ScreenTexelSize * 0.5);
 
                 return ret;
             }
