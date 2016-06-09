@@ -2,20 +2,20 @@
 {
     Properties
     {
-{% unityasset Assets/MGFX/Rendering/NPR/Shaders/NPRCelShading2.Properties.txt %}
+{% unityasset MGFX/Rendering/NPR/Shaders/NPRCelShading2.Properties.txt %}
     }
 
     CGINCLUDE
 #include "UnityCG.cginc"
 #include "Lighting.cginc"
-{% unityasset Assets/MGFX/Rendering/Common/Shaders/MGFXAutoLight.cginc %}
-{% unityasset Assets/MGFX/Rendering/Common/Shaders/MGFXNoise.cginc %}
-{% unityasset Assets/MGFX/Rendering/NPR/Shaders/NPRCelShading2.CGinc.txt %}
+{% unityasset MGFX/Rendering/Common/Shaders/MGFXAutoLight.cginc %}
+{% unityasset MGFX/Rendering/Common/Shaders/MGFXNoise.cginc %}
+{% unityasset MGFX/Rendering/NPR/Shaders/NPRCelShading2.CGinc.txt %}
     ENDCG
 
     SubShader
     {
-{% unityasset Assets/MGFX/Rendering/NPR/Shaders/NPRCelShading2.SubShader.txt %}
+{% unityasset MGFX/Rendering/NPR/Shaders/NPRCelShading2.SubShader.txt %}
     }
 
     CustomEditor "MGFX.NPRCelShading2UI"

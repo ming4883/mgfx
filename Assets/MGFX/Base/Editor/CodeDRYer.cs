@@ -16,22 +16,25 @@ namespace MGFX
             {
                 base.Initialize(_tagName, _markup, _tokens);
 
+                string _path = System.IO.Path.Combine(Application.dataPath, _markup.Trim());
+
                 try
                 {
-                    string _path = _markup;
+                    
                     using (var _f = new System.IO.StreamReader(_path))
                     {
                         m_Content = _f.ReadToEnd();
                     }
                 }
-                catch (Exception)
+                catch (Exception _err)
                 {
+                    Log.E(_err);
                     m_Content = null;
                 }
 
                 if (null == m_Content)
                 {
-                    Log.E("failed to load TextAsset {0}", _markup);
+                    Log.E("failed to load TextAsset {0}", _path);
                     return;
                 }
                 else
@@ -159,15 +162,15 @@ namespace MGFX
         {
             EditorGUILayout.Separator();
 
-            EditorGUILayout.TextArea("Templates should be named in AssetName.type.txt\n"+
-                "For example:\n"+
+            EditorGUILayout.TextArea("Templates should be named in AssetName.type.txt\n" +
+                "For example:\n" +
                 "MYUBER.Shader.txt -> MYUBER.shader", 
                 EditorStyles.helpBox, UI.LAYOUT_DEFAULT);
             
             EditorGUILayout.Separator();
             EditorGUILayout.Separator();
 
-            EditorGUILayout.TextArea("DO NOT REPEAT YOURSELF!\n"+
+            EditorGUILayout.TextArea("DO NOT REPEAT YOURSELF!\n" +
                 "CodeDRYer use the DotLiquid template engine.\n" +
                 "For more information, click the following buttons.", 
                 EditorStyles.helpBox, UI.LAYOUT_DEFAULT);
