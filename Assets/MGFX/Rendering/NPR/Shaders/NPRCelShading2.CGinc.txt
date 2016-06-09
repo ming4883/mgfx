@@ -96,6 +96,8 @@ v2f vert (appdata v)
 ///
 uniform sampler2D _MainTex;
 
+uniform float _FadeOut;
+
 #if _NORMAL_MAP_ON
 uniform sampler2D _NormalMapTex;
 #endif
@@ -141,7 +143,8 @@ half3 decodeWorldNormal(in v2f i, in fixed vface)
 
 half dither(in v2f i)
 {
-	half d1 = Bayer(i.pos.xy);
+	half d1 = Bayer(i.pos.xy + mul(UNITY_MATRIX_MV, float4(0, 0, 0, 1)).xy);
+	//half d1 = Bayer(i.pos.xy + float2(UNITY_MATRIX_MV._13, UNITY_MATRIX_MV._23));
 	half d2 = InterleavedGradientNoise(i.pos.xy);
 
 	//return clamp(d2 + d1 * 0.5, -1, 1);
@@ -172,6 +175,9 @@ void fade(in v2f i, fixed vface)
 {
 	half viewZ = i.worldPosAndZ.w;
 	half d = dither(i);
+
+	half fading = _FadeOut * 2.0 - 1.0;
+	clip(d - fading);
 
 	//if (vface < 1)
 	//	clip(d);

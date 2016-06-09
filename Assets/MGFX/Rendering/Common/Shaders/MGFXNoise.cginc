@@ -69,7 +69,8 @@ F1 InterleavedGradientNoise( F2 uv )
 
 F1 Bayer( F2 uv )
 {
-	F2 val = dot(tex2D(_BayerTex, uv * _BayerTex_TexelSize.xy).rg, F2(256.0 * 255.0, 255.0));
+	uv = uv * _BayerTex_TexelSize.xy;
+	F2 val = dot(tex2D(_BayerTex, uv).rg, F2(256.0 * 255.0, 255.0));
 	val = val * _BayerTex_TexelSize.x * _BayerTex_TexelSize.y;
 	return val * 2.0 - 1.0;
 	//return (tex2D(_BayerTex, uv * _BayerTex_TexelSize.xy).r) * 2.0 - 1.0;

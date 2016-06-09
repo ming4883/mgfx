@@ -1,5 +1,7 @@
 ﻿[NoScaleOffset] _MainTex ("Texture", 2D) = "white" {}
 
+_FadeOut ("_FadeOut", Range(0,1)) = 0.0
+
 [Toggle(_NORMAL_MAP_ON)] _NormalMapOn("Enable NormalMap", Int) = 0
 [NoScaleOffset] _NormalMapTex ("Normal Map", 2D) = "black" {}
 

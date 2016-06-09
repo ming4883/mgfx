@@ -10,6 +10,9 @@ namespace MGFX
 		[MaterialProperty("_MainTex")]
 		MaterialProperty m_MainTex;
 
+        [MaterialProperty("_FadeOut")]
+        MaterialProperty m_FadeOut;
+
         [MaterialProperty("_BayerTex")]
         MaterialProperty m_BayerTex;
 
@@ -87,6 +90,8 @@ namespace MGFX
 			_materialEditor.TextureProperty(m_MainTex, "Main Texture (RGB)");
 
             _materialEditor.TextureProperty(m_BayerTex, "Differ Matrix");
+
+            _materialEditor.ShaderProperty(m_FadeOut, "Fade Out");
 
 			if (DoKeyword (_materialEditor, m_DimOn, "Use Dim Texture"))
 			{
