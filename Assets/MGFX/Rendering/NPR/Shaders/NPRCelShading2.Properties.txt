@@ -2,6 +2,8 @@
 
 _FadeOut ("_FadeOut", Range(0,1)) = 0.0
 
+[Toggle(_DARKEN_BACKFACES_ON)] _DarkenBackfacesOn("Enable Darken Backfaces", Int) = 0
+
 [Toggle(_NORMAL_MAP_ON)] _NormalMapOn("Enable NormalMap", Int) = 0
 [NoScaleOffset] _NormalMapTex ("Normal Map", 2D) = "black" {}
 
@@ -19,6 +21,10 @@ _FadeOut ("_FadeOut", Range(0,1)) = 0.0
 [Toggle(_RIM_ON)] _RimOn("Enable Rim", Int) = 0
 [NoScaleOffset] _RimLUTTex ("Rim LUT (R)", 2D) = "white" {}
 _RimIntensity ("RimIntensity", Range(0,1)) = 1.0
+
+[Toggle(_MATCAP_ON)] _MatCapOn("Enable MatCap", Int) = 0
+[NoScaleOffset] _MatCapTex ("MatCap", 2D) = "black" {}
+_MatCapIntensity ("MatCapIntensity", Range(0,1)) = 1.0
 
 [Toggle(_EDGE_ON)] _EdgeOn("Enable Edges", Int) = 0
 _EdgeColor ("EdgeColor", Color) = (0, 0, 0, 1)

@@ -121,7 +121,7 @@ namespace MGFX
 				//Log.I ("adding RenderSystemDummy for camera '{0}'", _cam.name);
 				_dummy = _cam.gameObject.AddComponent<RenderSystemDummy> ();
 			}
-			_dummy.hideFlags = HideFlags.DontSaveInEditor;
+            _dummy.hideFlags = HideFlags.NotEditable;
 		}
 
 		public static bool IsSceneCamera(Camera _cam)

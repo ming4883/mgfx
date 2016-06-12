@@ -13,6 +13,9 @@ namespace MGFX
         [MaterialProperty("_FadeOut")]
         MaterialProperty m_FadeOut;
 
+        [MaterialProperty("_DarkenBackfacesOn", "_DARKEN_BACKFACES_ON")]
+        MaterialProperty m_DarkenBackfacesOn;
+
         [MaterialProperty("_BayerTex")]
         MaterialProperty m_BayerTex;
 
@@ -36,6 +39,15 @@ namespace MGFX
 
 		[MaterialProperty("_RimIntensity")]
 		MaterialProperty m_RimIntensity;
+
+        [MaterialProperty("_MatCapOn", "_MATCAP_ON")]
+        MaterialProperty m_MatCapOn;
+
+        [MaterialProperty("_MatCapTex")]
+        MaterialProperty m_MatCapTex;
+
+        [MaterialProperty("_MatCapIntensity")]
+        MaterialProperty m_MapCapIntensity;
 
 		[MaterialProperty("_OverlayOn", "_OVERLAY_ON")]
 		MaterialProperty m_OverlayOn;
@@ -77,6 +89,7 @@ namespace MGFX
 			DoNormalMap(_materialEditor);
 			DoOverlay(_materialEditor);
 			DoRim(_materialEditor);
+            DoMatCap(_materialEditor);
 			DoDiffuseLUT(_materialEditor);
 			DoEdge(_materialEditor);
 			DoSSAO (_materialEditor);
@@ -92,6 +105,8 @@ namespace MGFX
             _materialEditor.TextureProperty(m_BayerTex, "Differ Matrix");
 
             _materialEditor.ShaderProperty(m_FadeOut, "Fade Out");
+
+            DoKeyword(_materialEditor, m_DarkenBackfacesOn, "Use Darken Backfaces");
 
 			if (DoKeyword (_materialEditor, m_DimOn, "Use Dim Texture"))
 			{
@@ -140,6 +155,20 @@ namespace MGFX
 
 			EndGroup();
 		}
+
+        private void DoMatCap(MaterialEditor _materialEditor)
+        {
+            if (!BeginGroup("MatCap"))
+                return;
+
+            if (DoKeyword(_materialEditor, m_MatCapOn, "Use MatCap"))
+            {
+                _materialEditor.TextureProperty(m_MatCapTex, "MatCap");
+                _materialEditor.ShaderProperty(m_MapCapIntensity, "MatCap Intensity");
+            }
+
+            EndGroup();
+        }
 
 		private void DoDiffuseLUT(MaterialEditor _materialEditor)
 		{
