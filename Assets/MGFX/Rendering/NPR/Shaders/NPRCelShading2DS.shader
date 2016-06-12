@@ -1,8 +1,12 @@
-Shader "MGFX/NPRCelShading2DS"
+Shader "MGFX/NPR/CelShading2DS"
 {
     Properties
     {
 [NoScaleOffset] _MainTex ("Texture", 2D) = "white" {}
+
+_FadeOut ("_FadeOut", Range(0,1)) = 0.0
+
+[Toggle(_DARKEN_BACKFACES_ON)] _DarkenBackfacesOn("Enable Darken Backfaces", Int) = 0
 
 [Toggle(_NORMAL_MAP_ON)] _NormalMapOn("Enable NormalMap", Int) = 0
 [NoScaleOffset] _NormalMapTex ("Normal Map", 2D) = "black" {}
@@ -21,6 +25,10 @@ Shader "MGFX/NPRCelShading2DS"
 [Toggle(_RIM_ON)] _RimOn("Enable Rim", Int) = 0
 [NoScaleOffset] _RimLUTTex ("Rim LUT (R)", 2D) = "white" {}
 _RimIntensity ("RimIntensity", Range(0,1)) = 1.0
+
+[Toggle(_MATCAP_ON)] _MatCapOn("Enable MatCap", Int) = 0
+[NoScaleOffset] _MatCapTex ("MatCap", 2D) = "black" {}
+_MatCapIntensity ("MatCapIntensity", Range(0,1)) = 1.0
 
 [Toggle(_EDGE_ON)] _EdgeOn("Enable Edges", Int) = 0
 _EdgeColor ("EdgeColor", Color) = (0, 0, 0, 1)
@@ -136,7 +144,8 @@ F1 InterleavedGradientNoise( F2 uv )
 
 F1 Bayer( F2 uv )
 {
-	F2 val = dot(tex2D(_BayerTex, uv * _BayerTex_TexelSize.xy).rg, F2(256.0 * 255.0, 255.0));
+	uv = uv * _BayerTex_TexelSize.xy;
+	F2 val = dot(tex2D(_BayerTex, uv).rg, F2(256.0 * 255.0, 255.0));
 	val = val * _BayerTex_TexelSize.x * _BayerTex_TexelSize.y;
 	return val * 2.0 - 1.0;
 	//return (tex2D(_BayerTex, uv * _BayerTex_TexelSize.xy).r) * 2.0 - 1.0;
@@ -192,7 +201,7 @@ struct v2f
 	float3 worldNormal : TEXCOORD3;
 #endif
 
-#ifndef LIGHTMAP_OFF
+#if !defined(LIGHTMAP_OFF) || !defined(DYNAMICLIGHTMAP_OFF)
 	float4 lmap : TEXCOORD6;
 #endif
 
@@ -241,6 +250,8 @@ v2f vert (appdata v)
 ///
 uniform sampler2D _MainTex;
 
+uniform float _FadeOut;
+
 #if _NORMAL_MAP_ON
 uniform sampler2D _NormalMapTex;
 #endif
@@ -262,6 +273,11 @@ uniform sampler2D _RimLUTTex;
 uniform float _RimIntensity;
 #endif
 
+#if _MATCAP_ON
+uniform sampler2D _MatCapTex;
+uniform float _MatCapIntensity;
+#endif
+
 #if _EDGE_ON
 uniform sampler2D _MudNPREdgeTex; // global property
 uniform float4 _MudNPREdgeTex_TexelSize;
@@ -270,7 +286,18 @@ uniform float _EdgeAutoColor;
 uniform float _EdgeAutoColorFactor;
 #endif
 
-half3 decodeWorldNormal(in v2f i, in fixed vface)
+struct ShadingContext
+{
+	half4 albedo;
+	half4 dimmed;
+	half3 worldNormal;
+	half3 worldViewDir;
+	fixed vface;
+	fixed shadow;
+	half4 result;
+};
+
+void fetchWorldNormal(inout ShadingContext ctx, in v2f i)
 {
 #if _NORMAL_MAP_ON
 	half3 tanNormal = UnpackNormal(tex2D(_NormalMapTex, i.uv.xy));
@@ -278,39 +305,152 @@ half3 decodeWorldNormal(in v2f i, in fixed vface)
 	worldNormal.x = dot(i.tanSpace0.xyz, tanNormal);
 	worldNormal.y = dot(i.tanSpace1.xyz, tanNormal);
 	worldNormal.z = dot(i.tanSpace2.xyz, tanNormal);
-	return normalize(worldNormal) * vface;
+	ctx.worldNormal = normalize(worldNormal) * ctx.vface;
 #else
-	return normalize(i.worldNormal) * vface;
+	ctx.worldNormal = normalize(i.worldNormal) * ctx.vface;
+#endif
+
+	ctx.worldViewDir = normalize(_WorldSpaceCameraPos.xyz - i.worldPosAndZ.xyz);
+
+}
+
+void fetchShadowTerm(inout ShadingContext ctx, in v2f i)
+{
+	ctx.shadow = ctx.vface > 0 ? SHADOW_ATTENUATION(i) : 1;
+}
+
+void fetchShadowTermWithDither(inout ShadingContext ctx, in v2f i)
+{
+	if (ctx.vface > 0)
+	{
+		fixed s = SHADOW_ATTENUATION(i);
+		fixed d = InterleavedGradientNoise(i.pos.xy * 0.5 + iGlobalTime);
+		s = clamp(s * (s + 0.25 * d), 0, 1);
+		ctx.shadow = s;
+	}
+	else
+	{
+		ctx.shadow = 1;
+	}
+}
+
+void fetchAlbedoAndDimmed(inout ShadingContext ctx, in v2f i)
+{
+	ctx.albedo = tex2D(_MainTex, i.uv.xy);
+#if _OVERLAY_ON
+	half4 overlay = tex2D(_OverlayTex, i.uv.zw);
+
+	half t = overlay.a;
+	t = (1-cos(t*3.1415926)) / 2;
+
+	ctx.albedo.rgb = lerp(ctx.albedo.rgb, overlay.rgb, t);
+#endif
+
+#if _DIM_ON
+	ctx.dimmed = tex2D(_DimTex, i.uv.xy);
+#else
+	ctx.dimmed = float4((ctx.albedo * ctx.albedo * 0.81).rgb, ctx.albedo.a);
+#endif
+
+}
+
+void applyEdge(inout ShadingContext ctx, in v2f i)
+{
+
+#if _EDGE_ON
+	half2 screenuv = i.pos.xy * _ScreenParams.zw - i.pos.xy;
+	half isedge = tex2D(_MudNPREdgeTex, screenuv).r;
+
+	half3 edgeColor = pow(ctx.albedo, _EdgeAutoColorFactor);
+	edgeColor = lerp(_EdgeColor, edgeColor, _EdgeAutoColor);
+
+	ctx.result.rgb = lerp(ctx.result.rgb, edgeColor, saturate(isedge * _EdgeColor.a * 4));
 #endif
 }
 
+
+void applyLightingFwdBase(inout ShadingContext ctx, in v2f i)
+{
+#ifdef LIGHTMAP_OFF
+	half ndotl = dot(ctx.worldNormal, _WorldSpaceLightPos0.xyz);
+	#if _DIFFUSE_LUT_ON
+	ndotl = tex2D(_DiffuseLUTTex, saturate(ndotl * 0.5 + 0.5)).r;
+	#else
+	ndotl = saturate(ndotl);
+	#endif
+	ctx.result.rgb += lerp(ctx.dimmed, ctx.albedo, ndotl * ctx.shadow) * _LightColor0.rgb;
+#endif
+}
+
+void applyLightingFwdAdd(inout ShadingContext ctx, in v2f i)
+{
+
+    MGFX_LIGHT_ATTENUATION(lightAtten, i, i.worldPosAndZ.xyz);
+
+	half ndotl = dot(ctx.worldNormal, _WorldSpaceLightPos0.xyz);
+	#if _DIFFUSE_LUT_ON
+	ndotl = tex2D(_DiffuseLUTTex, saturate(ndotl * 0.5 + 0.5)).r;
+	#else
+	ndotl = saturate(ndotl);
+	#endif
+	ctx.result.rgb += lerp(ctx.dimmed, ctx.albedo, ndotl * ctx.shadow) * _LightColor0.rgb * lightAtten * ctx.shadow;
+}
+
+
+void applyLightmap(inout ShadingContext ctx, in v2f i)
+{
+#ifndef LIGHTMAP_OFF
+	half3 lmap = DecodeLightmap (UNITY_SAMPLE_TEX2D(unity_Lightmap, i.lmap.xy));
+	half lum = Luminance(lmap) * ctx.shadow;
+	ctx.result.rgb += lerp(ctx.dimmed, ctx.albedo, lum) * lmap;
+#endif
+}
+
+void applyDarkenBackFace(inout ShadingContext ctx, in v2f i)
+{
+#if _DARKEN_BACKFACES_ON
+	if (ctx.vface < 0)
+    	ctx.result.rgb *= 0.125;
+#endif
+}
+
+void applyRim(inout ShadingContext ctx, in v2f i)
+{
+#if _RIM_ON
+	half vdotl = dot(ctx.worldNormal, ctx.worldViewDir);
+	vdotl = tex2D(_RimLUTTex, saturate(vdotl * 0.5 + 0.5)).r;
+
+	ctx.result.rgb += vdotl * ctx.albedo * _RimIntensity;
+
+#endif
+}
+
+void applyMatcap(inout ShadingContext ctx, in v2f i)
+{
+#if _MATCAP_ON
+	half3 viewNormal = mul((float3x3)UNITY_MATRIX_V, ctx.worldNormal);
+	ctx.result.rgb += tex2D(_MatCapTex, saturate(viewNormal * 0.5 + 0.5)) * ctx.albedo * _MatCapIntensity;
+#endif
+}
+
+void shadingContext(inout ShadingContext ctx, in v2f i, in fixed vface)
+{
+	ctx = (ShadingContext)0;
+	ctx.vface = vface;
+	fetchAlbedoAndDimmed(ctx, i);
+	fetchShadowTerm(ctx, i);
+	fetchWorldNormal(ctx, i);
+
+	ctx.result = half4(0, 0, 0, ctx.albedo.a);
+}
+
+
 half dither(in v2f i)
 {
-	half d1 = Bayer(i.pos.xy);
-	half d2 = InterleavedGradientNoise(i.pos.xy);
-
-	//return clamp(d2 + d1 * 0.5, -1, 1);
-	//return clamp(d1 + d2 * 0.0625, -1, 1);
+	half d1 = Bayer(i.pos.xy + float2(UNITY_MATRIX_MV._14, UNITY_MATRIX_MV._24));
+	//half d2 = InterleavedGradientNoise(i.pos.xy);
 	//return (d1 + d2) * 0.5;
 	return d1;
-	//return d2;
-}
-
-half shadowTerm(in v2f i)
-{
-	half s = SHADOW_ATTENUATION(i);
-	return s;
-}
-
-half shadowTermWithDither(in v2f i)
-{
-	half s = SHADOW_ATTENUATION(i);
-	half d = InterleavedGradientNoise(i.pos.xy * 0.5 + iGlobalTime);
-	s = clamp(s * (s + 0.25 * d), 0, 1);
-	//d = d * 0.5 + 0.5;
-	//d = (1-cos(d * d * 3.1415926)) / 2;
-	//s = lerp(1 - pow(1-s, 2), s, d);
-	return s;
 }
 
 void fade(in v2f i, fixed vface)
@@ -318,8 +458,14 @@ void fade(in v2f i, fixed vface)
 	half viewZ = i.worldPosAndZ.w;
 	half d = dither(i);
 
-	//if (vface < 1)
-	//	clip(d);
+	half fading = _FadeOut;
+#if _DARKEN_BACKFACES_ON
+	if (vface < 1)
+		fading = max(fading, 0.0625);
+#endif
+
+	fading = fading * 2.0 - 1.0;
+	clip(d - fading);
 
 	half bZ = _ProjectionParams.y * 2;
 	half eZ = _ProjectionParams.y * 6;
@@ -330,108 +476,27 @@ void fade(in v2f i, fixed vface)
 	clip(f);
 }
 
-half3 lighting(in v2f i, in half3 albedo, in half ndotl, in half shadow)
-{
-#if _DIM_ON
-	half3 dark = tex2D(_DimTex, i.uv.xy);
-#else
-	half3 dark = pow(albedo * 0.9, 2.0);
-#endif
-
-#if _DIFFUSE_LUT_ON
-	ndotl = tex2D(_DiffuseLUTTex, saturate(ndotl * 0.5 + 0.5) * shadow).r;
-#else
-	ndotl = saturate(ndotl) * shadow;
-#endif
-	return lerp(dark, albedo, ndotl) * _LightColor0.rgb;
-}
-
-#ifndef LIGHTMAP_OFF
-half3 lightmapping(in v2f i, in half3 albedo, in half shadow)
-{
-#if _DIM_ON
-	half3 dark = tex2D(_DimTex, i.uv.xy);
-#else
-	half3 dark = pow(albedo * 0.9, 2.0);
-#endif
-	half3 lmap = DecodeLightmap (UNITY_SAMPLE_TEX2D(unity_Lightmap, i.lmap.xy));
-	half lum = Luminance(lmap) * shadow;
-	return lerp(dark, albedo, lum) * lmap;
-}
-#endif
-
-void darkout(inout half3 col, fixed vface)
-{
-	if (vface < 0)
-    	col *= 0.25;
-}
-
-half4 fetchAlbedo(v2f i)
-{
-	half4 albedo = tex2D(_MainTex, i.uv.xy);
-#if _OVERLAY_ON
-	half4 overlay = tex2D(_OverlayTex, i.uv.zw);
-
-	half t = overlay.a;
-	t = (1-cos(t*3.1415926)) / 2;
-
-	albedo.rgb = lerp(albedo.rgb, overlay.rgb, t);
-#endif
-
-	return albedo;
-}
-
-void applyEdge(inout half3 col, in v2f i)
-{
-
-#if _EDGE_ON
-	half2 screenuv = i.pos.xy * _ScreenParams.zw - i.pos.xy;
-	half isedge = tex2D(_MudNPREdgeTex, screenuv).r;
-
-	half3 edgeColor = pow(col.rgb, _EdgeAutoColorFactor);
-	edgeColor = lerp(_EdgeColor, edgeColor, _EdgeAutoColor);
-
-	col.rgb = lerp(col.rgb, edgeColor, saturate(isedge * _EdgeColor.a * 4));
-#endif
-
-}
 
 half4 frag_base (v2f i, fixed vface : VFACE) : SV_Target
 {
    	fade(i, vface);
 
-    fixed shadow = shadowTerm(i);
+    ShadingContext ctx;
+    shadingContext(ctx, i, vface);
 
-    half3 worldNormal = decodeWorldNormal(i, vface);
+	applyLightmap(ctx, i);
 
-    half ndotl = dot(worldNormal, _WorldSpaceLightPos0.xyz);
+	applyLightingFwdBase(ctx, i);
+	
+	applyRim(ctx, i);
 
-    half4 albedo = fetchAlbedo(i);
+	applyMatcap(ctx, i);
 
-    half3 col = 0;
+    applyDarkenBackFace(ctx, i);
 
+    applyEdge(ctx, i);
 
-#ifndef LIGHTMAP_OFF
-	col = lightmapping(i, albedo, shadow);
-#else
-	col = lighting(i, albedo, ndotl, shadow);
-#endif
-
-#if _RIM_ON
-	half3 worldViewDir = normalize(_WorldSpaceCameraPos.xyz - i.worldPosAndZ.xyz);
-
-	half vdotl = dot(worldNormal, worldViewDir);
-	vdotl = tex2D(_RimLUTTex, saturate(vdotl * 0.5 + 0.5)).r;
-
-	col += vdotl * albedo * _RimIntensity;
-
-#endif
-
-    darkout(col, vface);
-
-    applyEdge(col, i);
-
-    return half4(col, 1);
+    return ctx.result;
 }
 
 
@@ -439,22 +504,14 @@ half4 frag_add (v2f i, fixed vface : VFACE) : SV_Target
 {
 	fade(i, vface);
 
-    fixed shadow = shadowTerm(i);
+    ShadingContext ctx;
+    shadingContext(ctx, i, vface);
 
-    half3 worldNormal = decodeWorldNormal(i, vface);
+    applyLightingFwdAdd(ctx, i);
 
-    half ndotl = dot(worldNormal, _WorldSpaceLightPos0.xyz);
+    applyDarkenBackFace(ctx, i);
 
-    half4 albedo = fetchAlbedo(i);
-
-    half3 col = lighting(i, albedo, ndotl, shadow);
-
-    darkout(col, vface);
-
-    MGFX_LIGHT_ATTENUATION(lightAtten, i, i.worldPosAndZ.xyz);
-    col *= lightAtten * shadow;
-
-    return half4(col, 1);
+    return ctx.result;
 }
     ENDCG
 
@@ -480,10 +537,12 @@ Pass
 	#pragma target 3.0
 
 	#pragma shader_feature _NORMAL_MAP_ON
+	#pragma shader_feature _DARKEN_BACKFACES_ON
 	#pragma shader_feature _DIM_ON
 	#pragma shader_feature _OVERLAY_ON
 	#pragma shader_feature _DIFFUSE_LUT_ON
 	#pragma shader_feature _RIM_ON
+	#pragma shader_feature _MATCAP_ON
 	#pragma shader_feature _EDGE_ON
 
 	ENDCG
@@ -507,6 +566,7 @@ Pass
 	#pragma target 3.0
 
 	#pragma shader_feature _NORMAL_MAP_ON
+	#pragma shader_feature _DARKEN_BACKFACES_ON
 	#pragma shader_feature _DIM_ON
 	#pragma shader_feature _OVERLAY_ON
 	#pragma shader_feature _DIFFUSE_LUT_ON
