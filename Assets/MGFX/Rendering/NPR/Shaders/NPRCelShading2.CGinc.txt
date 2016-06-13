@@ -275,7 +275,7 @@ void applyMatcap(inout ShadingContext ctx, in v2f i)
 {
 #if _MATCAP_ON
 	half3 viewNormal = mul((float3x3)UNITY_MATRIX_V, ctx.worldNormal);
-	ctx.result.rgb += tex2D(_MatCapTex, saturate(viewNormal * 0.5 + 0.5)) * ctx.albedo * _MatCapIntensity;
+	ctx.result.rgb += tex2D(_MatCapTex, saturate(viewNormal * 0.5 + 0.5)) * _MatCapIntensity * ctx.albedo.rgb;
 #endif
 }
 
