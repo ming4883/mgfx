@@ -384,7 +384,6 @@ void applyLightingFwdBase(inout ShadingContext ctx, in v2f i)
 
 void applyLightingFwdAdd(inout ShadingContext ctx, in v2f i)
 {
-
     MGFX_LIGHT_ATTENUATION(lightAtten, i, i.worldPosAndZ.xyz);
 
 	half ndotl = dot(ctx.worldNormal, _WorldSpaceLightPos0.xyz);
@@ -400,9 +399,17 @@ void applyLightingFwdAdd(inout ShadingContext ctx, in v2f i)
 void applyLightmap(inout ShadingContext ctx, in v2f i)
 {
 #ifndef LIGHTMAP_OFF
+
 	half3 lmap = DecodeLightmap (UNITY_SAMPLE_TEX2D(unity_Lightmap, i.lmap.xy));
+
+	#if DIRLIGHTMAP_COMBINED
+		fixed4 dirmap = UNITY_SAMPLE_TEX2D_SAMPLER (unity_LightmapInd, unity_Lightmap, i.lmap.xy);
+		lmap = DecodeDirectionalLightmap (lmap, dirmap, ctx.worldNormal);
+	#endif
+
 	half lum = Luminance(lmap) * ctx.shadow;
 	ctx.result.rgb += lerp(ctx.dimmed, ctx.albedo, lum) * lmap;
+
 #endif
 }
 
@@ -532,7 +539,7 @@ Pass
 	CGPROGRAM
 	#pragma vertex vert
 	#pragma fragment frag_base
-	#pragma multi_compile_fwdbase novertexlight LIGHTMAP_OFF LIGHTMAP_ON
+	#pragma multi_compile_fwdbase novertexlight LIGHTMAP_OFF LIGHTMAP_ON DIRLIGHTMAP_OFF DIRLIGHTMAP_COMBINED
 	#pragma target 3.0
 
 	#pragma shader_feature _NORMAL_MAP_ON
