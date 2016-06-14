@@ -20,11 +20,11 @@ _FadeOut ("_FadeOut", Range(0,1)) = 0.0
 
 [Toggle(_RIM_ON)] _RimOn("Enable Rim", Int) = 0
 [NoScaleOffset] _RimLUTTex ("Rim LUT (R)", 2D) = "white" {}
-_RimIntensity ("RimIntensity", Range(0,1)) = 1.0
+_RimIntensity ("RimIntensity", Range(0,2)) = 1.0
 
 [Toggle(_MATCAP_ON)] _MatCapOn("Enable MatCap", Int) = 0
 [NoScaleOffset] _MatCapTex ("MatCap", 2D) = "black" {}
-_MatCapIntensity ("MatCapIntensity", Range(0,1)) = 1.0
+_MatCapIntensity ("MatCapIntensity", Range(0,2)) = 1.0
 
 [Toggle(_EDGE_ON)] _EdgeOn("Enable Edges", Int) = 0
 _EdgeColor ("EdgeColor", Color) = (0, 0, 0, 1)
