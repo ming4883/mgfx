@@ -151,9 +151,13 @@ void fetchWorldNormal(inout ShadingContext ctx, in v2f i)
 	worldNormal.x = dot(i.tanSpace0.xyz, tanNormal);
 	worldNormal.y = dot(i.tanSpace1.xyz, tanNormal);
 	worldNormal.z = dot(i.tanSpace2.xyz, tanNormal);
-	ctx.worldNormal = normalize(worldNormal) * ctx.vface;
+	ctx.worldNormal = normalize(worldNormal);
 #else
-	ctx.worldNormal = normalize(i.worldNormal) * ctx.vface;
+	ctx.worldNormal = normalize(i.worldNormal);
+#endif
+
+#ifdef BACKFACE_ON
+	ctx.worldNormal *= -1;
 #endif
 
 	ctx.worldViewDir = normalize(_WorldSpaceCameraPos.xyz - i.worldPosAndZ.xyz);
@@ -262,8 +266,9 @@ void applyLightmap(inout ShadingContext ctx, in v2f i)
 void applyDarkenBackFace(inout ShadingContext ctx, in v2f i)
 {
 #if _DARKEN_BACKFACES_ON
-	if (ctx.vface < 0)
+#ifdef BACKFACE_ON
     	ctx.result.rgb *= 0.125;
+#endif
 #endif
 }
 
@@ -313,8 +318,9 @@ void fade(in v2f i, fixed vface)
 
 	half fading = _FadeOut;
 #if _DARKEN_BACKFACES_ON
-	if (vface < 1)
+#ifdef BACKFACE_ON
 		fading = max(fading, 0.0625);
+#endif
 #endif
 
 	fading = fading * 2.0 - 1.0;
