@@ -38,39 +38,26 @@ _EdgeAutoColorFactor ("EdgeAutoColorFactor", Range(0.125,4)) = 0.25
 
     SubShader
     {
-Tags
-{ 
-	"RenderType"="Opaque"
-}
+		Tags
+		{ 
+			"RenderType"="Opaque"
+		}
 
-Pass
-{
-	Tags
-	{
-		"LightMode"="ForwardBase"
-	}
-	Cull Back
+		Pass
+		{
+			Tags
+			{
+				"LightMode"="ForwardBase"
+			}
+			Cull Back
 
-	CGPROGRAM
-	#pragma vertex vert
-	#pragma fragment frag_base
-	#pragma multi_compile_fwdbase novertexlight LIGHTMAP_OFF LIGHTMAP_ON DIRLIGHTMAP_OFF DIRLIGHTMAP_COMBINED
-	#pragma target 3.0
-
-	#pragma shader_feature _NORMAL_MAP_ON
-	#pragma shader_feature _DARKEN_BACKFACES_ON
-	#pragma shader_feature _DIM_ON
-	#pragma shader_feature _OVERLAY_ON
-	#pragma shader_feature _DIFFUSE_LUT_ON
-	#pragma shader_feature _RIM_ON
-	#pragma shader_feature _MATCAP_ON
-	#pragma shader_feature _EDGE_ON
-
-#include "UnityCG.cginc"
+			CGPROGRAM
+			#include "UnityCG.cginc"
 #include "Lighting.cginc"
 #include "AutoLight.cginc"
 
 #if UNITY_VERSION < 540
+#define UNITY_SHADER_NO_UPGRADE
 #define unity_WorldToLight _LightMatrix0 
 #endif
 
@@ -102,7 +89,7 @@ Pass
 	unityShadowCoord2 lightCoord = mul(unity_WorldToLight, unityShadowCoord4(worldPos, 1)).xy; \
 	fixed destName = tex2D(_LightTexture0, lightCoord).w;
 #endif
-uniform sampler2D _BayerTex;
+			uniform sampler2D _BayerTex;
 uniform float4 _BayerTex_TexelSize;
 
 #define F1 float
@@ -181,8 +168,21 @@ F1 Bayer( F2 uv )
 }
 // ====
 
-///
-/// Vertex
+			#pragma vertex vert
+#pragma fragment frag_base
+#pragma multi_compile_fwdbase novertexlight LIGHTMAP_OFF LIGHTMAP_ON DIRLIGHTMAP_OFF DIRLIGHTMAP_COMBINED
+#pragma target 3.0
+
+#pragma shader_feature _NORMAL_MAP_ON
+#pragma shader_feature _DARKEN_BACKFACES_ON
+#pragma shader_feature _DIM_ON
+#pragma shader_feature _OVERLAY_ON
+#pragma shader_feature _DIFFUSE_LUT_ON
+#pragma shader_feature _RIM_ON
+#pragma shader_feature _MATCAP_ON
+#pragma shader_feature _EDGE_ON
+//#pragma enable_d3d11_debug_symbols
+			/// Vertex
 ///
 struct appdata
 {
@@ -349,22 +349,23 @@ void fetchWorldNormal(inout ShadingContext ctx, in v2f i)
 
 void fetchShadowTerm(inout ShadingContext ctx, in v2f i)
 {
-	ctx.shadow = ctx.vface > 0 ? SHADOW_ATTENUATION(i) : 1;
+#if !defined(BACKFACE_ON)
+	ctx.shadow = SHADOW_ATTENUATION(i);
+#else
+	ctx.shadow = 1;
+#endif
 }
 
 void fetchShadowTermWithDither(inout ShadingContext ctx, in v2f i)
 {
-	if (ctx.vface > 0)
-	{
-		fixed s = SHADOW_ATTENUATION(i);
-		fixed d = InterleavedGradientNoise(i.pos.xy * 0.5 + iGlobalTime);
-		s = clamp(s * (s + 0.25 * d), 0, 1);
-		ctx.shadow = s;
-	}
-	else
-	{
-		ctx.shadow = 1;
-	}
+#if !defined(BACKFACE_ON)
+	fixed s = SHADOW_ATTENUATION(i);
+	fixed d = InterleavedGradientNoise(i.pos.xy * 0.5 + iGlobalTime);
+	s = clamp(s * (s + 0.25 * d), 0, 1);
+	ctx.shadow = s;
+#else
+	ctx.shadow = 1;
+#endif
 }
 
 void fetchAlbedoAndDimmed(inout ShadingContext ctx, in v2f i)
@@ -387,20 +388,32 @@ void fetchAlbedoAndDimmed(inout ShadingContext ctx, in v2f i)
 
 }
 
-void applyEdge(inout ShadingContext ctx, in v2f i)
+void applyEdgeFwdBase(inout ShadingContext ctx, in v2f i)
 {
-
 #if _EDGE_ON
-	half2 screenuv = i.pos.xy * _ScreenParams.zw - i.pos.xy;
-	half isedge = tex2D(_MudNPREdgeTex, screenuv).r;
+	#if !defined(BACKFACE_ON)
+		half2 screenuv = i.pos.xy * _ScreenParams.zw - i.pos.xy;
+		half isedge = tex2D(_MudNPREdgeTex, screenuv).r;
 
-	half3 edgeColor = pow(ctx.albedo, _EdgeAutoColorFactor);
-	edgeColor = lerp(_EdgeColor, edgeColor, _EdgeAutoColor);
+		half3 edgeColor = pow(ctx.albedo, _EdgeAutoColorFactor);
+		edgeColor = lerp(_EdgeColor, edgeColor, _EdgeAutoColor);
 
-	ctx.result.rgb = lerp(ctx.result.rgb, edgeColor, saturate(isedge * _EdgeColor.a * 4));
+		ctx.result.rgb = lerp(ctx.result.rgb, edgeColor, saturate(isedge * _EdgeColor.a * 4));
+	#endif
 #endif
 }
 
+void applyEdgeFwdAdd(inout ShadingContext ctx, in v2f i)
+{
+#if _EDGE_ON
+	#if !defined(BACKFACE_ON)
+		half2 screenuv = i.pos.xy * _ScreenParams.zw - i.pos.xy;
+		half isedge = tex2D(_MudNPREdgeTex, screenuv).r;
+
+		ctx.result.rgb *= 1.0 - saturate(isedge * _EdgeColor.a * 4);
+	#endif
+#endif
+}
 
 void applyLightingFwdBase(inout ShadingContext ctx, in v2f i)
 {
@@ -469,8 +482,14 @@ void applyRim(inout ShadingContext ctx, in v2f i)
 void applyMatcap(inout ShadingContext ctx, in v2f i)
 {
 #if _MATCAP_ON
-	half3 viewNormal = mul((float3x3)UNITY_MATRIX_V, ctx.worldNormal);
-	ctx.result.rgb += tex2D(_MatCapTex, saturate(viewNormal * 0.5 + 0.5)) * _MatCapIntensity * ctx.albedo.rgb;
+	#if _MATCAP_PLANAR_ON
+		half3 worldRelf = reflect(-ctx.worldViewDir, ctx.worldNormal);
+		half3 viewRelf = normalize(mul((float3x3)UNITY_MATRIX_V, worldRelf));
+		ctx.result.rgb += tex2D(_MatCapTex, saturate(viewRelf.xy * 0.5 + 0.5)) * _MatCapIntensity * ctx.albedo.rgb;
+	#else
+		half3 viewNormal = mul((float3x3)UNITY_MATRIX_V, ctx.worldNormal);
+		ctx.result.rgb += tex2D(_MatCapTex, saturate(viewNormal * 0.5 + 0.5)) * _MatCapIntensity * ctx.albedo.rgb;
+	#endif
 #endif
 }
 
@@ -500,12 +519,6 @@ void fade(in v2f i, fixed vface)
 	half d = dither(i);
 
 	half fading = _FadeOut;
-#if _DARKEN_BACKFACES_ON
-#ifdef BACKFACE_ON
-		fading = max(fading, 0.0625);
-#endif
-#endif
-
 	fading = fading * 2.0 - 1.0;
 	clip(d - fading);
 
@@ -536,7 +549,7 @@ half4 frag_base (v2f i, fixed vface : VFACE) : SV_Target
 
     applyDarkenBackFace(ctx, i);
 
-    applyEdge(ctx, i);
+    applyEdgeFwdBase(ctx, i);
 
     return ctx.result;
 }
@@ -553,41 +566,29 @@ half4 frag_add (v2f i, fixed vface : VFACE) : SV_Target
 
     applyDarkenBackFace(ctx, i);
 
+    applyEdgeFwdAdd(ctx, i);
+
     return ctx.result;
 }
+			ENDCG
+		}
 
-	ENDCG
-}
+		Pass
+		{
+			Tags
+			{
+				"LightMode"="ForwardBase"
+			}
+			Cull Front
 
-Pass
-{
-	Tags
-	{
-		"LightMode"="ForwardBase"
-	}
-	Cull Front
-
-    CGPROGRAM
-	#pragma vertex vert
-	#pragma fragment frag_base
-	#pragma multi_compile_fwdbase novertexlight LIGHTMAP_OFF LIGHTMAP_ON DIRLIGHTMAP_OFF DIRLIGHTMAP_COMBINED
-	#pragma target 3.0
-
-	#pragma shader_feature _NORMAL_MAP_ON
-	#pragma shader_feature _DARKEN_BACKFACES_ON
-	#pragma shader_feature _DIM_ON
-	#pragma shader_feature _OVERLAY_ON
-	#pragma shader_feature _DIFFUSE_LUT_ON
-	#pragma shader_feature _RIM_ON
-	#pragma shader_feature _MATCAP_ON
-	#pragma shader_feature _EDGE_ON
-
-#include "UnityCG.cginc"
+		    CGPROGRAM
+			#define BACKFACE_ON
+			#include "UnityCG.cginc"
 #include "Lighting.cginc"
-#define BACKFACE_ON
 #include "AutoLight.cginc"
 
 #if UNITY_VERSION < 540
+#define UNITY_SHADER_NO_UPGRADE
 #define unity_WorldToLight _LightMatrix0 
 #endif
 
@@ -619,7 +620,7 @@ Pass
 	unityShadowCoord2 lightCoord = mul(unity_WorldToLight, unityShadowCoord4(worldPos, 1)).xy; \
 	fixed destName = tex2D(_LightTexture0, lightCoord).w;
 #endif
-uniform sampler2D _BayerTex;
+			uniform sampler2D _BayerTex;
 uniform float4 _BayerTex_TexelSize;
 
 #define F1 float
@@ -698,8 +699,21 @@ F1 Bayer( F2 uv )
 }
 // ====
 
-///
-/// Vertex
+			#pragma vertex vert
+#pragma fragment frag_base
+#pragma multi_compile_fwdbase novertexlight LIGHTMAP_OFF LIGHTMAP_ON DIRLIGHTMAP_OFF DIRLIGHTMAP_COMBINED
+#pragma target 3.0
+
+#pragma shader_feature _NORMAL_MAP_ON
+#pragma shader_feature _DARKEN_BACKFACES_ON
+#pragma shader_feature _DIM_ON
+#pragma shader_feature _OVERLAY_ON
+#pragma shader_feature _DIFFUSE_LUT_ON
+#pragma shader_feature _RIM_ON
+#pragma shader_feature _MATCAP_ON
+#pragma shader_feature _EDGE_ON
+//#pragma enable_d3d11_debug_symbols
+			/// Vertex
 ///
 struct appdata
 {
@@ -866,22 +880,23 @@ void fetchWorldNormal(inout ShadingContext ctx, in v2f i)
 
 void fetchShadowTerm(inout ShadingContext ctx, in v2f i)
 {
-	ctx.shadow = ctx.vface > 0 ? SHADOW_ATTENUATION(i) : 1;
+#if !defined(BACKFACE_ON)
+	ctx.shadow = SHADOW_ATTENUATION(i);
+#else
+	ctx.shadow = 1;
+#endif
 }
 
 void fetchShadowTermWithDither(inout ShadingContext ctx, in v2f i)
 {
-	if (ctx.vface > 0)
-	{
-		fixed s = SHADOW_ATTENUATION(i);
-		fixed d = InterleavedGradientNoise(i.pos.xy * 0.5 + iGlobalTime);
-		s = clamp(s * (s + 0.25 * d), 0, 1);
-		ctx.shadow = s;
-	}
-	else
-	{
-		ctx.shadow = 1;
-	}
+#if !defined(BACKFACE_ON)
+	fixed s = SHADOW_ATTENUATION(i);
+	fixed d = InterleavedGradientNoise(i.pos.xy * 0.5 + iGlobalTime);
+	s = clamp(s * (s + 0.25 * d), 0, 1);
+	ctx.shadow = s;
+#else
+	ctx.shadow = 1;
+#endif
 }
 
 void fetchAlbedoAndDimmed(inout ShadingContext ctx, in v2f i)
@@ -904,20 +919,32 @@ void fetchAlbedoAndDimmed(inout ShadingContext ctx, in v2f i)
 
 }
 
-void applyEdge(inout ShadingContext ctx, in v2f i)
+void applyEdgeFwdBase(inout ShadingContext ctx, in v2f i)
 {
-
 #if _EDGE_ON
-	half2 screenuv = i.pos.xy * _ScreenParams.zw - i.pos.xy;
-	half isedge = tex2D(_MudNPREdgeTex, screenuv).r;
+	#if !defined(BACKFACE_ON)
+		half2 screenuv = i.pos.xy * _ScreenParams.zw - i.pos.xy;
+		half isedge = tex2D(_MudNPREdgeTex, screenuv).r;
 
-	half3 edgeColor = pow(ctx.albedo, _EdgeAutoColorFactor);
-	edgeColor = lerp(_EdgeColor, edgeColor, _EdgeAutoColor);
+		half3 edgeColor = pow(ctx.albedo, _EdgeAutoColorFactor);
+		edgeColor = lerp(_EdgeColor, edgeColor, _EdgeAutoColor);
 
-	ctx.result.rgb = lerp(ctx.result.rgb, edgeColor, saturate(isedge * _EdgeColor.a * 4));
+		ctx.result.rgb = lerp(ctx.result.rgb, edgeColor, saturate(isedge * _EdgeColor.a * 4));
+	#endif
 #endif
 }
 
+void applyEdgeFwdAdd(inout ShadingContext ctx, in v2f i)
+{
+#if _EDGE_ON
+	#if !defined(BACKFACE_ON)
+		half2 screenuv = i.pos.xy * _ScreenParams.zw - i.pos.xy;
+		half isedge = tex2D(_MudNPREdgeTex, screenuv).r;
+
+		ctx.result.rgb *= 1.0 - saturate(isedge * _EdgeColor.a * 4);
+	#endif
+#endif
+}
 
 void applyLightingFwdBase(inout ShadingContext ctx, in v2f i)
 {
@@ -986,8 +1013,14 @@ void applyRim(inout ShadingContext ctx, in v2f i)
 void applyMatcap(inout ShadingContext ctx, in v2f i)
 {
 #if _MATCAP_ON
-	half3 viewNormal = mul((float3x3)UNITY_MATRIX_V, ctx.worldNormal);
-	ctx.result.rgb += tex2D(_MatCapTex, saturate(viewNormal * 0.5 + 0.5)) * _MatCapIntensity * ctx.albedo.rgb;
+	#if _MATCAP_PLANAR_ON
+		half3 worldRelf = reflect(-ctx.worldViewDir, ctx.worldNormal);
+		half3 viewRelf = normalize(mul((float3x3)UNITY_MATRIX_V, worldRelf));
+		ctx.result.rgb += tex2D(_MatCapTex, saturate(viewRelf.xy * 0.5 + 0.5)) * _MatCapIntensity * ctx.albedo.rgb;
+	#else
+		half3 viewNormal = mul((float3x3)UNITY_MATRIX_V, ctx.worldNormal);
+		ctx.result.rgb += tex2D(_MatCapTex, saturate(viewNormal * 0.5 + 0.5)) * _MatCapIntensity * ctx.albedo.rgb;
+	#endif
 #endif
 }
 
@@ -1017,12 +1050,6 @@ void fade(in v2f i, fixed vface)
 	half d = dither(i);
 
 	half fading = _FadeOut;
-#if _DARKEN_BACKFACES_ON
-#ifdef BACKFACE_ON
-		fading = max(fading, 0.0625);
-#endif
-#endif
-
 	fading = fading * 2.0 - 1.0;
 	clip(d - fading);
 
@@ -1053,7 +1080,7 @@ half4 frag_base (v2f i, fixed vface : VFACE) : SV_Target
 
     applyDarkenBackFace(ctx, i);
 
-    applyEdge(ctx, i);
+    applyEdgeFwdBase(ctx, i);
 
     return ctx.result;
 }
@@ -1070,43 +1097,32 @@ half4 frag_add (v2f i, fixed vface : VFACE) : SV_Target
 
     applyDarkenBackFace(ctx, i);
 
+    applyEdgeFwdAdd(ctx, i);
+
     return ctx.result;
-}
-    
-	ENDCG
-}
+}    
+			ENDCG
+		}
 
+		Pass
+		{
+			Tags
+			{
+				"LightMode"="ForwardAdd"
+			}
 
-Pass
-{
-	Tags
-	{
-		"LightMode"="ForwardAdd"
-	}
+			ZWrite Off
+			ZTest LEqual
+			Blend One One
+			Cull Back
 
-	ZWrite Off
-	ZTest LEqual
-	Blend One One
-	Cull Back
-
-	CGPROGRAM
-
-	#pragma vertex vert
-	#pragma fragment frag_add
-	#pragma multi_compile_fwdadd_fullshadows
-	#pragma target 3.0
-
-	#pragma shader_feature _NORMAL_MAP_ON
-	#pragma shader_feature _DARKEN_BACKFACES_ON
-	#pragma shader_feature _DIM_ON
-	#pragma shader_feature _OVERLAY_ON
-	#pragma shader_feature _DIFFUSE_LUT_ON
-
-#include "UnityCG.cginc"
+			CGPROGRAM
+			#include "UnityCG.cginc"
 #include "Lighting.cginc"
 #include "AutoLight.cginc"
 
 #if UNITY_VERSION < 540
+#define UNITY_SHADER_NO_UPGRADE
 #define unity_WorldToLight _LightMatrix0 
 #endif
 
@@ -1138,7 +1154,7 @@ Pass
 	unityShadowCoord2 lightCoord = mul(unity_WorldToLight, unityShadowCoord4(worldPos, 1)).xy; \
 	fixed destName = tex2D(_LightTexture0, lightCoord).w;
 #endif
-uniform sampler2D _BayerTex;
+			uniform sampler2D _BayerTex;
 uniform float4 _BayerTex_TexelSize;
 
 #define F1 float
@@ -1217,8 +1233,19 @@ F1 Bayer( F2 uv )
 }
 // ====
 
-///
-/// Vertex
+			#pragma vertex vert
+#pragma fragment frag_add
+#pragma multi_compile_fwdadd_fullshadows
+#pragma target 3.0
+
+#pragma shader_feature _NORMAL_MAP_ON
+#pragma shader_feature _DARKEN_BACKFACES_ON
+#pragma shader_feature _DIM_ON
+#pragma shader_feature _OVERLAY_ON
+#pragma shader_feature _DIFFUSE_LUT_ON
+#pragma shader_feature _EDGE_ON
+//#pragma enable_d3d11_debug_symbols
+			/// Vertex
 ///
 struct appdata
 {
@@ -1385,22 +1412,23 @@ void fetchWorldNormal(inout ShadingContext ctx, in v2f i)
 
 void fetchShadowTerm(inout ShadingContext ctx, in v2f i)
 {
-	ctx.shadow = ctx.vface > 0 ? SHADOW_ATTENUATION(i) : 1;
+#if !defined(BACKFACE_ON)
+	ctx.shadow = SHADOW_ATTENUATION(i);
+#else
+	ctx.shadow = 1;
+#endif
 }
 
 void fetchShadowTermWithDither(inout ShadingContext ctx, in v2f i)
 {
-	if (ctx.vface > 0)
-	{
-		fixed s = SHADOW_ATTENUATION(i);
-		fixed d = InterleavedGradientNoise(i.pos.xy * 0.5 + iGlobalTime);
-		s = clamp(s * (s + 0.25 * d), 0, 1);
-		ctx.shadow = s;
-	}
-	else
-	{
-		ctx.shadow = 1;
-	}
+#if !defined(BACKFACE_ON)
+	fixed s = SHADOW_ATTENUATION(i);
+	fixed d = InterleavedGradientNoise(i.pos.xy * 0.5 + iGlobalTime);
+	s = clamp(s * (s + 0.25 * d), 0, 1);
+	ctx.shadow = s;
+#else
+	ctx.shadow = 1;
+#endif
 }
 
 void fetchAlbedoAndDimmed(inout ShadingContext ctx, in v2f i)
@@ -1423,20 +1451,32 @@ void fetchAlbedoAndDimmed(inout ShadingContext ctx, in v2f i)
 
 }
 
-void applyEdge(inout ShadingContext ctx, in v2f i)
+void applyEdgeFwdBase(inout ShadingContext ctx, in v2f i)
 {
-
 #if _EDGE_ON
-	half2 screenuv = i.pos.xy * _ScreenParams.zw - i.pos.xy;
-	half isedge = tex2D(_MudNPREdgeTex, screenuv).r;
+	#if !defined(BACKFACE_ON)
+		half2 screenuv = i.pos.xy * _ScreenParams.zw - i.pos.xy;
+		half isedge = tex2D(_MudNPREdgeTex, screenuv).r;
 
-	half3 edgeColor = pow(ctx.albedo, _EdgeAutoColorFactor);
-	edgeColor = lerp(_EdgeColor, edgeColor, _EdgeAutoColor);
+		half3 edgeColor = pow(ctx.albedo, _EdgeAutoColorFactor);
+		edgeColor = lerp(_EdgeColor, edgeColor, _EdgeAutoColor);
 
-	ctx.result.rgb = lerp(ctx.result.rgb, edgeColor, saturate(isedge * _EdgeColor.a * 4));
+		ctx.result.rgb = lerp(ctx.result.rgb, edgeColor, saturate(isedge * _EdgeColor.a * 4));
+	#endif
 #endif
 }
 
+void applyEdgeFwdAdd(inout ShadingContext ctx, in v2f i)
+{
+#if _EDGE_ON
+	#if !defined(BACKFACE_ON)
+		half2 screenuv = i.pos.xy * _ScreenParams.zw - i.pos.xy;
+		half isedge = tex2D(_MudNPREdgeTex, screenuv).r;
+
+		ctx.result.rgb *= 1.0 - saturate(isedge * _EdgeColor.a * 4);
+	#endif
+#endif
+}
 
 void applyLightingFwdBase(inout ShadingContext ctx, in v2f i)
 {
@@ -1505,8 +1545,14 @@ void applyRim(inout ShadingContext ctx, in v2f i)
 void applyMatcap(inout ShadingContext ctx, in v2f i)
 {
 #if _MATCAP_ON
-	half3 viewNormal = mul((float3x3)UNITY_MATRIX_V, ctx.worldNormal);
-	ctx.result.rgb += tex2D(_MatCapTex, saturate(viewNormal * 0.5 + 0.5)) * _MatCapIntensity * ctx.albedo.rgb;
+	#if _MATCAP_PLANAR_ON
+		half3 worldRelf = reflect(-ctx.worldViewDir, ctx.worldNormal);
+		half3 viewRelf = normalize(mul((float3x3)UNITY_MATRIX_V, worldRelf));
+		ctx.result.rgb += tex2D(_MatCapTex, saturate(viewRelf.xy * 0.5 + 0.5)) * _MatCapIntensity * ctx.albedo.rgb;
+	#else
+		half3 viewNormal = mul((float3x3)UNITY_MATRIX_V, ctx.worldNormal);
+		ctx.result.rgb += tex2D(_MatCapTex, saturate(viewNormal * 0.5 + 0.5)) * _MatCapIntensity * ctx.albedo.rgb;
+	#endif
 #endif
 }
 
@@ -1536,12 +1582,6 @@ void fade(in v2f i, fixed vface)
 	half d = dither(i);
 
 	half fading = _FadeOut;
-#if _DARKEN_BACKFACES_ON
-#ifdef BACKFACE_ON
-		fading = max(fading, 0.0625);
-#endif
-#endif
-
 	fading = fading * 2.0 - 1.0;
 	clip(d - fading);
 
@@ -1572,7 +1612,7 @@ half4 frag_base (v2f i, fixed vface : VFACE) : SV_Target
 
     applyDarkenBackFace(ctx, i);
 
-    applyEdge(ctx, i);
+    applyEdgeFwdBase(ctx, i);
 
     return ctx.result;
 }
@@ -1589,42 +1629,33 @@ half4 frag_add (v2f i, fixed vface : VFACE) : SV_Target
 
     applyDarkenBackFace(ctx, i);
 
+    applyEdgeFwdAdd(ctx, i);
+
     return ctx.result;
 }
+			ENDCG
+		}
 
-	ENDCG
-}
+		Pass
+		{
+			Tags
+			{
+				"LightMode"="ForwardAdd"
+			}
 
-Pass
-{
-	Tags
-	{
-		"LightMode"="ForwardAdd"
-	}
+			ZWrite Off
+			ZTest LEqual
+			Blend One One
+			Cull Front
 
-	ZWrite Off
-	ZTest LEqual
-	Blend One One
-	Cull Front
-
-    CGPROGRAM
-	#pragma vertex vert
-	#pragma fragment frag_add
-	#pragma multi_compile_fwdadd_fullshadows
-	#pragma target 3.0
-
-	#pragma shader_feature _NORMAL_MAP_ON
-	#pragma shader_feature _DARKEN_BACKFACES_ON
-	#pragma shader_feature _DIM_ON
-	#pragma shader_feature _OVERLAY_ON
-	#pragma shader_feature _DIFFUSE_LUT_ON
-
-#include "UnityCG.cginc"
+		    CGPROGRAM
+		    #define BACKFACE_ON
+			#include "UnityCG.cginc"
 #include "Lighting.cginc"
-#define BACKFACE_ON
 #include "AutoLight.cginc"
 
 #if UNITY_VERSION < 540
+#define UNITY_SHADER_NO_UPGRADE
 #define unity_WorldToLight _LightMatrix0 
 #endif
 
@@ -1656,7 +1687,7 @@ Pass
 	unityShadowCoord2 lightCoord = mul(unity_WorldToLight, unityShadowCoord4(worldPos, 1)).xy; \
 	fixed destName = tex2D(_LightTexture0, lightCoord).w;
 #endif
-uniform sampler2D _BayerTex;
+			uniform sampler2D _BayerTex;
 uniform float4 _BayerTex_TexelSize;
 
 #define F1 float
@@ -1735,8 +1766,19 @@ F1 Bayer( F2 uv )
 }
 // ====
 
-///
-/// Vertex
+			#pragma vertex vert
+#pragma fragment frag_add
+#pragma multi_compile_fwdadd_fullshadows
+#pragma target 3.0
+
+#pragma shader_feature _NORMAL_MAP_ON
+#pragma shader_feature _DARKEN_BACKFACES_ON
+#pragma shader_feature _DIM_ON
+#pragma shader_feature _OVERLAY_ON
+#pragma shader_feature _DIFFUSE_LUT_ON
+#pragma shader_feature _EDGE_ON
+//#pragma enable_d3d11_debug_symbols
+			/// Vertex
 ///
 struct appdata
 {
@@ -1903,22 +1945,23 @@ void fetchWorldNormal(inout ShadingContext ctx, in v2f i)
 
 void fetchShadowTerm(inout ShadingContext ctx, in v2f i)
 {
-	ctx.shadow = ctx.vface > 0 ? SHADOW_ATTENUATION(i) : 1;
+#if !defined(BACKFACE_ON)
+	ctx.shadow = SHADOW_ATTENUATION(i);
+#else
+	ctx.shadow = 1;
+#endif
 }
 
 void fetchShadowTermWithDither(inout ShadingContext ctx, in v2f i)
 {
-	if (ctx.vface > 0)
-	{
-		fixed s = SHADOW_ATTENUATION(i);
-		fixed d = InterleavedGradientNoise(i.pos.xy * 0.5 + iGlobalTime);
-		s = clamp(s * (s + 0.25 * d), 0, 1);
-		ctx.shadow = s;
-	}
-	else
-	{
-		ctx.shadow = 1;
-	}
+#if !defined(BACKFACE_ON)
+	fixed s = SHADOW_ATTENUATION(i);
+	fixed d = InterleavedGradientNoise(i.pos.xy * 0.5 + iGlobalTime);
+	s = clamp(s * (s + 0.25 * d), 0, 1);
+	ctx.shadow = s;
+#else
+	ctx.shadow = 1;
+#endif
 }
 
 void fetchAlbedoAndDimmed(inout ShadingContext ctx, in v2f i)
@@ -1941,20 +1984,32 @@ void fetchAlbedoAndDimmed(inout ShadingContext ctx, in v2f i)
 
 }
 
-void applyEdge(inout ShadingContext ctx, in v2f i)
+void applyEdgeFwdBase(inout ShadingContext ctx, in v2f i)
 {
-
 #if _EDGE_ON
-	half2 screenuv = i.pos.xy * _ScreenParams.zw - i.pos.xy;
-	half isedge = tex2D(_MudNPREdgeTex, screenuv).r;
+	#if !defined(BACKFACE_ON)
+		half2 screenuv = i.pos.xy * _ScreenParams.zw - i.pos.xy;
+		half isedge = tex2D(_MudNPREdgeTex, screenuv).r;
 
-	half3 edgeColor = pow(ctx.albedo, _EdgeAutoColorFactor);
-	edgeColor = lerp(_EdgeColor, edgeColor, _EdgeAutoColor);
+		half3 edgeColor = pow(ctx.albedo, _EdgeAutoColorFactor);
+		edgeColor = lerp(_EdgeColor, edgeColor, _EdgeAutoColor);
 
-	ctx.result.rgb = lerp(ctx.result.rgb, edgeColor, saturate(isedge * _EdgeColor.a * 4));
+		ctx.result.rgb = lerp(ctx.result.rgb, edgeColor, saturate(isedge * _EdgeColor.a * 4));
+	#endif
 #endif
 }
 
+void applyEdgeFwdAdd(inout ShadingContext ctx, in v2f i)
+{
+#if _EDGE_ON
+	#if !defined(BACKFACE_ON)
+		half2 screenuv = i.pos.xy * _ScreenParams.zw - i.pos.xy;
+		half isedge = tex2D(_MudNPREdgeTex, screenuv).r;
+
+		ctx.result.rgb *= 1.0 - saturate(isedge * _EdgeColor.a * 4);
+	#endif
+#endif
+}
 
 void applyLightingFwdBase(inout ShadingContext ctx, in v2f i)
 {
@@ -2023,8 +2078,14 @@ void applyRim(inout ShadingContext ctx, in v2f i)
 void applyMatcap(inout ShadingContext ctx, in v2f i)
 {
 #if _MATCAP_ON
-	half3 viewNormal = mul((float3x3)UNITY_MATRIX_V, ctx.worldNormal);
-	ctx.result.rgb += tex2D(_MatCapTex, saturate(viewNormal * 0.5 + 0.5)) * _MatCapIntensity * ctx.albedo.rgb;
+	#if _MATCAP_PLANAR_ON
+		half3 worldRelf = reflect(-ctx.worldViewDir, ctx.worldNormal);
+		half3 viewRelf = normalize(mul((float3x3)UNITY_MATRIX_V, worldRelf));
+		ctx.result.rgb += tex2D(_MatCapTex, saturate(viewRelf.xy * 0.5 + 0.5)) * _MatCapIntensity * ctx.albedo.rgb;
+	#else
+		half3 viewNormal = mul((float3x3)UNITY_MATRIX_V, ctx.worldNormal);
+		ctx.result.rgb += tex2D(_MatCapTex, saturate(viewNormal * 0.5 + 0.5)) * _MatCapIntensity * ctx.albedo.rgb;
+	#endif
 #endif
 }
 
@@ -2054,12 +2115,6 @@ void fade(in v2f i, fixed vface)
 	half d = dither(i);
 
 	half fading = _FadeOut;
-#if _DARKEN_BACKFACES_ON
-#ifdef BACKFACE_ON
-		fading = max(fading, 0.0625);
-#endif
-#endif
-
 	fading = fading * 2.0 - 1.0;
 	clip(d - fading);
 
@@ -2090,7 +2145,7 @@ half4 frag_base (v2f i, fixed vface : VFACE) : SV_Target
 
     applyDarkenBackFace(ctx, i);
 
-    applyEdge(ctx, i);
+    applyEdgeFwdBase(ctx, i);
 
     return ctx.result;
 }
@@ -2107,17 +2162,16 @@ half4 frag_add (v2f i, fixed vface : VFACE) : SV_Target
 
     applyDarkenBackFace(ctx, i);
 
+    applyEdgeFwdAdd(ctx, i);
+
     return ctx.result;
 }
+			ENDCG
+		}
 
-	ENDCG
-}
-
-
-// shadow casting support
-UsePass "Legacy Shaders/VertexLit/SHADOWCASTER"
+		// shadow casting support
+		UsePass "Legacy Shaders/VertexLit/SHADOWCASTER"
     }
-
 
     CustomEditor "MGFX.NPRCelShading2UI"
 }

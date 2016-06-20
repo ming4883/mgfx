@@ -1,6 +1,9 @@
+#include "UnityCG.cginc"
+#include "Lighting.cginc"
 #include "AutoLight.cginc"
 
 #if UNITY_VERSION < 540
+#define UNITY_SHADER_NO_UPGRADE
 #define unity_WorldToLight _LightMatrix0 
 #endif
 

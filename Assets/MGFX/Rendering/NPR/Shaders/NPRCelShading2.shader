@@ -68,9 +68,12 @@ Pass
 
 #include "UnityCG.cginc"
 #include "Lighting.cginc"
+#include "UnityCG.cginc"
+#include "Lighting.cginc"
 #include "AutoLight.cginc"
 
 #if UNITY_VERSION < 540
+#define UNITY_SHADER_NO_UPGRADE
 #define unity_WorldToLight _LightMatrix0 
 #endif
 
@@ -181,7 +184,6 @@ F1 Bayer( F2 uv )
 }
 // ====
 
-///
 /// Vertex
 ///
 struct appdata
@@ -349,22 +351,23 @@ void fetchWorldNormal(inout ShadingContext ctx, in v2f i)
 
 void fetchShadowTerm(inout ShadingContext ctx, in v2f i)
 {
-	ctx.shadow = ctx.vface > 0 ? SHADOW_ATTENUATION(i) : 1;
+#if !defined(BACKFACE_ON)
+	ctx.shadow = SHADOW_ATTENUATION(i);
+#else
+	ctx.shadow = 1;
+#endif
 }
 
 void fetchShadowTermWithDither(inout ShadingContext ctx, in v2f i)
 {
-	if (ctx.vface > 0)
-	{
-		fixed s = SHADOW_ATTENUATION(i);
-		fixed d = InterleavedGradientNoise(i.pos.xy * 0.5 + iGlobalTime);
-		s = clamp(s * (s + 0.25 * d), 0, 1);
-		ctx.shadow = s;
-	}
-	else
-	{
-		ctx.shadow = 1;
-	}
+#if !defined(BACKFACE_ON)
+	fixed s = SHADOW_ATTENUATION(i);
+	fixed d = InterleavedGradientNoise(i.pos.xy * 0.5 + iGlobalTime);
+	s = clamp(s * (s + 0.25 * d), 0, 1);
+	ctx.shadow = s;
+#else
+	ctx.shadow = 1;
+#endif
 }
 
 void fetchAlbedoAndDimmed(inout ShadingContext ctx, in v2f i)
@@ -387,20 +390,32 @@ void fetchAlbedoAndDimmed(inout ShadingContext ctx, in v2f i)
 
 }
 
-void applyEdge(inout ShadingContext ctx, in v2f i)
+void applyEdgeFwdBase(inout ShadingContext ctx, in v2f i)
 {
-
 #if _EDGE_ON
-	half2 screenuv = i.pos.xy * _ScreenParams.zw - i.pos.xy;
-	half isedge = tex2D(_MudNPREdgeTex, screenuv).r;
+	#if !defined(BACKFACE_ON)
+		half2 screenuv = i.pos.xy * _ScreenParams.zw - i.pos.xy;
+		half isedge = tex2D(_MudNPREdgeTex, screenuv).r;
 
-	half3 edgeColor = pow(ctx.albedo, _EdgeAutoColorFactor);
-	edgeColor = lerp(_EdgeColor, edgeColor, _EdgeAutoColor);
+		half3 edgeColor = pow(ctx.albedo, _EdgeAutoColorFactor);
+		edgeColor = lerp(_EdgeColor, edgeColor, _EdgeAutoColor);
 
-	ctx.result.rgb = lerp(ctx.result.rgb, edgeColor, saturate(isedge * _EdgeColor.a * 4));
+		ctx.result.rgb = lerp(ctx.result.rgb, edgeColor, saturate(isedge * _EdgeColor.a * 4));
+	#endif
 #endif
 }
 
+void applyEdgeFwdAdd(inout ShadingContext ctx, in v2f i)
+{
+#if _EDGE_ON
+	#if !defined(BACKFACE_ON)
+		half2 screenuv = i.pos.xy * _ScreenParams.zw - i.pos.xy;
+		half isedge = tex2D(_MudNPREdgeTex, screenuv).r;
+
+		ctx.result.rgb *= 1.0 - saturate(isedge * _EdgeColor.a * 4);
+	#endif
+#endif
+}
 
 void applyLightingFwdBase(inout ShadingContext ctx, in v2f i)
 {
@@ -469,8 +484,14 @@ void applyRim(inout ShadingContext ctx, in v2f i)
 void applyMatcap(inout ShadingContext ctx, in v2f i)
 {
 #if _MATCAP_ON
-	half3 viewNormal = mul((float3x3)UNITY_MATRIX_V, ctx.worldNormal);
-	ctx.result.rgb += tex2D(_MatCapTex, saturate(viewNormal * 0.5 + 0.5)) * _MatCapIntensity * ctx.albedo.rgb;
+	#if _MATCAP_PLANAR_ON
+		half3 worldRelf = reflect(-ctx.worldViewDir, ctx.worldNormal);
+		half3 viewRelf = normalize(mul((float3x3)UNITY_MATRIX_V, worldRelf));
+		ctx.result.rgb += tex2D(_MatCapTex, saturate(viewRelf.xy * 0.5 + 0.5)) * _MatCapIntensity * ctx.albedo.rgb;
+	#else
+		half3 viewNormal = mul((float3x3)UNITY_MATRIX_V, ctx.worldNormal);
+		ctx.result.rgb += tex2D(_MatCapTex, saturate(viewNormal * 0.5 + 0.5)) * _MatCapIntensity * ctx.albedo.rgb;
+	#endif
 #endif
 }
 
@@ -500,12 +521,6 @@ void fade(in v2f i, fixed vface)
 	half d = dither(i);
 
 	half fading = _FadeOut;
-#if _DARKEN_BACKFACES_ON
-#ifdef BACKFACE_ON
-		fading = max(fading, 0.0625);
-#endif
-#endif
-
 	fading = fading * 2.0 - 1.0;
 	clip(d - fading);
 
@@ -536,7 +551,7 @@ half4 frag_base (v2f i, fixed vface : VFACE) : SV_Target
 
     applyDarkenBackFace(ctx, i);
 
-    applyEdge(ctx, i);
+    applyEdgeFwdBase(ctx, i);
 
     return ctx.result;
 }
@@ -552,6 +567,8 @@ half4 frag_add (v2f i, fixed vface : VFACE) : SV_Target
     applyLightingFwdAdd(ctx, i);
 
     applyDarkenBackFace(ctx, i);
+
+    applyEdgeFwdAdd(ctx, i);
 
     return ctx.result;
 }
@@ -586,9 +603,12 @@ Pass
 
 #include "UnityCG.cginc"
 #include "Lighting.cginc"
+#include "UnityCG.cginc"
+#include "Lighting.cginc"
 #include "AutoLight.cginc"
 
 #if UNITY_VERSION < 540
+#define UNITY_SHADER_NO_UPGRADE
 #define unity_WorldToLight _LightMatrix0 
 #endif
 
@@ -699,7 +719,6 @@ F1 Bayer( F2 uv )
 }
 // ====
 
-///
 /// Vertex
 ///
 struct appdata
@@ -867,22 +886,23 @@ void fetchWorldNormal(inout ShadingContext ctx, in v2f i)
 
 void fetchShadowTerm(inout ShadingContext ctx, in v2f i)
 {
-	ctx.shadow = ctx.vface > 0 ? SHADOW_ATTENUATION(i) : 1;
+#if !defined(BACKFACE_ON)
+	ctx.shadow = SHADOW_ATTENUATION(i);
+#else
+	ctx.shadow = 1;
+#endif
 }
 
 void fetchShadowTermWithDither(inout ShadingContext ctx, in v2f i)
 {
-	if (ctx.vface > 0)
-	{
-		fixed s = SHADOW_ATTENUATION(i);
-		fixed d = InterleavedGradientNoise(i.pos.xy * 0.5 + iGlobalTime);
-		s = clamp(s * (s + 0.25 * d), 0, 1);
-		ctx.shadow = s;
-	}
-	else
-	{
-		ctx.shadow = 1;
-	}
+#if !defined(BACKFACE_ON)
+	fixed s = SHADOW_ATTENUATION(i);
+	fixed d = InterleavedGradientNoise(i.pos.xy * 0.5 + iGlobalTime);
+	s = clamp(s * (s + 0.25 * d), 0, 1);
+	ctx.shadow = s;
+#else
+	ctx.shadow = 1;
+#endif
 }
 
 void fetchAlbedoAndDimmed(inout ShadingContext ctx, in v2f i)
@@ -905,20 +925,32 @@ void fetchAlbedoAndDimmed(inout ShadingContext ctx, in v2f i)
 
 }
 
-void applyEdge(inout ShadingContext ctx, in v2f i)
+void applyEdgeFwdBase(inout ShadingContext ctx, in v2f i)
 {
-
 #if _EDGE_ON
-	half2 screenuv = i.pos.xy * _ScreenParams.zw - i.pos.xy;
-	half isedge = tex2D(_MudNPREdgeTex, screenuv).r;
+	#if !defined(BACKFACE_ON)
+		half2 screenuv = i.pos.xy * _ScreenParams.zw - i.pos.xy;
+		half isedge = tex2D(_MudNPREdgeTex, screenuv).r;
 
-	half3 edgeColor = pow(ctx.albedo, _EdgeAutoColorFactor);
-	edgeColor = lerp(_EdgeColor, edgeColor, _EdgeAutoColor);
+		half3 edgeColor = pow(ctx.albedo, _EdgeAutoColorFactor);
+		edgeColor = lerp(_EdgeColor, edgeColor, _EdgeAutoColor);
 
-	ctx.result.rgb = lerp(ctx.result.rgb, edgeColor, saturate(isedge * _EdgeColor.a * 4));
+		ctx.result.rgb = lerp(ctx.result.rgb, edgeColor, saturate(isedge * _EdgeColor.a * 4));
+	#endif
 #endif
 }
 
+void applyEdgeFwdAdd(inout ShadingContext ctx, in v2f i)
+{
+#if _EDGE_ON
+	#if !defined(BACKFACE_ON)
+		half2 screenuv = i.pos.xy * _ScreenParams.zw - i.pos.xy;
+		half isedge = tex2D(_MudNPREdgeTex, screenuv).r;
+
+		ctx.result.rgb *= 1.0 - saturate(isedge * _EdgeColor.a * 4);
+	#endif
+#endif
+}
 
 void applyLightingFwdBase(inout ShadingContext ctx, in v2f i)
 {
@@ -987,8 +1019,14 @@ void applyRim(inout ShadingContext ctx, in v2f i)
 void applyMatcap(inout ShadingContext ctx, in v2f i)
 {
 #if _MATCAP_ON
-	half3 viewNormal = mul((float3x3)UNITY_MATRIX_V, ctx.worldNormal);
-	ctx.result.rgb += tex2D(_MatCapTex, saturate(viewNormal * 0.5 + 0.5)) * _MatCapIntensity * ctx.albedo.rgb;
+	#if _MATCAP_PLANAR_ON
+		half3 worldRelf = reflect(-ctx.worldViewDir, ctx.worldNormal);
+		half3 viewRelf = normalize(mul((float3x3)UNITY_MATRIX_V, worldRelf));
+		ctx.result.rgb += tex2D(_MatCapTex, saturate(viewRelf.xy * 0.5 + 0.5)) * _MatCapIntensity * ctx.albedo.rgb;
+	#else
+		half3 viewNormal = mul((float3x3)UNITY_MATRIX_V, ctx.worldNormal);
+		ctx.result.rgb += tex2D(_MatCapTex, saturate(viewNormal * 0.5 + 0.5)) * _MatCapIntensity * ctx.albedo.rgb;
+	#endif
 #endif
 }
 
@@ -1018,12 +1056,6 @@ void fade(in v2f i, fixed vface)
 	half d = dither(i);
 
 	half fading = _FadeOut;
-#if _DARKEN_BACKFACES_ON
-#ifdef BACKFACE_ON
-		fading = max(fading, 0.0625);
-#endif
-#endif
-
 	fading = fading * 2.0 - 1.0;
 	clip(d - fading);
 
@@ -1054,7 +1086,7 @@ half4 frag_base (v2f i, fixed vface : VFACE) : SV_Target
 
     applyDarkenBackFace(ctx, i);
 
-    applyEdge(ctx, i);
+    applyEdgeFwdBase(ctx, i);
 
     return ctx.result;
 }
@@ -1070,6 +1102,8 @@ half4 frag_add (v2f i, fixed vface : VFACE) : SV_Target
     applyLightingFwdAdd(ctx, i);
 
     applyDarkenBackFace(ctx, i);
+
+    applyEdgeFwdAdd(ctx, i);
 
     return ctx.result;
 }

@@ -46,8 +46,6 @@ namespace MGFX
 		{
 			transform.hideFlags = HideFlags.HideInInspector;
 			Camera.onPreRender += OnPreRenderCamera;
-
-			//QualitySettings.antiAliasing = 0;
 		}
 
 		public void OnDisable ()
