@@ -27,6 +27,7 @@ _FadeOut ("_FadeOut", Range(0,1)) = 0.0
 _RimIntensity ("RimIntensity", Range(0,2)) = 1.0
 
 [Toggle(_MATCAP_ON)] _MatCapOn("Enable MatCap", Int) = 0
+[Toggle(_MATCAP_PLANAR_ON)] _MatCapPlanarOn("Planar Mode", Int) = 0
 [NoScaleOffset] _MatCapTex ("MatCap", 2D) = "black" {}
 _MatCapIntensity ("MatCapIntensity", Range(0,2)) = 1.0
 

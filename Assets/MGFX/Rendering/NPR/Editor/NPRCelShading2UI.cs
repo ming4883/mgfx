@@ -43,6 +43,9 @@ namespace MGFX
         [MaterialProperty("_MatCapOn", "_MATCAP_ON")]
         MaterialProperty m_MatCapOn;
 
+        [MaterialProperty("_MatCapPlanarOn", "_MATCAP_PLANAR_ON")]
+        MaterialProperty m_MatCapPlanarOn;
+
         [MaterialProperty("_MatCapTex")]
         MaterialProperty m_MatCapTex;
 
@@ -165,6 +168,7 @@ namespace MGFX
             {
                 _materialEditor.TextureProperty(m_MatCapTex, "MatCap");
                 _materialEditor.ShaderProperty(m_MapCapIntensity, "MatCap Intensity");
+                DoKeyword(_materialEditor, m_MatCapPlanarOn, "Planar Mode");
             }
 
             EndGroup();

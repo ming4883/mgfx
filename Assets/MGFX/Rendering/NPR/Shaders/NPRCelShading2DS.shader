@@ -27,6 +27,7 @@ _FadeOut ("_FadeOut", Range(0,1)) = 0.0
 _RimIntensity ("RimIntensity", Range(0,2)) = 1.0
 
 [Toggle(_MATCAP_ON)] _MatCapOn("Enable MatCap", Int) = 0
+[Toggle(_MATCAP_PLANAR_ON)] _MatCapPlanarOn("Planar Mode", Int) = 0
 [NoScaleOffset] _MatCapTex ("MatCap", 2D) = "black" {}
 _MatCapIntensity ("MatCapIntensity", Range(0,2)) = 1.0
 
@@ -180,6 +181,7 @@ F1 Bayer( F2 uv )
 #pragma shader_feature _DIFFUSE_LUT_ON
 #pragma shader_feature _RIM_ON
 #pragma shader_feature _MATCAP_ON
+#pragma shader_feature _MATCAP_PLANAR_ON
 #pragma shader_feature _EDGE_ON
 //#pragma enable_d3d11_debug_symbols
 			/// Vertex
@@ -711,6 +713,7 @@ F1 Bayer( F2 uv )
 #pragma shader_feature _DIFFUSE_LUT_ON
 #pragma shader_feature _RIM_ON
 #pragma shader_feature _MATCAP_ON
+#pragma shader_feature _MATCAP_PLANAR_ON
 #pragma shader_feature _EDGE_ON
 //#pragma enable_d3d11_debug_symbols
 			/// Vertex
