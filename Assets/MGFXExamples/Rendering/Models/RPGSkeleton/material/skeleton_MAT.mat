@@ -9,7 +9,7 @@ Material:
   m_Name: skeleton_MAT
   m_Shader: {fileID: 4800000, guid: 9d3b0e88e5ed99a4cbc480a20c0fabbf, type: 3}
   m_ShaderKeywords: S_RECEIVE_SHADOWS S_SPECULAR_METALLIC _DARKEN_BACKFACES_ON _DIFFUSE_LUT_ON
-    _EDGE_ON _MATCAP_ON
+    _EDGE_ON _IRRADIANCE_ON _RIM_ON
   m_LightmapFlags: 5
   m_CustomRenderQueue: 2000
   stringTagMap: {}
@@ -186,7 +186,7 @@ Material:
       data:
         first:
           name: _RimOn
-        second: 0
+        second: 1
       data:
         first:
           name: _RimIntensity
@@ -194,7 +194,7 @@ Material:
       data:
         first:
           name: _MatCapOn
-        second: 1
+        second: 0
       data:
         first:
           name: _MatCapIntensity
@@ -314,6 +314,10 @@ Material:
       data:
         first:
           name: g_flReflectanceScale
+        second: 1
+      data:
+        first:
+          name: _IrradianceOn
         second: 1
     m_Colors:
       data:

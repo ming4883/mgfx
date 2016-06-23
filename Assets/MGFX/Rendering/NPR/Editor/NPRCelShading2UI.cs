@@ -13,6 +13,9 @@ namespace MGFX
         [MaterialProperty("_FadeOut")]
         MaterialProperty m_FadeOut;
 
+        [MaterialProperty("_IrradianceOn", "_IRRADIANCE_ON")]
+        MaterialProperty m_IrradianceOn;
+
         [MaterialProperty("_DarkenBackfacesOn", "_DARKEN_BACKFACES_ON")]
         MaterialProperty m_DarkenBackfacesOn;
 
@@ -108,6 +111,8 @@ namespace MGFX
             _materialEditor.TextureProperty(m_BayerTex, "Differ Matrix");
 
             _materialEditor.ShaderProperty(m_FadeOut, "Fade Out");
+
+            DoKeyword(_materialEditor, m_IrradianceOn, "Use Irradiance");
 
             DoKeyword(_materialEditor, m_DarkenBackfacesOn, "Use Darken Backfaces");
 

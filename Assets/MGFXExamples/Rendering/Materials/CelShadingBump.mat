@@ -7,10 +7,11 @@ Material:
   m_PrefabParentObject: {fileID: 0}
   m_PrefabInternal: {fileID: 0}
   m_Name: CelShadingBump
-  m_Shader: {fileID: 4800000, guid: 9d3b0e88e5ed99a4cbc480a20c0fabbf, type: 3}
-  m_ShaderKeywords: _DARKEN_BACKFACES_ON _DIM_ON _MATCAP_PLANAR_ON _NORMAL_MAP_ON
+  m_Shader: {fileID: 4800000, guid: 638edf9e76479cf499fd8915b0906f64, type: 3}
+  m_ShaderKeywords: _DARKEN_BACKFACES_ON _DIM_ON _IRRADIANCE_ON _MATCAP_PLANAR_ON
+    _NORMAL_MAP_ON
   m_LightmapFlags: 5
-  m_CustomRenderQueue: -1
+  m_CustomRenderQueue: 2000
   stringTagMap: {}
   m_SavedProperties:
     serializedVersion: 2
@@ -239,6 +240,10 @@ Material:
         first:
           name: _Metallic
         second: 0
+      data:
+        first:
+          name: _IrradianceOn
+        second: 1
       data:
         first:
           name: _RimSize

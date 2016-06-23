@@ -6,6 +6,7 @@ Shader "MGFX/NPR/CelShading2DS"
 
 _FadeOut ("_FadeOut", Range(0,1)) = 0.0
 
+[Toggle(_IRRADIANCE_ON)] _IrradianceOn("Enable Darken Backfaces", Int) = 1
 [Toggle(_DARKEN_BACKFACES_ON)] _DarkenBackfacesOn("Enable Darken Backfaces", Int) = 0
 
 [Toggle(_NORMAL_MAP_ON)] _NormalMapOn("Enable NormalMap", Int) = 0
@@ -174,6 +175,7 @@ F1 Bayer( F2 uv )
 #pragma multi_compile_fwdbase novertexlight LIGHTMAP_OFF LIGHTMAP_ON DYNAMICLIGHTMAP_OFF DYNAMICLIGHTMAP_ON DIRLIGHTMAP_OFF DIRLIGHTMAP_COMBINED
 #pragma target 3.0
 
+#pragma shader_feature _IRRADIANCE_ON
 #pragma shader_feature _NORMAL_MAP_ON
 #pragma shader_feature _DARKEN_BACKFACES_ON
 #pragma shader_feature _DIM_ON
@@ -422,11 +424,34 @@ void applyLightingFwdBase(inout ShadingContext ctx, in v2f i)
 #ifdef LIGHTMAP_OFF
 	half ndotl = dot(ctx.worldNormal, _WorldSpaceLightPos0.xyz);
 	#if _DIFFUSE_LUT_ON
-	ndotl = tex2D(_DiffuseLUTTex, saturate(ndotl * 0.5 + 0.5)).r;
+		ndotl = tex2D(_DiffuseLUTTex, saturate(ndotl * 0.5 + 0.5)).r;
 	#else
-	ndotl = saturate(ndotl);
+		ndotl = saturate(ndotl);
 	#endif
-	ctx.result.rgb += lerp(ctx.dimmed, ctx.albedo, ndotl * ctx.shadow) * _LightColor0.rgb;
+
+	half3 lighting = lerp(ctx.dimmed, ctx.albedo, ndotl * ctx.shadow) * _LightColor0.rgb;
+
+	#if _IRRADIANCE_ON
+		half3 irrad = half3(0, 0, 0);
+		#ifdef DYNAMICLIGHTMAP_ON
+
+			irrad = DecodeRealtimeLightmap (UNITY_SAMPLE_TEX2D(unity_DynamicLightmap, i.lmap.zw));
+
+			#if DIRLIGHTMAP_COMBINED
+				fixed4 dirmap = UNITY_SAMPLE_TEX2D_SAMPLER (unity_DynamicDirectionality, unity_DynamicLightmap, i.lmap.zw);
+				irrad = DecodeDirectionalLightmap (irrad, dirmap, ctx.worldNormal);
+			#endif
+
+		#elif UNITY_SHOULD_SAMPLE_SH
+
+			irrad = ShadeSHPerPixel (ctx.worldNormal, irrad);
+		#endif
+
+		lighting = lighting + irrad * ctx.dimmed;
+	#endif
+
+	ctx.result.rgb += lighting;
+
 #endif
 }
 
@@ -443,21 +468,6 @@ void applyLightingFwdAdd(inout ShadingContext ctx, in v2f i)
 	ctx.result.rgb += lerp(ctx.dimmed, ctx.albedo, ndotl * ctx.shadow) * _LightColor0.rgb * lightAtten * ctx.shadow;
 }
 
-void applySHLighting(inout ShadingContext ctx, in v2f i)
-{
-#ifdef UNITY_SHOULD_SAMPLE_SH
-
-	half3 ambient = half3(0, 0, 0);
-	ambient = ShadeSHPerPixel (ctx.worldNormal, ambient);
-
-	//half lum = Luminance(ambient);
-	//ctx.result.rgb += lerp(ctx.dimmed, ctx.albedo, lum) * ambient;
-	ctx.result.rgb += ctx.albedo * ambient;
-
-#endif
-}
-
-
 void applyLightmap(inout ShadingContext ctx, in v2f i)
 {
 #ifdef LIGHTMAP_ON
@@ -471,24 +481,6 @@ void applyLightmap(inout ShadingContext ctx, in v2f i)
 
 	half lum = Luminance(lmap) * ctx.shadow;
 	ctx.result.rgb += lerp(ctx.dimmed, ctx.albedo, lum) * lmap;
-
-#endif
-}
-
-void applyDynamicLightmap(inout ShadingContext ctx, in v2f i)
-{
-#ifdef DYNAMICLIGHTMAP_ON
-
-	half3 lmap = DecodeRealtimeLightmap (UNITY_SAMPLE_TEX2D(unity_DynamicLightmap, i.lmap.zw));
-
-	#if DIRLIGHTMAP_COMBINED
-		fixed4 dirmap = UNITY_SAMPLE_TEX2D_SAMPLER (unity_DynamicDirectionality, unity_DynamicLightmap, i.lmap.zw);
-		lmap = DecodeDirectionalLightmap (lmap, dirmap, ctx.worldNormal);
-	#endif
-
-	//half lum = Luminance(lmap);
-	//ctx.result.rgb += lerp(ctx.dimmed, ctx.albedo, lum) * lmap;
-	ctx.result.rgb += ctx.albedo * lmap;
 
 #endif
 }
@@ -573,14 +565,10 @@ half4 frag_base (v2f i, fixed vface : VFACE) : SV_Target
     ShadingContext ctx;
     shadingContext(ctx, i, vface);
 
-    applySHLighting(ctx, i);
+	applyLightingFwdBase(ctx, i);
 
 	applyLightmap(ctx, i);
 
-	applyDynamicLightmap(ctx, i);
-
-	applyLightingFwdBase(ctx, i);
-	
 	applyRim(ctx, i);
 
 	applyMatcap(ctx, i);
@@ -742,6 +730,7 @@ F1 Bayer( F2 uv )
 #pragma multi_compile_fwdbase novertexlight LIGHTMAP_OFF LIGHTMAP_ON DYNAMICLIGHTMAP_OFF DYNAMICLIGHTMAP_ON DIRLIGHTMAP_OFF DIRLIGHTMAP_COMBINED
 #pragma target 3.0
 
+#pragma shader_feature _IRRADIANCE_ON
 #pragma shader_feature _NORMAL_MAP_ON
 #pragma shader_feature _DARKEN_BACKFACES_ON
 #pragma shader_feature _DIM_ON
@@ -990,11 +979,34 @@ void applyLightingFwdBase(inout ShadingContext ctx, in v2f i)
 #ifdef LIGHTMAP_OFF
 	half ndotl = dot(ctx.worldNormal, _WorldSpaceLightPos0.xyz);
 	#if _DIFFUSE_LUT_ON
-	ndotl = tex2D(_DiffuseLUTTex, saturate(ndotl * 0.5 + 0.5)).r;
+		ndotl = tex2D(_DiffuseLUTTex, saturate(ndotl * 0.5 + 0.5)).r;
 	#else
-	ndotl = saturate(ndotl);
+		ndotl = saturate(ndotl);
 	#endif
-	ctx.result.rgb += lerp(ctx.dimmed, ctx.albedo, ndotl * ctx.shadow) * _LightColor0.rgb;
+
+	half3 lighting = lerp(ctx.dimmed, ctx.albedo, ndotl * ctx.shadow) * _LightColor0.rgb;
+
+	#if _IRRADIANCE_ON
+		half3 irrad = half3(0, 0, 0);
+		#ifdef DYNAMICLIGHTMAP_ON
+
+			irrad = DecodeRealtimeLightmap (UNITY_SAMPLE_TEX2D(unity_DynamicLightmap, i.lmap.zw));
+
+			#if DIRLIGHTMAP_COMBINED
+				fixed4 dirmap = UNITY_SAMPLE_TEX2D_SAMPLER (unity_DynamicDirectionality, unity_DynamicLightmap, i.lmap.zw);
+				irrad = DecodeDirectionalLightmap (irrad, dirmap, ctx.worldNormal);
+			#endif
+
+		#elif UNITY_SHOULD_SAMPLE_SH
+
+			irrad = ShadeSHPerPixel (ctx.worldNormal, irrad);
+		#endif
+
+		lighting = lighting + irrad * ctx.dimmed;
+	#endif
+
+	ctx.result.rgb += lighting;
+
 #endif
 }
 
@@ -1011,21 +1023,6 @@ void applyLightingFwdAdd(inout ShadingContext ctx, in v2f i)
 	ctx.result.rgb += lerp(ctx.dimmed, ctx.albedo, ndotl * ctx.shadow) * _LightColor0.rgb * lightAtten * ctx.shadow;
 }
 
-void applySHLighting(inout ShadingContext ctx, in v2f i)
-{
-#ifdef UNITY_SHOULD_SAMPLE_SH
-
-	half3 ambient = half3(0, 0, 0);
-	ambient = ShadeSHPerPixel (ctx.worldNormal, ambient);
-
-	//half lum = Luminance(ambient);
-	//ctx.result.rgb += lerp(ctx.dimmed, ctx.albedo, lum) * ambient;
-	ctx.result.rgb += ctx.albedo * ambient;
-
-#endif
-}
-
-
 void applyLightmap(inout ShadingContext ctx, in v2f i)
 {
 #ifdef LIGHTMAP_ON
@@ -1039,24 +1036,6 @@ void applyLightmap(inout ShadingContext ctx, in v2f i)
 
 	half lum = Luminance(lmap) * ctx.shadow;
 	ctx.result.rgb += lerp(ctx.dimmed, ctx.albedo, lum) * lmap;
-
-#endif
-}
-
-void applyDynamicLightmap(inout ShadingContext ctx, in v2f i)
-{
-#ifdef DYNAMICLIGHTMAP_ON
-
-	half3 lmap = DecodeRealtimeLightmap (UNITY_SAMPLE_TEX2D(unity_DynamicLightmap, i.lmap.zw));
-
-	#if DIRLIGHTMAP_COMBINED
-		fixed4 dirmap = UNITY_SAMPLE_TEX2D_SAMPLER (unity_DynamicDirectionality, unity_DynamicLightmap, i.lmap.zw);
-		lmap = DecodeDirectionalLightmap (lmap, dirmap, ctx.worldNormal);
-	#endif
-
-	//half lum = Luminance(lmap);
-	//ctx.result.rgb += lerp(ctx.dimmed, ctx.albedo, lum) * lmap;
-	ctx.result.rgb += ctx.albedo * lmap;
 
 #endif
 }
@@ -1141,14 +1120,10 @@ half4 frag_base (v2f i, fixed vface : VFACE) : SV_Target
     ShadingContext ctx;
     shadingContext(ctx, i, vface);
 
-    applySHLighting(ctx, i);
+	applyLightingFwdBase(ctx, i);
 
 	applyLightmap(ctx, i);
 
-	applyDynamicLightmap(ctx, i);
-
-	applyLightingFwdBase(ctx, i);
-	
 	applyRim(ctx, i);
 
 	applyMatcap(ctx, i);
@@ -1558,11 +1533,34 @@ void applyLightingFwdBase(inout ShadingContext ctx, in v2f i)
 #ifdef LIGHTMAP_OFF
 	half ndotl = dot(ctx.worldNormal, _WorldSpaceLightPos0.xyz);
 	#if _DIFFUSE_LUT_ON
-	ndotl = tex2D(_DiffuseLUTTex, saturate(ndotl * 0.5 + 0.5)).r;
+		ndotl = tex2D(_DiffuseLUTTex, saturate(ndotl * 0.5 + 0.5)).r;
 	#else
-	ndotl = saturate(ndotl);
+		ndotl = saturate(ndotl);
 	#endif
-	ctx.result.rgb += lerp(ctx.dimmed, ctx.albedo, ndotl * ctx.shadow) * _LightColor0.rgb;
+
+	half3 lighting = lerp(ctx.dimmed, ctx.albedo, ndotl * ctx.shadow) * _LightColor0.rgb;
+
+	#if _IRRADIANCE_ON
+		half3 irrad = half3(0, 0, 0);
+		#ifdef DYNAMICLIGHTMAP_ON
+
+			irrad = DecodeRealtimeLightmap (UNITY_SAMPLE_TEX2D(unity_DynamicLightmap, i.lmap.zw));
+
+			#if DIRLIGHTMAP_COMBINED
+				fixed4 dirmap = UNITY_SAMPLE_TEX2D_SAMPLER (unity_DynamicDirectionality, unity_DynamicLightmap, i.lmap.zw);
+				irrad = DecodeDirectionalLightmap (irrad, dirmap, ctx.worldNormal);
+			#endif
+
+		#elif UNITY_SHOULD_SAMPLE_SH
+
+			irrad = ShadeSHPerPixel (ctx.worldNormal, irrad);
+		#endif
+
+		lighting = lighting + irrad * ctx.dimmed;
+	#endif
+
+	ctx.result.rgb += lighting;
+
 #endif
 }
 
@@ -1579,21 +1577,6 @@ void applyLightingFwdAdd(inout ShadingContext ctx, in v2f i)
 	ctx.result.rgb += lerp(ctx.dimmed, ctx.albedo, ndotl * ctx.shadow) * _LightColor0.rgb * lightAtten * ctx.shadow;
 }
 
-void applySHLighting(inout ShadingContext ctx, in v2f i)
-{
-#ifdef UNITY_SHOULD_SAMPLE_SH
-
-	half3 ambient = half3(0, 0, 0);
-	ambient = ShadeSHPerPixel (ctx.worldNormal, ambient);
-
-	//half lum = Luminance(ambient);
-	//ctx.result.rgb += lerp(ctx.dimmed, ctx.albedo, lum) * ambient;
-	ctx.result.rgb += ctx.albedo * ambient;
-
-#endif
-}
-
-
 void applyLightmap(inout ShadingContext ctx, in v2f i)
 {
 #ifdef LIGHTMAP_ON
@@ -1607,24 +1590,6 @@ void applyLightmap(inout ShadingContext ctx, in v2f i)
 
 	half lum = Luminance(lmap) * ctx.shadow;
 	ctx.result.rgb += lerp(ctx.dimmed, ctx.albedo, lum) * lmap;
-
-#endif
-}
-
-void applyDynamicLightmap(inout ShadingContext ctx, in v2f i)
-{
-#ifdef DYNAMICLIGHTMAP_ON
-
-	half3 lmap = DecodeRealtimeLightmap (UNITY_SAMPLE_TEX2D(unity_DynamicLightmap, i.lmap.zw));
-
-	#if DIRLIGHTMAP_COMBINED
-		fixed4 dirmap = UNITY_SAMPLE_TEX2D_SAMPLER (unity_DynamicDirectionality, unity_DynamicLightmap, i.lmap.zw);
-		lmap = DecodeDirectionalLightmap (lmap, dirmap, ctx.worldNormal);
-	#endif
-
-	//half lum = Luminance(lmap);
-	//ctx.result.rgb += lerp(ctx.dimmed, ctx.albedo, lum) * lmap;
-	ctx.result.rgb += ctx.albedo * lmap;
 
 #endif
 }
@@ -1709,14 +1674,10 @@ half4 frag_base (v2f i, fixed vface : VFACE) : SV_Target
     ShadingContext ctx;
     shadingContext(ctx, i, vface);
 
-    applySHLighting(ctx, i);
+	applyLightingFwdBase(ctx, i);
 
 	applyLightmap(ctx, i);
 
-	applyDynamicLightmap(ctx, i);
-
-	applyLightingFwdBase(ctx, i);
-	
 	applyRim(ctx, i);
 
 	applyMatcap(ctx, i);
@@ -2127,11 +2088,34 @@ void applyLightingFwdBase(inout ShadingContext ctx, in v2f i)
 #ifdef LIGHTMAP_OFF
 	half ndotl = dot(ctx.worldNormal, _WorldSpaceLightPos0.xyz);
 	#if _DIFFUSE_LUT_ON
-	ndotl = tex2D(_DiffuseLUTTex, saturate(ndotl * 0.5 + 0.5)).r;
+		ndotl = tex2D(_DiffuseLUTTex, saturate(ndotl * 0.5 + 0.5)).r;
 	#else
-	ndotl = saturate(ndotl);
+		ndotl = saturate(ndotl);
 	#endif
-	ctx.result.rgb += lerp(ctx.dimmed, ctx.albedo, ndotl * ctx.shadow) * _LightColor0.rgb;
+
+	half3 lighting = lerp(ctx.dimmed, ctx.albedo, ndotl * ctx.shadow) * _LightColor0.rgb;
+
+	#if _IRRADIANCE_ON
+		half3 irrad = half3(0, 0, 0);
+		#ifdef DYNAMICLIGHTMAP_ON
+
+			irrad = DecodeRealtimeLightmap (UNITY_SAMPLE_TEX2D(unity_DynamicLightmap, i.lmap.zw));
+
+			#if DIRLIGHTMAP_COMBINED
+				fixed4 dirmap = UNITY_SAMPLE_TEX2D_SAMPLER (unity_DynamicDirectionality, unity_DynamicLightmap, i.lmap.zw);
+				irrad = DecodeDirectionalLightmap (irrad, dirmap, ctx.worldNormal);
+			#endif
+
+		#elif UNITY_SHOULD_SAMPLE_SH
+
+			irrad = ShadeSHPerPixel (ctx.worldNormal, irrad);
+		#endif
+
+		lighting = lighting + irrad * ctx.dimmed;
+	#endif
+
+	ctx.result.rgb += lighting;
+
 #endif
 }
 
@@ -2148,21 +2132,6 @@ void applyLightingFwdAdd(inout ShadingContext ctx, in v2f i)
 	ctx.result.rgb += lerp(ctx.dimmed, ctx.albedo, ndotl * ctx.shadow) * _LightColor0.rgb * lightAtten * ctx.shadow;
 }
 
-void applySHLighting(inout ShadingContext ctx, in v2f i)
-{
-#ifdef UNITY_SHOULD_SAMPLE_SH
-
-	half3 ambient = half3(0, 0, 0);
-	ambient = ShadeSHPerPixel (ctx.worldNormal, ambient);
-
-	//half lum = Luminance(ambient);
-	//ctx.result.rgb += lerp(ctx.dimmed, ctx.albedo, lum) * ambient;
-	ctx.result.rgb += ctx.albedo * ambient;
-
-#endif
-}
-
-
 void applyLightmap(inout ShadingContext ctx, in v2f i)
 {
 #ifdef LIGHTMAP_ON
@@ -2176,24 +2145,6 @@ void applyLightmap(inout ShadingContext ctx, in v2f i)
 
 	half lum = Luminance(lmap) * ctx.shadow;
 	ctx.result.rgb += lerp(ctx.dimmed, ctx.albedo, lum) * lmap;
-
-#endif
-}
-
-void applyDynamicLightmap(inout ShadingContext ctx, in v2f i)
-{
-#ifdef DYNAMICLIGHTMAP_ON
-
-	half3 lmap = DecodeRealtimeLightmap (UNITY_SAMPLE_TEX2D(unity_DynamicLightmap, i.lmap.zw));
-
-	#if DIRLIGHTMAP_COMBINED
-		fixed4 dirmap = UNITY_SAMPLE_TEX2D_SAMPLER (unity_DynamicDirectionality, unity_DynamicLightmap, i.lmap.zw);
-		lmap = DecodeDirectionalLightmap (lmap, dirmap, ctx.worldNormal);
-	#endif
-
-	//half lum = Luminance(lmap);
-	//ctx.result.rgb += lerp(ctx.dimmed, ctx.albedo, lum) * lmap;
-	ctx.result.rgb += ctx.albedo * lmap;
 
 #endif
 }
@@ -2278,14 +2229,10 @@ half4 frag_base (v2f i, fixed vface : VFACE) : SV_Target
     ShadingContext ctx;
     shadingContext(ctx, i, vface);
 
-    applySHLighting(ctx, i);
+	applyLightingFwdBase(ctx, i);
 
 	applyLightmap(ctx, i);
 
-	applyDynamicLightmap(ctx, i);
-
-	applyLightingFwdBase(ctx, i);
-	
 	applyRim(ctx, i);
 
 	applyMatcap(ctx, i);
