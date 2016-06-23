@@ -1,6 +1,6 @@
 ﻿#pragma vertex vert
 #pragma fragment frag_base
-#pragma multi_compile_fwdbase novertexlight LIGHTMAP_OFF LIGHTMAP_ON DIRLIGHTMAP_OFF DIRLIGHTMAP_COMBINED
+#pragma multi_compile_fwdbase novertexlight LIGHTMAP_OFF LIGHTMAP_ON DYNAMICLIGHTMAP_OFF DYNAMICLIGHTMAP_ON DIRLIGHTMAP_OFF DIRLIGHTMAP_COMBINED
 #pragma target 3.0
 
 #pragma shader_feature _NORMAL_MAP_ON

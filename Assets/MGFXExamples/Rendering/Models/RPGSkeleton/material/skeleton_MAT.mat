@@ -83,7 +83,7 @@ Material:
         first:
           name: _MatCapTex
         second:
-          m_Texture: {fileID: 2800000, guid: a24bbcd82b22c6e46a6723e270e807fb, type: 3}
+          m_Texture: {fileID: 2800000, guid: 5a049a5395c90154dbc3d1cc025c2f59, type: 3}
           m_Scale: {x: 1, y: 1}
           m_Offset: {x: 0, y: 0}
       data:
@@ -211,6 +211,10 @@ Material:
         first:
           name: _EdgeAutoColorFactor
         second: 4
+      data:
+        first:
+          name: _MatCapPlanarOn
+        second: 0
       data:
         first:
           name: _Parallax

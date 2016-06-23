@@ -115,7 +115,7 @@ namespace MGFX
 
     class CodeDRYerWindow : EditorWindow
     {
-        [MenuItem("MGFX/CodeDRYer", false, 1000)]
+        [MenuItem("Window/MGFX/CodeDRYer", false, 1000)]
         public static void MenuItem()
         {
             CodeDRYerWindow _window = EditorWindow.CreateInstance <CodeDRYerWindow>();

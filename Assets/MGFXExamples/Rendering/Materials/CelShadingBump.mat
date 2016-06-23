@@ -8,7 +8,7 @@ Material:
   m_PrefabInternal: {fileID: 0}
   m_Name: CelShadingBump
   m_Shader: {fileID: 4800000, guid: 9d3b0e88e5ed99a4cbc480a20c0fabbf, type: 3}
-  m_ShaderKeywords: _DARKEN_BACKFACES_ON _DIM_ON _MATCAP_ON _MATCAP_PLANAR_ON _NORMAL_MAP_ON
+  m_ShaderKeywords: _DARKEN_BACKFACES_ON _DIM_ON _MATCAP_PLANAR_ON _NORMAL_MAP_ON
   m_LightmapFlags: 5
   m_CustomRenderQueue: -1
   stringTagMap: {}
@@ -82,7 +82,7 @@ Material:
         first:
           name: _MatCapTex
         second:
-          m_Texture: {fileID: 2800000, guid: a24bbcd82b22c6e46a6723e270e807fb, type: 3}
+          m_Texture: {fileID: 2800000, guid: 5a049a5395c90154dbc3d1cc025c2f59, type: 3}
           m_Scale: {x: 1, y: 1}
           m_Offset: {x: 0, y: 0}
       data:
@@ -182,11 +182,11 @@ Material:
       data:
         first:
           name: _MatCapOn
-        second: 1
+        second: 0
       data:
         first:
           name: _MatCapIntensity
-        second: 0.5
+        second: 1
       data:
         first:
           name: _EdgeOn
@@ -199,6 +199,10 @@ Material:
         first:
           name: _EdgeAutoColorFactor
         second: 1.5
+      data:
+        first:
+          name: _MatCapPlanarOn
+        second: 1
       data:
         first:
           name: _Parallax
@@ -247,10 +251,6 @@ Material:
         first:
           name: _SsaoShapness
         second: 0
-      data:
-        first:
-          name: _MatCapPlanarOn
-        second: 1
     m_Colors:
       data:
         first:
