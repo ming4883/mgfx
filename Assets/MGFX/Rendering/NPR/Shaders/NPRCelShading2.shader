@@ -5,6 +5,7 @@ Shader "MGFX/NPR/CelShading2"
 [NoScaleOffset] _MainTex ("Texture", 2D) = "white" {}
 
 _FadeOut ("_FadeOut", Range(0,1)) = 0.0
+[Toggle(_TEXTURE_FADE_OUT_ON)] _TextureFadeOutOn("Enable Texture FadeOut", Int) = 0
 
 [Toggle(_IRRADIANCE_ON)] _IrradianceOn("Enable Darken Backfaces", Int) = 1
 [Toggle(_DARKEN_BACKFACES_ON)] _DarkenBackfacesOn("Enable Darken Backfaces", Int) = 0
@@ -175,6 +176,7 @@ F1 Bayer( F2 uv )
 #pragma multi_compile_fwdbase novertexlight LIGHTMAP_OFF LIGHTMAP_ON DYNAMICLIGHTMAP_OFF DYNAMICLIGHTMAP_ON DIRLIGHTMAP_OFF DIRLIGHTMAP_COMBINED
 #pragma target 3.0
 
+#pragma shader_feature _TEXTURE_FADE_OUT_ON
 #pragma shader_feature _IRRADIANCE_ON
 #pragma shader_feature _NORMAL_MAP_ON
 #pragma shader_feature _DARKEN_BACKFACES_ON
@@ -539,7 +541,7 @@ half dither(in v2f i)
 	return d1;
 }
 
-void fade(in v2f i, fixed vface)
+void fade(inout ShadingContext ctx, in v2f i)
 {
 	half viewZ = i.worldPosAndZ.w;
 	half d = dither(i);
@@ -547,6 +549,10 @@ void fade(in v2f i, fixed vface)
 	half fading = _FadeOut;
 	fading = fading * 2.0 - 1.0;
 	clip(d - fading);
+
+#if _TEXTURE_FADE_OUT_ON
+	clip(d + ctx.albedo.a);
+#endif
 
 	half bZ = _ProjectionParams.y * 2;
 	half eZ = _ProjectionParams.y * 6;
@@ -560,10 +566,10 @@ void fade(in v2f i, fixed vface)
 
 half4 frag_base (v2f i, fixed vface : VFACE) : SV_Target
 {
-   	fade(i, vface);
-
     ShadingContext ctx;
     shadingContext(ctx, i, vface);
+
+   	fade(ctx, i);
 
 	applyLightingFwdBase(ctx, i);
 
@@ -583,10 +589,10 @@ half4 frag_base (v2f i, fixed vface : VFACE) : SV_Target
 
 half4 frag_add (v2f i, fixed vface : VFACE) : SV_Target
 {
-	fade(i, vface);
-
     ShadingContext ctx;
     shadingContext(ctx, i, vface);
+
+    fade(ctx, i);
 
     applyLightingFwdAdd(ctx, i);
 
@@ -733,6 +739,7 @@ F1 Bayer( F2 uv )
 #pragma multi_compile_fwdadd_fullshadows
 #pragma target 3.0
 
+#pragma shader_feature _TEXTURE_FADE_OUT_ON
 #pragma shader_feature _NORMAL_MAP_ON
 #pragma shader_feature _DARKEN_BACKFACES_ON
 #pragma shader_feature _DIM_ON
@@ -1093,7 +1100,7 @@ half dither(in v2f i)
 	return d1;
 }
 
-void fade(in v2f i, fixed vface)
+void fade(inout ShadingContext ctx, in v2f i)
 {
 	half viewZ = i.worldPosAndZ.w;
 	half d = dither(i);
@@ -1101,6 +1108,10 @@ void fade(in v2f i, fixed vface)
 	half fading = _FadeOut;
 	fading = fading * 2.0 - 1.0;
 	clip(d - fading);
+
+#if _TEXTURE_FADE_OUT_ON
+	clip(d + ctx.albedo.a);
+#endif
 
 	half bZ = _ProjectionParams.y * 2;
 	half eZ = _ProjectionParams.y * 6;
@@ -1114,10 +1125,10 @@ void fade(in v2f i, fixed vface)
 
 half4 frag_base (v2f i, fixed vface : VFACE) : SV_Target
 {
-   	fade(i, vface);
-
     ShadingContext ctx;
     shadingContext(ctx, i, vface);
+
+   	fade(ctx, i);
 
 	applyLightingFwdBase(ctx, i);
 
@@ -1137,10 +1148,10 @@ half4 frag_base (v2f i, fixed vface : VFACE) : SV_Target
 
 half4 frag_add (v2f i, fixed vface : VFACE) : SV_Target
 {
-	fade(i, vface);
-
     ShadingContext ctx;
     shadingContext(ctx, i, vface);
+
+    fade(ctx, i);
 
     applyLightingFwdAdd(ctx, i);
 
@@ -1150,6 +1161,65 @@ half4 frag_add (v2f i, fixed vface : VFACE) : SV_Target
 
     return ctx.result;
 }
+			ENDCG
+		}
+
+		Pass
+		{
+			Name "META"
+			Tags
+			{
+				"LightMode"="Meta"
+			}
+
+			Cull Off
+
+		    CGPROGRAM
+			#pragma only_renderers d3d11
+#pragma vertex vert_meta
+#pragma fragment frag_meta
+
+#include "UnityCG.cginc"
+#include "UnityMetaPass.cginc"
+
+struct appdata
+{
+    float4 vertex : POSITION;
+    float2 texcoord : TEXCOORD0;
+    float2 texcoord1 : TEXCOORD1;
+    float2 texcoord2 : TEXCOORD2;
+};
+
+struct v2f_meta
+{
+	float2 uv		: TEXCOORD0;
+	float4 pos		: SV_POSITION;
+};
+
+
+uniform sampler2D _MainTex;
+uniform float4 _MainTex_ST;
+
+v2f_meta vert_meta (appdata v)
+{
+	v2f_meta o;
+	o.pos = UnityMetaVertexPosition(v.vertex, v.texcoord1.xy, v.texcoord2.xy, unity_LightmapST, unity_DynamicLightmapST);
+	o.uv = TRANSFORM_TEX(v.texcoord, _MainTex);
+	return o;
+}
+
+
+float4 frag_meta (v2f_meta i) : SV_Target
+{
+	UnityMetaInput o;
+	UNITY_INITIALIZE_OUTPUT(UnityMetaInput, o);
+
+	o.Albedo = tex2D(_MainTex, i.uv);
+	o.Emission = 0;
+
+	return UnityMetaFragment(o);
+}
+
 			ENDCG
 		}
 

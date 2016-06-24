@@ -3,6 +3,7 @@
 #pragma multi_compile_fwdadd_fullshadows
 #pragma target 3.0
 
+#pragma shader_feature _TEXTURE_FADE_OUT_ON
 #pragma shader_feature _NORMAL_MAP_ON
 #pragma shader_feature _DARKEN_BACKFACES_ON
 #pragma shader_feature _DIM_ON

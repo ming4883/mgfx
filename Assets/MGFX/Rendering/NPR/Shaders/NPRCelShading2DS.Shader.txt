@@ -86,6 +86,21 @@
 			ENDCG
 		}
 
+		Pass
+		{
+			Name "META"
+			Tags
+			{
+				"LightMode"="Meta"
+			}
+
+			Cull Off
+
+		    CGPROGRAM
+			{% unityasset MGFX/Rendering/NPR/Shaders/NPRCelShading2.CGMeta.txt %}
+			ENDCG
+		}
+
 		// shadow casting support
 		UsePass "Legacy Shaders/VertexLit/SHADOWCASTER"
     }

@@ -3,6 +3,7 @@
 #pragma multi_compile_fwdbase novertexlight LIGHTMAP_OFF LIGHTMAP_ON DYNAMICLIGHTMAP_OFF DYNAMICLIGHTMAP_ON DIRLIGHTMAP_OFF DIRLIGHTMAP_COMBINED
 #pragma target 3.0
 
+#pragma shader_feature _TEXTURE_FADE_OUT_ON
 #pragma shader_feature _IRRADIANCE_ON
 #pragma shader_feature _NORMAL_MAP_ON
 #pragma shader_feature _DARKEN_BACKFACES_ON

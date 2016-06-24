@@ -13,6 +13,9 @@ namespace MGFX
         [MaterialProperty("_FadeOut")]
         MaterialProperty m_FadeOut;
 
+        [MaterialProperty("_TextureFadeOutOn", "_TEXTURE_FADE_OUT_ON")]
+        MaterialProperty m_TextureFadeOutOn;
+
         [MaterialProperty("_IrradianceOn", "_IRRADIANCE_ON")]
         MaterialProperty m_IrradianceOn;
 
@@ -111,6 +114,8 @@ namespace MGFX
             _materialEditor.TextureProperty(m_BayerTex, "Differ Matrix");
 
             _materialEditor.ShaderProperty(m_FadeOut, "Fade Out");
+
+            DoKeyword(_materialEditor, m_TextureFadeOutOn, "Fade Out (Tex Alpha)");
 
             DoKeyword(_materialEditor, m_IrradianceOn, "Use Irradiance");
 

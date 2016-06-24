@@ -351,7 +351,7 @@ half dither(in v2f i)
 	return d1;
 }
 
-void fade(in v2f i, fixed vface)
+void fade(inout ShadingContext ctx, in v2f i)
 {
 	half viewZ = i.worldPosAndZ.w;
 	half d = dither(i);
@@ -359,6 +359,10 @@ void fade(in v2f i, fixed vface)
 	half fading = _FadeOut;
 	fading = fading * 2.0 - 1.0;
 	clip(d - fading);
+
+#if _TEXTURE_FADE_OUT_ON
+	clip(d + ctx.albedo.a);
+#endif
 
 	half bZ = _ProjectionParams.y * 2;
 	half eZ = _ProjectionParams.y * 6;
@@ -372,10 +376,10 @@ void fade(in v2f i, fixed vface)
 
 half4 frag_base (v2f i, fixed vface : VFACE) : SV_Target
 {
-   	fade(i, vface);
-
     ShadingContext ctx;
     shadingContext(ctx, i, vface);
+
+   	fade(ctx, i);
 
 	applyLightingFwdBase(ctx, i);
 
@@ -395,10 +399,10 @@ half4 frag_base (v2f i, fixed vface : VFACE) : SV_Target
 
 half4 frag_add (v2f i, fixed vface : VFACE) : SV_Target
 {
-	fade(i, vface);
-
     ShadingContext ctx;
     shadingContext(ctx, i, vface);
+
+    fade(ctx, i);
 
     applyLightingFwdAdd(ctx, i);
 

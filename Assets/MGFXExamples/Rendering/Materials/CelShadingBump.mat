@@ -256,6 +256,10 @@ Material:
         first:
           name: _SsaoShapness
         second: 0
+      data:
+        first:
+          name: _TextureFadeOutOn
+        second: 0
     m_Colors:
       data:
         first:

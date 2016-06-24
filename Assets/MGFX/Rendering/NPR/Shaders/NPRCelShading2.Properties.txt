@@ -1,6 +1,7 @@
 ﻿[NoScaleOffset] _MainTex ("Texture", 2D) = "white" {}
 
 _FadeOut ("_FadeOut", Range(0,1)) = 0.0
+[Toggle(_TEXTURE_FADE_OUT_ON)] _TextureFadeOutOn("Enable Texture FadeOut", Int) = 0
 
 [Toggle(_IRRADIANCE_ON)] _IrradianceOn("Enable Darken Backfaces", Int) = 1
 [Toggle(_DARKEN_BACKFACES_ON)] _DarkenBackfacesOn("Enable Darken Backfaces", Int) = 0
