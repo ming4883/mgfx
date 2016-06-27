@@ -8,6 +8,7 @@ _FadeOut ("_FadeOut", Range(0,1)) = 0.0
 [Toggle(_TEXTURE_FADE_OUT_ON)] _TextureFadeOutOn("Enable Texture FadeOut", Int) = 0
 
 [Toggle(_IRRADIANCE_ON)] _IrradianceOn("Enable Darken Backfaces", Int) = 1
+_IrradianceBoost ("IrradianceBoost", Range(0,1)) = 0.0
 [Toggle(_DARKEN_BACKFACES_ON)] _DarkenBackfacesOn("Enable Darken Backfaces", Int) = 0
 
 [Toggle(_NORMAL_MAP_ON)] _NormalMapOn("Enable NormalMap", Int) = 0
@@ -287,6 +288,10 @@ uniform sampler2D _MainTex;
 
 uniform float _FadeOut;
 
+#if _IRRADIANCE_ON
+uniform float _IrradianceBoost;
+#endif
+
 #if _NORMAL_MAP_ON
 uniform sampler2D _NormalMapTex;
 #endif
@@ -449,7 +454,7 @@ void applyLightingFwdBase(inout ShadingContext ctx, in v2f i)
 			irrad = ShadeSHPerPixel (ctx.worldNormal, irrad);
 		#endif
 
-		lighting = lighting + irrad * ctx.dimmed;
+		lighting += irrad * (ctx.albedo * (1 - _IrradianceBoost) + _IrradianceBoost);
 	#endif
 
 	ctx.result.rgb += lighting;
@@ -846,6 +851,10 @@ uniform sampler2D _MainTex;
 
 uniform float _FadeOut;
 
+#if _IRRADIANCE_ON
+uniform float _IrradianceBoost;
+#endif
+
 #if _NORMAL_MAP_ON
 uniform sampler2D _NormalMapTex;
 #endif
@@ -1008,7 +1017,7 @@ void applyLightingFwdBase(inout ShadingContext ctx, in v2f i)
 			irrad = ShadeSHPerPixel (ctx.worldNormal, irrad);
 		#endif
 
-		lighting = lighting + irrad * ctx.dimmed;
+		lighting += irrad * (ctx.albedo * (1 - _IrradianceBoost) + _IrradianceBoost);
 	#endif
 
 	ctx.result.rgb += lighting;

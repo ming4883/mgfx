@@ -19,6 +19,9 @@ namespace MGFX
         [MaterialProperty("_IrradianceOn", "_IRRADIANCE_ON")]
         MaterialProperty m_IrradianceOn;
 
+        [MaterialProperty("_IrradianceBoost")]
+        MaterialProperty m_IrradianceBoost;
+
         [MaterialProperty("_DarkenBackfacesOn", "_DARKEN_BACKFACES_ON")]
         MaterialProperty m_DarkenBackfacesOn;
 
@@ -117,7 +120,10 @@ namespace MGFX
 
             DoKeyword(_materialEditor, m_TextureFadeOutOn, "Fade Out (Tex Alpha)");
 
-            DoKeyword(_materialEditor, m_IrradianceOn, "Use Irradiance");
+            if (DoKeyword(_materialEditor, m_IrradianceOn, "Use Irradiance"))
+            {
+                _materialEditor.ShaderProperty(m_IrradianceBoost, "Irradiance Boost");
+            }
 
             DoKeyword(_materialEditor, m_DarkenBackfacesOn, "Use Darken Backfaces");
 
