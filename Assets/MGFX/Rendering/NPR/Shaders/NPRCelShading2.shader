@@ -8,7 +8,7 @@ _FadeOut ("_FadeOut", Range(0,1)) = 0.0
 [Toggle(_TEXTURE_FADE_OUT_ON)] _TextureFadeOutOn("Enable Texture FadeOut", Int) = 0
 
 [Toggle(_IRRADIANCE_ON)] _IrradianceOn("Enable Darken Backfaces", Int) = 1
-_IrradianceBoost ("IrradianceBoost", Range(0,1)) = 0.0
+_IrradianceBoost ("IrradianceBoost", Range(-1,8)) = 0.0
 [Toggle(_DARKEN_BACKFACES_ON)] _DarkenBackfacesOn("Enable Darken Backfaces", Int) = 0
 
 [Toggle(_NORMAL_MAP_ON)] _NormalMapOn("Enable NormalMap", Int) = 0
@@ -382,14 +382,6 @@ void fetchShadowTermWithDither(inout ShadingContext ctx, in v2f i)
 void fetchAlbedoAndDimmed(inout ShadingContext ctx, in v2f i)
 {
 	ctx.albedo = tex2D(_MainTex, i.uv.xy);
-#if _OVERLAY_ON
-	half4 overlay = tex2D(_OverlayTex, i.uv.zw);
-
-	half t = overlay.a;
-	t = (1-cos(t*3.1415926)) / 2;
-
-	ctx.albedo.rgb = lerp(ctx.albedo.rgb, overlay.rgb, t);
-#endif
 
 #if _DIM_ON
 	ctx.dimmed = tex2D(_DimTex, i.uv.xy);
@@ -398,6 +390,16 @@ void fetchAlbedoAndDimmed(inout ShadingContext ctx, in v2f i)
 	dimmed = dimmed * dimmed;
 	dimmed = dimmed * dimmed;
 	ctx.dimmed = half4(dimmed, ctx.albedo.a);
+#endif
+
+#if _OVERLAY_ON
+	half4 overlay = tex2D(_OverlayTex, i.uv.zw);
+
+	half t = overlay.a;
+	t = (1-cos(t*3.1415926)) / 2;
+
+	ctx.albedo.rgb = lerp(ctx.albedo.rgb, overlay.rgb, t);
+	ctx.dimmed.rgb = lerp(ctx.dimmed.rgb, overlay.rgb, t);
 #endif
 
 }
@@ -457,7 +459,7 @@ void applyLightingFwdBase(inout ShadingContext ctx, in v2f i)
 			irrad = ShadeSHPerPixel (ctx.worldNormal, irrad);
 		#endif
 
-		lighting += irrad * (ctx.albedo * (1 - _IrradianceBoost) + _IrradianceBoost);
+		lighting += irrad * ctx.albedo * (1.0 + _IrradianceBoost);
 	#endif
 
 	ctx.result.rgb += lighting;
@@ -951,14 +953,6 @@ void fetchShadowTermWithDither(inout ShadingContext ctx, in v2f i)
 void fetchAlbedoAndDimmed(inout ShadingContext ctx, in v2f i)
 {
 	ctx.albedo = tex2D(_MainTex, i.uv.xy);
-#if _OVERLAY_ON
-	half4 overlay = tex2D(_OverlayTex, i.uv.zw);
-
-	half t = overlay.a;
-	t = (1-cos(t*3.1415926)) / 2;
-
-	ctx.albedo.rgb = lerp(ctx.albedo.rgb, overlay.rgb, t);
-#endif
 
 #if _DIM_ON
 	ctx.dimmed = tex2D(_DimTex, i.uv.xy);
@@ -967,6 +961,16 @@ void fetchAlbedoAndDimmed(inout ShadingContext ctx, in v2f i)
 	dimmed = dimmed * dimmed;
 	dimmed = dimmed * dimmed;
 	ctx.dimmed = half4(dimmed, ctx.albedo.a);
+#endif
+
+#if _OVERLAY_ON
+	half4 overlay = tex2D(_OverlayTex, i.uv.zw);
+
+	half t = overlay.a;
+	t = (1-cos(t*3.1415926)) / 2;
+
+	ctx.albedo.rgb = lerp(ctx.albedo.rgb, overlay.rgb, t);
+	ctx.dimmed.rgb = lerp(ctx.dimmed.rgb, overlay.rgb, t);
 #endif
 
 }
@@ -1026,7 +1030,7 @@ void applyLightingFwdBase(inout ShadingContext ctx, in v2f i)
 			irrad = ShadeSHPerPixel (ctx.worldNormal, irrad);
 		#endif
 
-		lighting += irrad * (ctx.albedo * (1 - _IrradianceBoost) + _IrradianceBoost);
+		lighting += irrad * ctx.albedo * (1.0 + _IrradianceBoost);
 	#endif
 
 	ctx.result.rgb += lighting;
