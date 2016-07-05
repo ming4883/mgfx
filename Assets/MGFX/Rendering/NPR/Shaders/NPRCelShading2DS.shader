@@ -394,7 +394,10 @@ void fetchAlbedoAndDimmed(inout ShadingContext ctx, in v2f i)
 #if _DIM_ON
 	ctx.dimmed = tex2D(_DimTex, i.uv.xy);
 #else
-	ctx.dimmed = float4((ctx.albedo * ctx.albedo * 0.81).rgb, ctx.albedo.a);
+	half3 dimmed = ctx.albedo.rgb * 0.9;
+	dimmed = dimmed * dimmed;
+	dimmed = dimmed * dimmed;
+	ctx.dimmed = half4(dimmed, ctx.albedo.a);
 #endif
 
 }
@@ -431,12 +434,12 @@ void applyLightingFwdBase(inout ShadingContext ctx, in v2f i)
 #ifdef LIGHTMAP_OFF
 	half ndotl = dot(ctx.worldNormal, _WorldSpaceLightPos0.xyz);
 	#if _DIFFUSE_LUT_ON
-		ndotl = tex2D(_DiffuseLUTTex, saturate(ndotl * 0.5 + 0.5)).r;
+		ndotl = tex2D(_DiffuseLUTTex, saturate(ndotl * 0.5 + 0.5) * ctx.shadow).r;
 	#else
-		ndotl = saturate(ndotl);
+		ndotl = saturate(ndotl) * ctx.shadow;
 	#endif
 
-	half3 lighting = lerp(ctx.dimmed, ctx.albedo, ndotl * ctx.shadow) * _LightColor0.rgb;
+	half3 lighting = lerp(ctx.dimmed, ctx.albedo, ndotl) * _LightColor0.rgb;
 
 	#if _IRRADIANCE_ON
 		half3 irrad = half3(0, 0, 0);
@@ -468,11 +471,11 @@ void applyLightingFwdAdd(inout ShadingContext ctx, in v2f i)
 
 	half ndotl = dot(ctx.worldNormal, _WorldSpaceLightPos0.xyz);
 	#if _DIFFUSE_LUT_ON
-	ndotl = tex2D(_DiffuseLUTTex, saturate(ndotl * 0.5 + 0.5)).r;
+	ndotl = tex2D(_DiffuseLUTTex, saturate(ndotl * 0.5 + 0.5) * ctx.shadow).r;
 	#else
-	ndotl = saturate(ndotl);
+	ndotl = saturate(ndotl) * ctx.shadow;
 	#endif
-	ctx.result.rgb += lerp(ctx.dimmed, ctx.albedo, ndotl * ctx.shadow) * _LightColor0.rgb * lightAtten * ctx.shadow;
+	ctx.result.rgb += lerp(ctx.dimmed, ctx.albedo, ndotl) * _LightColor0.rgb * lightAtten * ctx.shadow;
 }
 
 void applyLightmap(inout ShadingContext ctx, in v2f i)
@@ -518,11 +521,14 @@ void applyMatcap(inout ShadingContext ctx, in v2f i)
 	#if _MATCAP_PLANAR_ON
 		half3 worldRelf = reflect(-ctx.worldViewDir, ctx.worldNormal);
 		half3 viewRelf = normalize(mul((float3x3)UNITY_MATRIX_V, worldRelf));
-		ctx.result.rgb += tex2D(_MatCapTex, saturate(viewRelf.xy * 0.5 + 0.5)) * _MatCapIntensity * ctx.albedo.rgb;
+		half2 mapCapUV = saturate(viewRelf.xy * 0.5 + 0.5);
 	#else
 		half3 viewNormal = mul((float3x3)UNITY_MATRIX_V, ctx.worldNormal);
-		ctx.result.rgb += tex2D(_MatCapTex, saturate(viewNormal * 0.5 + 0.5)) * _MatCapIntensity * ctx.albedo.rgb;
+		half2 mapCapUV = saturate(viewNormal.xy * 0.5 + 0.5);
 	#endif
+
+	half4 mapCap = tex2D(_MatCapTex, mapCapUV);
+	ctx.result.rgb += (mapCap * ctx.albedo.rgb + mapCap * ctx.albedo.a) * _MatCapIntensity;
 #endif
 }
 
@@ -958,7 +964,10 @@ void fetchAlbedoAndDimmed(inout ShadingContext ctx, in v2f i)
 #if _DIM_ON
 	ctx.dimmed = tex2D(_DimTex, i.uv.xy);
 #else
-	ctx.dimmed = float4((ctx.albedo * ctx.albedo * 0.81).rgb, ctx.albedo.a);
+	half3 dimmed = ctx.albedo.rgb * 0.9;
+	dimmed = dimmed * dimmed;
+	dimmed = dimmed * dimmed;
+	ctx.dimmed = half4(dimmed, ctx.albedo.a);
 #endif
 
 }
@@ -995,12 +1004,12 @@ void applyLightingFwdBase(inout ShadingContext ctx, in v2f i)
 #ifdef LIGHTMAP_OFF
 	half ndotl = dot(ctx.worldNormal, _WorldSpaceLightPos0.xyz);
 	#if _DIFFUSE_LUT_ON
-		ndotl = tex2D(_DiffuseLUTTex, saturate(ndotl * 0.5 + 0.5)).r;
+		ndotl = tex2D(_DiffuseLUTTex, saturate(ndotl * 0.5 + 0.5) * ctx.shadow).r;
 	#else
-		ndotl = saturate(ndotl);
+		ndotl = saturate(ndotl) * ctx.shadow;
 	#endif
 
-	half3 lighting = lerp(ctx.dimmed, ctx.albedo, ndotl * ctx.shadow) * _LightColor0.rgb;
+	half3 lighting = lerp(ctx.dimmed, ctx.albedo, ndotl) * _LightColor0.rgb;
 
 	#if _IRRADIANCE_ON
 		half3 irrad = half3(0, 0, 0);
@@ -1032,11 +1041,11 @@ void applyLightingFwdAdd(inout ShadingContext ctx, in v2f i)
 
 	half ndotl = dot(ctx.worldNormal, _WorldSpaceLightPos0.xyz);
 	#if _DIFFUSE_LUT_ON
-	ndotl = tex2D(_DiffuseLUTTex, saturate(ndotl * 0.5 + 0.5)).r;
+	ndotl = tex2D(_DiffuseLUTTex, saturate(ndotl * 0.5 + 0.5) * ctx.shadow).r;
 	#else
-	ndotl = saturate(ndotl);
+	ndotl = saturate(ndotl) * ctx.shadow;
 	#endif
-	ctx.result.rgb += lerp(ctx.dimmed, ctx.albedo, ndotl * ctx.shadow) * _LightColor0.rgb * lightAtten * ctx.shadow;
+	ctx.result.rgb += lerp(ctx.dimmed, ctx.albedo, ndotl) * _LightColor0.rgb * lightAtten * ctx.shadow;
 }
 
 void applyLightmap(inout ShadingContext ctx, in v2f i)
@@ -1082,11 +1091,14 @@ void applyMatcap(inout ShadingContext ctx, in v2f i)
 	#if _MATCAP_PLANAR_ON
 		half3 worldRelf = reflect(-ctx.worldViewDir, ctx.worldNormal);
 		half3 viewRelf = normalize(mul((float3x3)UNITY_MATRIX_V, worldRelf));
-		ctx.result.rgb += tex2D(_MatCapTex, saturate(viewRelf.xy * 0.5 + 0.5)) * _MatCapIntensity * ctx.albedo.rgb;
+		half2 mapCapUV = saturate(viewRelf.xy * 0.5 + 0.5);
 	#else
 		half3 viewNormal = mul((float3x3)UNITY_MATRIX_V, ctx.worldNormal);
-		ctx.result.rgb += tex2D(_MatCapTex, saturate(viewNormal * 0.5 + 0.5)) * _MatCapIntensity * ctx.albedo.rgb;
+		half2 mapCapUV = saturate(viewNormal.xy * 0.5 + 0.5);
 	#endif
+
+	half4 mapCap = tex2D(_MatCapTex, mapCapUV);
+	ctx.result.rgb += (mapCap * ctx.albedo.rgb + mapCap * ctx.albedo.a) * _MatCapIntensity;
 #endif
 }
 
@@ -1521,7 +1533,10 @@ void fetchAlbedoAndDimmed(inout ShadingContext ctx, in v2f i)
 #if _DIM_ON
 	ctx.dimmed = tex2D(_DimTex, i.uv.xy);
 #else
-	ctx.dimmed = float4((ctx.albedo * ctx.albedo * 0.81).rgb, ctx.albedo.a);
+	half3 dimmed = ctx.albedo.rgb * 0.9;
+	dimmed = dimmed * dimmed;
+	dimmed = dimmed * dimmed;
+	ctx.dimmed = half4(dimmed, ctx.albedo.a);
 #endif
 
 }
@@ -1558,12 +1573,12 @@ void applyLightingFwdBase(inout ShadingContext ctx, in v2f i)
 #ifdef LIGHTMAP_OFF
 	half ndotl = dot(ctx.worldNormal, _WorldSpaceLightPos0.xyz);
 	#if _DIFFUSE_LUT_ON
-		ndotl = tex2D(_DiffuseLUTTex, saturate(ndotl * 0.5 + 0.5)).r;
+		ndotl = tex2D(_DiffuseLUTTex, saturate(ndotl * 0.5 + 0.5) * ctx.shadow).r;
 	#else
-		ndotl = saturate(ndotl);
+		ndotl = saturate(ndotl) * ctx.shadow;
 	#endif
 
-	half3 lighting = lerp(ctx.dimmed, ctx.albedo, ndotl * ctx.shadow) * _LightColor0.rgb;
+	half3 lighting = lerp(ctx.dimmed, ctx.albedo, ndotl) * _LightColor0.rgb;
 
 	#if _IRRADIANCE_ON
 		half3 irrad = half3(0, 0, 0);
@@ -1595,11 +1610,11 @@ void applyLightingFwdAdd(inout ShadingContext ctx, in v2f i)
 
 	half ndotl = dot(ctx.worldNormal, _WorldSpaceLightPos0.xyz);
 	#if _DIFFUSE_LUT_ON
-	ndotl = tex2D(_DiffuseLUTTex, saturate(ndotl * 0.5 + 0.5)).r;
+	ndotl = tex2D(_DiffuseLUTTex, saturate(ndotl * 0.5 + 0.5) * ctx.shadow).r;
 	#else
-	ndotl = saturate(ndotl);
+	ndotl = saturate(ndotl) * ctx.shadow;
 	#endif
-	ctx.result.rgb += lerp(ctx.dimmed, ctx.albedo, ndotl * ctx.shadow) * _LightColor0.rgb * lightAtten * ctx.shadow;
+	ctx.result.rgb += lerp(ctx.dimmed, ctx.albedo, ndotl) * _LightColor0.rgb * lightAtten * ctx.shadow;
 }
 
 void applyLightmap(inout ShadingContext ctx, in v2f i)
@@ -1645,11 +1660,14 @@ void applyMatcap(inout ShadingContext ctx, in v2f i)
 	#if _MATCAP_PLANAR_ON
 		half3 worldRelf = reflect(-ctx.worldViewDir, ctx.worldNormal);
 		half3 viewRelf = normalize(mul((float3x3)UNITY_MATRIX_V, worldRelf));
-		ctx.result.rgb += tex2D(_MatCapTex, saturate(viewRelf.xy * 0.5 + 0.5)) * _MatCapIntensity * ctx.albedo.rgb;
+		half2 mapCapUV = saturate(viewRelf.xy * 0.5 + 0.5);
 	#else
 		half3 viewNormal = mul((float3x3)UNITY_MATRIX_V, ctx.worldNormal);
-		ctx.result.rgb += tex2D(_MatCapTex, saturate(viewNormal * 0.5 + 0.5)) * _MatCapIntensity * ctx.albedo.rgb;
+		half2 mapCapUV = saturate(viewNormal.xy * 0.5 + 0.5);
 	#endif
+
+	half4 mapCap = tex2D(_MatCapTex, mapCapUV);
+	ctx.result.rgb += (mapCap * ctx.albedo.rgb + mapCap * ctx.albedo.a) * _MatCapIntensity;
 #endif
 }
 
@@ -2085,7 +2103,10 @@ void fetchAlbedoAndDimmed(inout ShadingContext ctx, in v2f i)
 #if _DIM_ON
 	ctx.dimmed = tex2D(_DimTex, i.uv.xy);
 #else
-	ctx.dimmed = float4((ctx.albedo * ctx.albedo * 0.81).rgb, ctx.albedo.a);
+	half3 dimmed = ctx.albedo.rgb * 0.9;
+	dimmed = dimmed * dimmed;
+	dimmed = dimmed * dimmed;
+	ctx.dimmed = half4(dimmed, ctx.albedo.a);
 #endif
 
 }
@@ -2122,12 +2143,12 @@ void applyLightingFwdBase(inout ShadingContext ctx, in v2f i)
 #ifdef LIGHTMAP_OFF
 	half ndotl = dot(ctx.worldNormal, _WorldSpaceLightPos0.xyz);
 	#if _DIFFUSE_LUT_ON
-		ndotl = tex2D(_DiffuseLUTTex, saturate(ndotl * 0.5 + 0.5)).r;
+		ndotl = tex2D(_DiffuseLUTTex, saturate(ndotl * 0.5 + 0.5) * ctx.shadow).r;
 	#else
-		ndotl = saturate(ndotl);
+		ndotl = saturate(ndotl) * ctx.shadow;
 	#endif
 
-	half3 lighting = lerp(ctx.dimmed, ctx.albedo, ndotl * ctx.shadow) * _LightColor0.rgb;
+	half3 lighting = lerp(ctx.dimmed, ctx.albedo, ndotl) * _LightColor0.rgb;
 
 	#if _IRRADIANCE_ON
 		half3 irrad = half3(0, 0, 0);
@@ -2159,11 +2180,11 @@ void applyLightingFwdAdd(inout ShadingContext ctx, in v2f i)
 
 	half ndotl = dot(ctx.worldNormal, _WorldSpaceLightPos0.xyz);
 	#if _DIFFUSE_LUT_ON
-	ndotl = tex2D(_DiffuseLUTTex, saturate(ndotl * 0.5 + 0.5)).r;
+	ndotl = tex2D(_DiffuseLUTTex, saturate(ndotl * 0.5 + 0.5) * ctx.shadow).r;
 	#else
-	ndotl = saturate(ndotl);
+	ndotl = saturate(ndotl) * ctx.shadow;
 	#endif
-	ctx.result.rgb += lerp(ctx.dimmed, ctx.albedo, ndotl * ctx.shadow) * _LightColor0.rgb * lightAtten * ctx.shadow;
+	ctx.result.rgb += lerp(ctx.dimmed, ctx.albedo, ndotl) * _LightColor0.rgb * lightAtten * ctx.shadow;
 }
 
 void applyLightmap(inout ShadingContext ctx, in v2f i)
@@ -2209,11 +2230,14 @@ void applyMatcap(inout ShadingContext ctx, in v2f i)
 	#if _MATCAP_PLANAR_ON
 		half3 worldRelf = reflect(-ctx.worldViewDir, ctx.worldNormal);
 		half3 viewRelf = normalize(mul((float3x3)UNITY_MATRIX_V, worldRelf));
-		ctx.result.rgb += tex2D(_MatCapTex, saturate(viewRelf.xy * 0.5 + 0.5)) * _MatCapIntensity * ctx.albedo.rgb;
+		half2 mapCapUV = saturate(viewRelf.xy * 0.5 + 0.5);
 	#else
 		half3 viewNormal = mul((float3x3)UNITY_MATRIX_V, ctx.worldNormal);
-		ctx.result.rgb += tex2D(_MatCapTex, saturate(viewNormal * 0.5 + 0.5)) * _MatCapIntensity * ctx.albedo.rgb;
+		half2 mapCapUV = saturate(viewNormal.xy * 0.5 + 0.5);
 	#endif
+
+	half4 mapCap = tex2D(_MatCapTex, mapCapUV);
+	ctx.result.rgb += (mapCap * ctx.albedo.rgb + mapCap * ctx.albedo.a) * _MatCapIntensity;
 #endif
 }
 

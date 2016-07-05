@@ -8,7 +8,7 @@ Material:
   m_PrefabInternal: {fileID: 0}
   m_Name: CelShadingBump
   m_Shader: {fileID: 4800000, guid: 638edf9e76479cf499fd8915b0906f64, type: 3}
-  m_ShaderKeywords: _DARKEN_BACKFACES_ON _DIM_ON _IRRADIANCE_ON _MATCAP_PLANAR_ON
+  m_ShaderKeywords: _DARKEN_BACKFACES_ON _DIFFUSE_LUT_ON _DIM_ON _IRRADIANCE_ON _MATCAP_PLANAR_ON
     _NORMAL_MAP_ON
   m_LightmapFlags: 5
   m_CustomRenderQueue: 2000
@@ -171,7 +171,7 @@ Material:
       data:
         first:
           name: _DiffuseLUTOn
-        second: 0
+        second: 1
       data:
         first:
           name: _RimOn
@@ -246,6 +246,14 @@ Material:
         second: 1
       data:
         first:
+          name: _TextureFadeOutOn
+        second: 0
+      data:
+        first:
+          name: _IrradianceBoost
+        second: 2
+      data:
+        first:
           name: _RimSize
         second: 0.25
       data:
@@ -255,14 +263,6 @@ Material:
       data:
         first:
           name: _SsaoShapness
-        second: 0
-      data:
-        first:
-          name: _TextureFadeOutOn
-        second: 0
-      data:
-        first:
-          name: _IrradianceBoost
         second: 0
     m_Colors:
       data:
