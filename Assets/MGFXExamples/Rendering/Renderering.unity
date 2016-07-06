@@ -682,7 +682,7 @@ Light:
     serializedVersion: 2
     m_Bits: 4294967295
   m_Lightmapping: 4
-  m_BounceIntensity: 1
+  m_BounceIntensity: 2
   m_ShadowRadius: 0
   m_ShadowAngle: 0
   m_AreaSize: {x: 1, y: 1}
@@ -2689,6 +2689,7 @@ GameObject:
   - 114: {fileID: 1847657276}
   - 114: {fileID: 1847657279}
   - 114: {fileID: 1847657278}
+  - 114: {fileID: 1847657280}
   m_Layer: 0
   m_Name: RenderSystem
   m_TagString: Untagged
@@ -2749,6 +2750,23 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   affectSceneCamera: 1
   m_CubeMesh: {fileID: 0}
+--- !u!114 &1847657280
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_PrefabParentObject: {fileID: 0}
+  m_PrefabInternal: {fileID: 0}
+  m_GameObject: {fileID: 1847657275}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f369bcc954781894fb218c85e06fcd10, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  affectSceneCamera: 1
+  threshold: 0.25
+  intensity: 0.5
+  blurSize: 1
+  blurIterations: 1
+  blurType: 1
 --- !u!1 &1867462548
 GameObject:
   m_ObjectHideFlags: 0
