@@ -13,5 +13,6 @@
 #pragma shader_feature _RIM_ON
 #pragma shader_feature _MATCAP_ON
 #pragma shader_feature _MATCAP_PLANAR_ON
+#pragma shader_feature _MATCAP_ALBEDO_ON
 #pragma shader_feature _EDGE_ON
 //#pragma enable_d3d11_debug_symbols

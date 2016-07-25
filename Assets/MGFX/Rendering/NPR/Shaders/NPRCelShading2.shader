@@ -30,9 +30,10 @@ _IrradianceBoost ("IrradianceBoost", Range(-1,8)) = 0.0
 _RimIntensity ("RimIntensity", Range(0,2)) = 1.0
 
 [Toggle(_MATCAP_ON)] _MatCapOn("Enable MatCap", Int) = 0
-[Toggle(_MATCAP_PLANAR_ON)] _MatCapPlanarOn("Planar Mode", Int) = 0
+[Toggle(_MATCAP_PLANAR_ON)] _MatCapPlanarOn("MatCap Planar Mode", Int) = 0
+[Toggle(_MATCAP_ALBEDO_ON)] _MatCapAlbedoOn("MatCap Albedo Mode", Int) = 0
 [NoScaleOffset] _MatCapTex ("MatCap", 2D) = "black" {}
-_MatCapIntensity ("MatCapIntensity", Range(0,2)) = 1.0
+_MatCapIntensity ("MatCapIntensity", Range(0,4)) = 1.0
 
 [Toggle(_EDGE_ON)] _EdgeOn("Enable Edges", Int) = 0
 _EdgeColor ("EdgeColor", Color) = (0, 0, 0, 1)
@@ -187,6 +188,7 @@ F1 Bayer( F2 uv )
 #pragma shader_feature _RIM_ON
 #pragma shader_feature _MATCAP_ON
 #pragma shader_feature _MATCAP_PLANAR_ON
+#pragma shader_feature _MATCAP_ALBEDO_ON
 #pragma shader_feature _EDGE_ON
 //#pragma enable_d3d11_debug_symbols
 			/// Vertex
@@ -530,7 +532,11 @@ void applyMatcap(inout ShadingContext ctx, in v2f i)
 	#endif
 
 	half4 mapCap = tex2D(_MatCapTex, mapCapUV);
-	ctx.result.rgb += (mapCap * ctx.albedo.rgb + mapCap * ctx.albedo.a) * _MatCapIntensity;
+	mapCap = mapCap * ctx.albedo.a * _MatCapIntensity;
+	#if _MATCAP_ALBEDO_ON
+		mapCap.rgb *= ctx.albedo.rgb;
+	#endif
+	ctx.result.rgb += mapCap;
 #endif
 }
 
@@ -1101,7 +1107,11 @@ void applyMatcap(inout ShadingContext ctx, in v2f i)
 	#endif
 
 	half4 mapCap = tex2D(_MatCapTex, mapCapUV);
-	ctx.result.rgb += (mapCap * ctx.albedo.rgb + mapCap * ctx.albedo.a) * _MatCapIntensity;
+	mapCap = mapCap * ctx.albedo.a * _MatCapIntensity;
+	#if _MATCAP_ALBEDO_ON
+		mapCap.rgb *= ctx.albedo.rgb;
+	#endif
+	ctx.result.rgb += mapCap;
 #endif
 }
 

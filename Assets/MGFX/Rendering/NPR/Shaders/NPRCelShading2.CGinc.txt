@@ -339,7 +339,11 @@ void applyMatcap(inout ShadingContext ctx, in v2f i)
 	#endif
 
 	half4 mapCap = tex2D(_MatCapTex, mapCapUV);
-	ctx.result.rgb += (mapCap * ctx.albedo.rgb + mapCap * ctx.albedo.a) * _MatCapIntensity;
+	mapCap = mapCap * ctx.albedo.a * _MatCapIntensity;
+	#if _MATCAP_ALBEDO_ON
+		mapCap.rgb *= ctx.albedo.rgb;
+	#endif
+	ctx.result.rgb += mapCap;
 #endif
 }
 
