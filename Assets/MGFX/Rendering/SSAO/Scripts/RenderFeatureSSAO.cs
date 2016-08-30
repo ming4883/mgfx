@@ -33,7 +33,8 @@ namespace MGFX
 		#region Material Identifiers
 
 		[Material("Hidden/MGFX/SSAO")]
-		private Material MaterialSSAO;
+        [HideInInspector]
+        public Material MaterialSSAO;
 		
 		#endregion
 
@@ -48,7 +49,7 @@ namespace MGFX
 
 		[SerializeField, Range(0, 4), Tooltip(
 			"Degree of darkness produced by the effect.")]
-		float _intensity = 1;
+		float _intensity = 3;
 
 		/// Radius of sample points, which affects extent of darkened areas.
 		public float radius
@@ -59,7 +60,7 @@ namespace MGFX
 
 		[SerializeField, Tooltip(
 			"Radius of sample points, which affects extent of darkened areas.")]
-		float _radius = 0.05f;
+		float _radius = 0.2f;
 
 		/// Degree of darkness produced by the effect.
 		public float sharpness
@@ -83,7 +84,7 @@ namespace MGFX
 
 		[SerializeField, Tooltip(
 			"Number of sample points, which affects quality and performance.")]
-		SampleCount _sampleCount = SampleCount.High;
+        SampleCount _sampleCount = SampleCount.Variable;
 
 		/// Determines the sample count when SampleCount.Variable is used.
 		/// In other cases, it returns the preset value of the current setting.
@@ -104,7 +105,7 @@ namespace MGFX
 		}
 
 		[SerializeField]
-		int _sampleCountValue = 24;
+		int _sampleCountValue = 64;
 
 		/// Number of iterations of blur filter.
 		public int blurIterations
@@ -126,7 +127,7 @@ namespace MGFX
 
 		[SerializeField, Tooltip(
 			"Halves the resolution of the effect to increase performance.")]
-		bool _downsampling = false;
+		bool _downsampling = true;
 
 		
 		#endregion
@@ -167,13 +168,6 @@ namespace MGFX
 
 		#region MonoBehaviour Functions
 
-		public override void OnEnable()
-		{
-			base.OnEnable();
-			LoadMaterials (this);
-			//LoadMaterial(MTL_SSAO);
-		}
-		
 		public override void SetupCameraEvents(Camera _cam, RenderSystem _system)
 		{
 			UpdateMaterialProperties(true);
@@ -182,7 +176,7 @@ namespace MGFX
 
 			// update command buffers
 			{
-				var _cmdBuf = GetCommandBufferForEvent (_cam, CameraEvent.AfterDepthNormalsTexture, "Minv.SSAO");
+				var _cmdBuf = GetCommandBufferForEvent (_cam, CameraEvent.AfterDepthNormalsTexture, "MGFX.SSAO");
 				_cmdBuf.Clear ();
 
 				var tw = _cam.pixelWidth;
@@ -244,7 +238,7 @@ namespace MGFX
 			}
 
 			{
-				var _cmdBuf = GetCommandBufferForEvent (_cam, CameraEvent.AfterForwardOpaque, "Minv.SSAO");
+				var _cmdBuf = GetCommandBufferForEvent (_cam, CameraEvent.AfterForwardOpaque, "MGFX.SSAO");
 				_cmdBuf.Clear ();
 
 				_cmdBuf.ReleaseTemporaryRT (_idMask);

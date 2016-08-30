@@ -1,4 +1,4 @@
-Shader "MGFX/Sprites/AdditiveColorZAlways"
+Shader "Minv/Sprites/AdditiveColorZAlways"
 {
 	Properties
 	{

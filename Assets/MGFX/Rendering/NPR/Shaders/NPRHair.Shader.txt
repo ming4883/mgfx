@@ -1,0 +1,58 @@
+﻿Shader "MGFX/NPR/Hair"
+{
+    Properties
+    {
+{% unityasset MGFX/Rendering/NPR/Shaders/NPRHair.Properties.txt %}
+    }
+
+    SubShader
+    {
+		Tags
+		{ 
+			"RenderType"="Opaque"
+		}
+
+		Pass
+		{
+			Tags
+			{
+				"LightMode"="ForwardBase"
+			}
+			Cull Back
+
+			CGPROGRAM
+			{% unityasset MGFX/Rendering/Base/Shaders/MinvBase.cginc %}
+			{% unityasset MGFX/Rendering/Base/Shaders/MinvAutoLight.cginc %}
+			{% unityasset MGFX/Rendering/Base/Shaders/MinvNoise.cginc %}
+			{% unityasset MGFX/Rendering/NPR/Shaders/NPRHair.CGFwdBase.txt %}
+			{% unityasset MGFX/Rendering/NPR/Shaders/NPRHair.CGinc.txt %}
+			ENDCG
+		}
+
+		Pass
+		{
+			Tags
+			{
+				"LightMode"="ForwardAdd"
+			}
+
+			ZWrite Off
+			ZTest LEqual
+			Blend One One
+			Cull Back
+
+			CGPROGRAM
+			{% unityasset MGFX/Rendering/Base/Shaders/MinvBase.cginc %}
+			{% unityasset MGFX/Rendering/Base/Shaders/MinvAutoLight.cginc %}
+			{% unityasset MGFX/Rendering/Base/Shaders/MinvNoise.cginc %}
+			{% unityasset MGFX/Rendering/NPR/Shaders/NPRHair.CGFwdAdd.txt %}
+			{% unityasset MGFX/Rendering/NPR/Shaders/NPRHair.CGinc.txt %}
+			ENDCG
+		}
+		
+		// shadow casting support
+		UsePass "Legacy Shaders/VertexLit/SHADOWCASTER"
+    }
+
+    CustomEditor "Minv.NPRHairUI"
+}

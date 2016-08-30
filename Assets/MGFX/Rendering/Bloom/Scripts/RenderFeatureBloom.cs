@@ -11,7 +11,8 @@ namespace MGFX
         #region Material Identifiers
 
         [Material("Hidden/MGFX/Bloom")]
-        private Material MaterialBloom;
+        [HideInInspector]
+        public Material MaterialBloom;
 
         #endregion
 
@@ -48,12 +49,6 @@ namespace MGFX
 
         #region MonoBehaviour Functions
 
-        public override void OnEnable()
-        {
-            base.OnEnable();
-            LoadMaterials(this);
-        }
-
         public override void SetupCameraEvents(Camera _cam, RenderSystem _system)
         {
             var _mtl = MaterialBloom;
@@ -65,7 +60,7 @@ namespace MGFX
             var _rtH = _cam.pixelHeight / divider;
 
             // update command buffers
-            var _cmdBuf = GetCommandBufferForEvent(_cam, CameraEvent.BeforeImageEffects, "Minv.Bloom");
+            var _cmdBuf = GetCommandBufferForEvent(_cam, CameraEvent.BeforeImageEffects, "MGFX.Bloom");
             _cmdBuf.Clear();
 
             var _idCurr = Shader.PropertyToID ("_CurrTexture");

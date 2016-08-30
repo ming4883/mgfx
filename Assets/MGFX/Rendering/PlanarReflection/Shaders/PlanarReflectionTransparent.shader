@@ -1,4 +1,4 @@
-﻿Shader "MGFX/PlanarReflection/Transparent"
+﻿Shader "Minv/PlanarReflection/Transparent"
 {
 	Properties
 	{

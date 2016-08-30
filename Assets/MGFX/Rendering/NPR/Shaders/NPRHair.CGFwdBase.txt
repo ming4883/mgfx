@@ -1,0 +1,10 @@
+﻿#pragma vertex vert
+#pragma fragment frag_base
+#pragma multi_compile_fwdbase novertexlight
+#pragma target 3.0
+
+#pragma shader_feature _NORMAL_MAP_ON
+#pragma shader_feature _DIM_ON
+#pragma shader_feature _RIM_ON
+
+//#pragma enable_d3d11_debug_symbols

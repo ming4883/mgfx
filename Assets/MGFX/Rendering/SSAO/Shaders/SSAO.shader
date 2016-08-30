@@ -1,9 +1,3 @@
-// Upgrade NOTE: commented out 'float4x4 _WorldToCamera', a built-in variable
-// Upgrade NOTE: replaced '_WorldToCamera' with 'unity_WorldToCamera'
-
-// Upgrade NOTE: commented out 'float4x4 _WorldToCamera', a built-in variable
-// Upgrade NOTE: replaced '_WorldToCamera' with 'unity_WorldToCamera'
-
 //
 // Kino/Obscurance - SSAO (screen-space ambient obscurance) effect for Unity
 //
@@ -34,6 +28,7 @@ Shader "Hidden/MGFX/SSAO"
         _MainTex("", 2D) = ""{}
     }
     CGINCLUDE
+    #define UNITY_SHADER_NO_UPGRADE
 
     // --------
     // Additional options for further customization
@@ -48,7 +43,7 @@ Shader "Hidden/MGFX/SSAO"
 
     // The constant below determines the contrast of occlusion. Altough this
     // allows intentional over/under occlusion, currently is not exposed to the
-    // editor, because it’s thought to be rarely useful.
+    // editor, because it is thought to be rarely useful.
     static const float kContrast = 0.6;
 
     // The constant below controls the geometry-awareness of the blur filter.
@@ -82,7 +77,7 @@ Shader "Hidden/MGFX/SSAO"
     #if _SOURCE_GBUFFER
     sampler2D _CameraGBufferTexture2;
     sampler2D_float _CameraDepthTexture;
-    // float4x4 _WorldToCamera;
+    float4x4 _WorldToCamera;
     #else
     sampler2D_float _CameraDepthNormalsTexture;
     #endif
@@ -159,7 +154,7 @@ Shader "Hidden/MGFX/SSAO"
     {
     #if _SOURCE_GBUFFER
         float3 norm = tex2Dlod(_CameraGBufferTexture2, uv).xyz * 2 - 1;
-        return mul((float3x3)unity_WorldToCamera, norm);
+        return mul((float3x3)_WorldToCamera, norm);
     #else
         float4 cdn = tex2Dlod(_CameraDepthNormalsTexture, uv);
         return DecodeViewNormalStereo(cdn) * float3(1, 1, -1);

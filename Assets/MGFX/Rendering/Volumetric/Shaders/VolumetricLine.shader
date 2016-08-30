@@ -30,7 +30,7 @@
                 v2f o;
                 o.vertex = mul(UNITY_MATRIX_MVP, v.vertex);
                 o.uv = v.texcoord;
-                o.worldPos = mul(_Object2World, v.vertex);
+                o.worldPos = mul(unity_ObjectToWorld, v.vertex);
                 return o;
             }
 

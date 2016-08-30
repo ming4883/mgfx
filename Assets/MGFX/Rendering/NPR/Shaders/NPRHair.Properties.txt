@@ -1,0 +1,19 @@
+﻿_FadeOut ("_FadeOut", Range(0,1)) = 0.0
+
+[NoScaleOffset] _BayerTex ("Bayer Matrix", 2D) = "white" {}
+
+[NoScaleOffset] _MainTex ("Texture", 2D) = "white" {}
+
+[NoScaleOffset] _DiffuseLUTTex ("Diffuse LUT", 2D) = "white" {}
+[NoScaleOffset] _SpecularLUTTex ("Specular LUT", 2D) = "white" {}
+
+[Toggle(_NORMAL_MAP_ON)] _NormalMapOn("Enable NormalMap", Int) = 0
+[NoScaleOffset] _NormalMapTex ("Normal Map", 2D) = "black" {}
+
+[Toggle(_DIM_ON)] _DimOn("Enable Dim", Int) = 0
+[NoScaleOffset] _DimTex ("Dim (RGB)", 2D) = "white" {}
+
+[Toggle(_RIM_ON)] _RimOn("Enable Rim", Int) = 0
+[NoScaleOffset] _RimLUTTex ("Rim LUT (R)", 2D) = "white" {}
+_RimIntensity ("RimIntensity", Range(0,2)) = 1.0
+

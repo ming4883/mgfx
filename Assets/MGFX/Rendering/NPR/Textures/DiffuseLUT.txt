@@ -1,0 +1,1 @@
+{"keys":[{"inTangent":0.0,"outTangent":0.0,"tangentMode":0,"time":0.0,"value":0.0},{"inTangent":0.0,"outTangent":0.0,"tangentMode":0,"time":1.0,"value":1.0}],"preWrapMode":8,"postWrapMode":8}

@@ -9,7 +9,8 @@ namespace MGFX
     public class RenderFeatureVolumetricLine : RenderFeatureBase
     {
         [Material("MGFX/VolumetricLine")]
-        private Material m_MaterialVolLine;
+		[HideInInspector]
+		public Material m_MaterialVolLine;
 
         public Mesh m_CubeMesh;
 
@@ -27,7 +28,7 @@ namespace MGFX
         public override void SetupCameraEvents(Camera _cam, RenderSystem _system)
         {
             var _evt = CameraEvent.AfterForwardAlpha;
-            var _cmdBuf = GetCommandBufferForEvent(_cam, _evt, "Minv.VolLine");
+            var _cmdBuf = GetCommandBufferForEvent(_cam, _evt, "MGFX.VolLine");
             _cmdBuf.Clear();
 
             var system = VolumetricLineSystem.instance;

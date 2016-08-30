@@ -1,0 +1,73 @@
+﻿Shader "MGFX/NPR/CelShading"
+{
+    Properties
+    {
+{% unityasset MGFX/Rendering/NPR/Shaders/NPRCelShading.Properties.txt %}
+    }
+
+    SubShader
+    {
+		Tags
+		{ 
+			"RenderType"="Opaque"
+		}
+
+		Pass
+		{
+			Tags
+			{
+				"LightMode"="ForwardBase"
+			}
+			Cull Back
+
+			CGPROGRAM
+			{% unityasset MGFX/Rendering/Base/Shaders/MinvBase.cginc %}
+			{% unityasset MGFX/Rendering/Base/Shaders/MinvAutoLight.cginc %}
+			{% unityasset MGFX/Rendering/Base/Shaders/MinvNoise.cginc %}
+			{% unityasset MGFX/Rendering/NPR/Shaders/NPRCelShading.CGFwdBase.txt %}
+			{% unityasset MGFX/Rendering/NPR/Shaders/NPRCelShading.CGinc.txt %}
+			ENDCG
+		}
+
+		Pass
+		{
+			Tags
+			{
+				"LightMode"="ForwardAdd"
+			}
+
+			ZWrite Off
+			ZTest LEqual
+			Blend One One
+			Cull Back
+
+			CGPROGRAM
+			{% unityasset MGFX/Rendering/Base/Shaders/MinvBase.cginc %}
+			{% unityasset MGFX/Rendering/Base/Shaders/MinvAutoLight.cginc %}
+			{% unityasset MGFX/Rendering/Base/Shaders/MinvNoise.cginc %}
+			{% unityasset MGFX/Rendering/NPR/Shaders/NPRCelShading.CGFwdAdd.txt %}
+			{% unityasset MGFX/Rendering/NPR/Shaders/NPRCelShading.CGinc.txt %}
+			ENDCG
+		}
+		
+		Pass
+		{
+			Name "META"
+			Tags
+			{
+				"LightMode"="Meta"
+			}
+
+			Cull Off
+
+		    CGPROGRAM
+			{% unityasset MGFX/Rendering/NPR/Shaders/NPRCelShading.CGMeta.txt %}
+			ENDCG
+		}
+
+		// shadow casting support
+		UsePass "Legacy Shaders/VertexLit/SHADOWCASTER"
+    }
+
+    CustomEditor "MGFX.NPRCelShadingUI"
+}

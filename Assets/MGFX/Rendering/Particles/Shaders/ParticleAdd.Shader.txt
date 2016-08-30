@@ -1,0 +1,22 @@
+﻿Shader "Minv/Particles/Add" {
+	Properties {
+		{% unityasset MGFX/Rendering/Particles/Shaders/Particle.Properties.txt %}
+	}
+
+	Category {
+		Tags { "Queue"="Transparent" "IgnoreProjector"="True" "RenderType"="Transparent" "PreviewType"="Plane" }
+		Blend SrcAlpha One
+		ColorMask RGB
+		Cull Off Lighting Off ZWrite Off
+		
+		SubShader {
+			Pass {
+				CGPROGRAM
+				{% unityasset MGFX/Rendering/Base/Shaders/MinvBase.cginc %}
+				{% unityasset MGFX/Rendering/Particles/Shaders/Particle.cginc %}
+				{% unityasset MGFX/Rendering/Particles/Shaders/ParticleAdd.cginc %}
+				ENDCG 
+			}
+		}	
+	}
+}

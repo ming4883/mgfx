@@ -1,4 +1,4 @@
-﻿Shader "MGFX/PlanarReflection/Base"
+﻿Shader "Minv/PlanarReflection/Base"
 {
 	Properties
 	{

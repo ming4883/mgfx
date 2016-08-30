@@ -1,4 +1,4 @@
-Shader "MGFX/Sprites/OverlayColorZAlways"
+Shader "Minv/Sprites/OverlayColorZAlways"
 {
 	Properties
 	{
