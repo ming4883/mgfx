@@ -14,22 +14,23 @@ namespace MGFX
         public void OnEnable()
         {
             m_Path.Clear();
-            m_Path.Add(new Vector3(-1, 0, 0));
-            m_Path.Add(new Vector3(-1, 1, 0));
-            m_Path.Add(m_Dot1 = new Vector3(-1, 2, 0));
+            m_Path.Add(new Vector3(-0.8f, 0, 0));
+            m_Path.Add(new Vector3(-1, 0.75f, 0));
+            m_Path.Add(m_Dot1 = new Vector3(-0.8f, 1.75f, 0));
             m_Path.Add(new Vector3(0, 1.5f, 0));
             m_Path.Add(m_Dot2 = new Vector3(1, 2, 0));
             m_Path.Add(new Vector3(1.2f, 0, 0));
             m_Path.Add(new Vector3(1, -1, 0));
-            m_Path.Add(new Vector3(0.5f, -1, 0));
-            m_Path.Add(new Vector3(0, -0.5f, 0));
-            m_Path.Add(new Vector3(2.0f, 1.0f, 0));
+            m_Path.Add(new Vector3(0.25f, -1.5f, 0));
+            m_Path.Add(new Vector3(-0.25f, -1.0f, 0));
+			m_Path.Add(new Vector3(0.25f, 0.0f, 0));
+			m_Path.Add(new Vector3(2.0f, 1.0f, 0));
 
             m_Dot1.y += 0.5f;
             m_Dot2.y += 0.5f;
 
             m_Tessellated.Clear();
-            CurveFitting.CentripetalCatmullRom.Tessellate(m_Tessellated, 16, 0.5f, m_Path);
+            CurveFitting.CentripetalCatmullRom.Tessellate(m_Tessellated, 8, 0.5f, m_Path);
 
             if (m_Tessellated.Count > 0)
                 CreateVolLines();
@@ -72,8 +73,8 @@ namespace MGFX
         }
 
 
-        Color m_VolLineColor = new Color(0.25f, 0.5f, 1.0f, 0.5f);
-        Color m_VolDotColor = new Color(0.25f, 0.5f, 1.0f, 1.0f);
+        public Color m_VolLineColor = new Color(1.0f, 0.5f, 0.625f, 0.5f);
+        public Color m_VolDotColor = new Color(1.0f, 0.5f, 0.625f, 1.0f);
 
         private void CreateVolLines()
         {
