@@ -17,6 +17,8 @@ public class CamerasControl : MonoBehaviour {
 		right = transform.Find("RightCamera").GetComponent<Camera>();
 		top = transform.Find("TopCamera").GetComponent<Camera>();
 		bottom = transform.Find("BottomCamera").GetComponent<Camera>();
+
+        Screen.fullScreen = true;
 	}
 	
 	// Update is called once per frame
