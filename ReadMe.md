@@ -1,0 +1,1 @@
+Use git submodule or symbolic link to place this folder under the path UnityProjectFolder/Assets/Lib
