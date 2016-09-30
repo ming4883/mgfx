@@ -61,7 +61,7 @@ namespace MGFX.Rendering
 
         public CodeDRYer()
         {
-            CreateTemplate("#{% unityasset Assets/MGFX/Rendering/Common/Shaders/OctEncode.cginc %}##");
+            CreateTemplate("#{% unityasset Assets/Lib/MGFX/Rendering/Common/Shaders/OctEncode.cginc %}##");
         }
 
         private DL.Template m_Template = null;

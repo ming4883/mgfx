@@ -1,1 +1,1 @@
-{"Templates":["Assets/MGFX/Rendering/NPR/Shaders/NPRCelShading.Shader.txt","Assets/MGFX/Rendering/NPR/Shaders/NPRCelShadingDS.Shader.txt","Assets/MGFX/Rendering/NPR/Shaders/NPRHair.Shader.txt"]}
+{"Templates":["Assets/Lib/MGFX/Rendering/NPR/Shaders/NPRCelShading.Shader.txt","Assets/Lib/MGFX/Rendering/NPR/Shaders/NPRCelShadingDS.Shader.txt","Assets/Lib/MGFX/Rendering/NPR/Shaders/NPRHair.Shader.txt"]}

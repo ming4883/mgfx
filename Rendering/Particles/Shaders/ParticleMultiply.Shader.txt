@@ -1,6 +1,6 @@
 ﻿Shader "Minv/Particles/Multiply" {
 	Properties {
-		{% unityasset MGFX/Rendering/Particles/Shaders/Particle.Properties.txt %}
+		{% unityasset Lib/MGFX/Rendering/Particles/Shaders/Particle.Properties.txt %}
 	}
 
 	Category {
@@ -12,9 +12,9 @@
 		SubShader {
 			Pass {
 				CGPROGRAM
-				{% unityasset MGFX/Rendering/Base/Shaders/MinvBase.cginc %}
-				{% unityasset MGFX/Rendering/Particles/Shaders/Particle.cginc %}
-				{% unityasset MGFX/Rendering/Particles/Shaders/ParticleMultiply.cginc %}
+				{% unityasset Lib/MGFX/Rendering/Base/Shaders/MinvBase.cginc %}
+				{% unityasset Lib/MGFX/Rendering/Particles/Shaders/Particle.cginc %}
+				{% unityasset Lib/MGFX/Rendering/Particles/Shaders/ParticleMultiply.cginc %}
 				ENDCG 
 			}
 		}	

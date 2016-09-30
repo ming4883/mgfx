@@ -2,7 +2,7 @@
 {
     Properties
     {
-{% unityasset MGFX/Rendering/NPR/Shaders/NPRCelShading.Properties.txt %}
+{% unityasset Lib/MGFX/Rendering/NPR/Shaders/NPRCelShading.Properties.txt %}
     }
 
     SubShader
@@ -21,11 +21,11 @@
 			Cull Back
 
 			CGPROGRAM
-			{% unityasset MGFX/Rendering/Base/Shaders/MinvBase.cginc %}
-			{% unityasset MGFX/Rendering/Base/Shaders/MinvAutoLight.cginc %}
-			{% unityasset MGFX/Rendering/Base/Shaders/MinvNoise.cginc %}
-			{% unityasset MGFX/Rendering/NPR/Shaders/NPRCelShading.CGFwdBase.txt %}
-			{% unityasset MGFX/Rendering/NPR/Shaders/NPRCelShading.CGinc.txt %}
+			{% unityasset Lib/MGFX/Rendering/Base/Shaders/MinvBase.cginc %}
+			{% unityasset Lib/MGFX/Rendering/Base/Shaders/MinvAutoLight.cginc %}
+			{% unityasset Lib/MGFX/Rendering/Base/Shaders/MinvNoise.cginc %}
+			{% unityasset Lib/MGFX/Rendering/NPR/Shaders/NPRCelShading.CGFwdBase.txt %}
+			{% unityasset Lib/MGFX/Rendering/NPR/Shaders/NPRCelShading.CGinc.txt %}
 			ENDCG
 		}
 
@@ -39,11 +39,11 @@
 
 		    CGPROGRAM
 			#define BACKFACE_ON
-			{% unityasset MGFX/Rendering/Base/Shaders/MinvBase.cginc %}
-			{% unityasset MGFX/Rendering/Base/Shaders/MinvAutoLight.cginc %}
-			{% unityasset MGFX/Rendering/Base/Shaders/MinvNoise.cginc %}
-			{% unityasset MGFX/Rendering/NPR/Shaders/NPRCelShading.CGFwdBase.txt %}
-			{% unityasset MGFX/Rendering/NPR/Shaders/NPRCelShading.CGinc.txt %}    
+			{% unityasset Lib/MGFX/Rendering/Base/Shaders/MinvBase.cginc %}
+			{% unityasset Lib/MGFX/Rendering/Base/Shaders/MinvAutoLight.cginc %}
+			{% unityasset Lib/MGFX/Rendering/Base/Shaders/MinvNoise.cginc %}
+			{% unityasset Lib/MGFX/Rendering/NPR/Shaders/NPRCelShading.CGFwdBase.txt %}
+			{% unityasset Lib/MGFX/Rendering/NPR/Shaders/NPRCelShading.CGinc.txt %}    
 			ENDCG
 		}
 
@@ -60,11 +60,11 @@
 			Cull Back
 
 			CGPROGRAM
-			{% unityasset MGFX/Rendering/Base/Shaders/MinvBase.cginc %}
-			{% unityasset MGFX/Rendering/Base/Shaders/MinvAutoLight.cginc %}
-			{% unityasset MGFX/Rendering/Base/Shaders/MinvNoise.cginc %}
-			{% unityasset MGFX/Rendering/NPR/Shaders/NPRCelShading.CGFwdAdd.txt %}
-			{% unityasset MGFX/Rendering/NPR/Shaders/NPRCelShading.CGinc.txt %}
+			{% unityasset Lib/MGFX/Rendering/Base/Shaders/MinvBase.cginc %}
+			{% unityasset Lib/MGFX/Rendering/Base/Shaders/MinvAutoLight.cginc %}
+			{% unityasset Lib/MGFX/Rendering/Base/Shaders/MinvNoise.cginc %}
+			{% unityasset Lib/MGFX/Rendering/NPR/Shaders/NPRCelShading.CGFwdAdd.txt %}
+			{% unityasset Lib/MGFX/Rendering/NPR/Shaders/NPRCelShading.CGinc.txt %}
 			ENDCG
 		}
 
@@ -82,11 +82,11 @@
 
 		    CGPROGRAM
 		    #define BACKFACE_ON
-		    {% unityasset MGFX/Rendering/Base/Shaders/MinvBase.cginc %}
-			{% unityasset MGFX/Rendering/Base/Shaders/MinvAutoLight.cginc %}
-			{% unityasset MGFX/Rendering/Base/Shaders/MinvNoise.cginc %}
-			{% unityasset MGFX/Rendering/NPR/Shaders/NPRCelShading.CGFwdAdd.txt %}
-			{% unityasset MGFX/Rendering/NPR/Shaders/NPRCelShading.CGinc.txt %}
+		    {% unityasset Lib/MGFX/Rendering/Base/Shaders/MinvBase.cginc %}
+			{% unityasset Lib/MGFX/Rendering/Base/Shaders/MinvAutoLight.cginc %}
+			{% unityasset Lib/MGFX/Rendering/Base/Shaders/MinvNoise.cginc %}
+			{% unityasset Lib/MGFX/Rendering/NPR/Shaders/NPRCelShading.CGFwdAdd.txt %}
+			{% unityasset Lib/MGFX/Rendering/NPR/Shaders/NPRCelShading.CGinc.txt %}
 			ENDCG
 		}
 		
@@ -101,7 +101,7 @@
 			Cull Off
 
 		    CGPROGRAM
-			{% unityasset MGFX/Rendering/NPR/Shaders/NPRCelShading.CGMeta.txt %}
+			{% unityasset Lib/MGFX/Rendering/NPR/Shaders/NPRCelShading.CGMeta.txt %}
 			ENDCG
 		}
 
