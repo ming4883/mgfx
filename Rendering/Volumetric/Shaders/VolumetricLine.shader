@@ -38,6 +38,7 @@
             uniform float4 _VolLineColor;
             uniform float3 _VolLinePoint0;
             uniform float3 _VolLinePoint1;
+            uniform sampler2D _VolLineLUT;
 
             struct Ray
             {
@@ -97,7 +98,8 @@
                 float3 d3 = DistancePoint(ray, b);
 
                 float dm = min(min(d1.x, d2.x), d3.x);
-                float s = 1 - saturate(dm / _VolLineRadius);
+                float s = saturate(dm / _VolLineRadius);
+                s = tex2D(_VolLineLUT, float2(s, 0.5));
                 return float4(_VolLineColor.rgb * s * _VolLineColor.a, s);
             }
             ENDCG

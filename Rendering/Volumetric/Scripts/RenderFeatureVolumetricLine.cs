@@ -12,6 +12,8 @@ namespace MGFX
 		[HideInInspector]
 		public Material m_MaterialVolLine;
 
+        public Texture m_LookUpTable;
+
         public Mesh m_CubeMesh;
 
         public override void OnEnable()
@@ -42,6 +44,9 @@ namespace MGFX
             Color valCol = Color.white;
             float valRad = 0;
             Matrix4x4 _m, _p;
+
+            var _lut = m_LookUpTable;
+            m_MaterialVolLine.SetTexture("_VolLineLUT", _lut);
 
             foreach (var _line in system.m_Lines)
             {
