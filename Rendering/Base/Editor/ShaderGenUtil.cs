@@ -1,117 +1,131 @@
-using UnityEngine;
-using UnityEditor;
 using System;
 using System.Collections.Generic;
+using UnityEditor;
+using UnityEngine;
 using DL = DotLiquid;
 
 namespace MGFX.Rendering
 {
-    class CodeDRYer
-    {
-        private class TagUnityAsset : DL.Tag
-        {
-            public string m_Content;
+	internal class CodeDRYer
+	{
+		private class TagUnityAsset : DL.Tag
+		{
+			public string m_Content;
 
-            public override void Initialize(string _tagName, string _markup, List<string> _tokens)
-            {
-                base.Initialize(_tagName, _markup, _tokens);
-                string _path = System.IO.Path.Combine(Application.dataPath, _markup.Trim());
-                try
-                {
-                    using (var _f = new System.IO.StreamReader(_path))
-                    {
-                        m_Content = _f.ReadToEnd();
-                    }
-                }
-                catch (Exception _err)
-                {
-                    Log.E(_err);
-                    m_Content = null;
-                }
+			public static string WorkingDir = "";
 
-                if (null == m_Content)
-                {
-                    Log.E("failed to load TextAsset {0}", _markup);
-                    return;
-                }
-                else
-                {
-                    //Log.I("Loaded {0}", _markup);
-                }
-            }
+			public override void Initialize(string _tagName, string _markup, List<string> _tokens)
+			{
+				base.Initialize(_tagName, _markup, _tokens);
+				string _path = _markup.Trim();
 
-            public override void Render(DL.Context context, System.IO.TextWriter result)
-            {
-                if (null != m_Content)
-                    result.Write(m_Content);
-                else
-                    result.Write("(null)");
-            }
-        }
+				if (_path.StartsWith("."))
+				{
+					_path = System.IO.Path.Combine(WorkingDir, _path);
+					_path = System.IO.Path.GetFullPath(_path);
+					//Log.I(_path);
+				}
+				else
+				{
+					_path = System.IO.Path.Combine(Application.dataPath, _path);
+				}
 
-        static CodeDRYer()
-        {
-            DL.Template.RegisterTag<TagUnityAsset>("unityasset");
-        }
+				try
+				{
+					using (var _f = new System.IO.StreamReader(_path))
+					{
+						m_Content = _f.ReadToEnd();
+					}
+				}
+				catch (Exception _err)
+				{
+					Log.E(_err);
+					m_Content = null;
+				}
 
-        public CodeDRYer(TextAsset _asset)
-        {
-            CreateTemplate(_asset.text);
-        }
+				if (null == m_Content)
+				{
+					Log.E("failed to load TextAsset {0}", _markup);
+					return;
+				}
+				else
+				{
+					//Log.I("Loaded {0}", _markup);
+				}
+			}
 
-        public CodeDRYer()
-        {
-            CreateTemplate("#{% unityasset Assets/Lib/MGFX/Rendering/Common/Shaders/OctEncode.cginc %}##");
-        }
+			public override void Render(DL.Context _context, System.IO.TextWriter _result)
+			{
+				if (null != m_Content)
+					_result.Write(m_Content);
+				else
+					_result.Write("(null)");
+			}
+		}
 
-        private DL.Template m_Template = null;
+		static CodeDRYer()
+		{
+			DL.Template.RegisterTag<TagUnityAsset>("unityasset");
+		}
 
-        private void CreateTemplate(string _text)
-        {
-            try
-            {
-                var _template = DL.Template.Parse(_text);
-                m_Template = _template;
-            }
-            catch (Exception _err)
-            {
-                Log.E(_err);
-            }
-        }
+		public CodeDRYer(TextAsset _asset)
+		{
+			var _workdir = AssetDatabase.GetAssetPath(_asset).Remove(0, 6); // "Remove 'Assets'"
+			_workdir = System.IO.Path.GetFullPath(Application.dataPath + _workdir);
+			_workdir = System.IO.Path.GetDirectoryName(_workdir);
+			CreateTemplate(_asset.text, _workdir);
+		}
+		
+		private DL.Template m_Template = null;
 
-        public bool Render(string _outputPath)
-        {
-            if (null == m_Template)
-                return false;
+		private void CreateTemplate(string _text, string _workingDir)
+		{
+			try
+			{
+				//Log.I("working dir {0}", _workingDir);
+				TagUnityAsset.WorkingDir = _workingDir;
 
-            var _ret = m_Template.Render();
+				var _template = DL.Template.Parse(_text);
+				m_Template = _template;
+			}
+			catch (Exception _err)
+			{
+				Log.E(_err);
+			}
+		}
 
-            if (null == _outputPath)
-            {
-                Log.I(_ret);
-            }
-            else
-            {
-                try
-                {
-                    using (var _f = new System.IO.StreamWriter(_outputPath))
-                    {
-                        _f.Write(_ret);
-                    }
-                }
-                catch (Exception _err)
-                {
-                    Log.E(_err);
-                    return false;
-                }
-            }
-            
-            return true;
-        }
-    }
+		public bool Render(string _outputPath)
+		{
+			if (null == m_Template)
+				return false;
 
+			var _ret = m_Template.Render();
 
-	struct ShaderGenData
+			if (null == _outputPath)
+			{
+				Log.I(_ret);
+			}
+			else
+			{
+				try
+				{
+					using (var _f = new System.IO.StreamWriter(_outputPath))
+					{
+						_f.Write(_ret);
+					}
+				}
+				catch (Exception _err)
+				{
+					Log.E(_err);
+					return false;
+				}
+			}
+
+			return true;
+		}
+	}
+
+	internal struct ShaderGenData
 	{
 		public string[] Templates;
 
@@ -130,8 +144,8 @@ namespace MGFX.Rendering
 			int _cnt = _templates == null ? 0 : _templates.Length;
 
 			Templates = new string[_cnt];
-			
-			for(int _i = 0; _i < _cnt; ++_i)
+
+			for (int _i = 0; _i < _cnt; ++_i)
 			{
 				Templates[_i] = AssetDatabase.GetAssetPath(_templates[_i]);
 			}
@@ -152,7 +166,7 @@ namespace MGFX.Rendering
 		}
 	}
 
-	class ShaderGenProp : ScriptableObject
+	internal class ShaderGenProp : ScriptableObject
 	{
 		public TextAsset[] LastAssets = new TextAsset[] { null };
 
@@ -177,9 +191,8 @@ namespace MGFX.Rendering
 		}
 	}
 
-
-	class ShaderGenUtil : RenderUtils.IUtil
-    {
+	internal class ShaderGenUtil : RenderUtils.IUtil
+	{
 		public ShaderGenData Data = new ShaderGenData();
 		public TextAsset ListFile = null;
 
@@ -194,9 +207,8 @@ namespace MGFX.Rendering
 			{
 				Data = ShaderGenData.FromJson(LoadSettings());
 			}
-			catch(Exception)
+			catch (Exception)
 			{
-
 			}
 		}
 
@@ -206,7 +218,7 @@ namespace MGFX.Rendering
 		}
 
 		public override void OnGUI()
-        {
+		{
 			ShaderGenProp _prop = ShaderGenProp.Acquire();
 			_prop.CopyFrom(ref Data);
 
@@ -214,19 +226,19 @@ namespace MGFX.Rendering
 
 			OnGUITemplates(_prop);
 
-            OnGUIHelp();
+			OnGUIHelp();
 
 			ShaderGenProp.Release(_prop);
 		}
 
-		void OnGUIListFile(ShaderGenProp _data)
+		private void OnGUIListFile(ShaderGenProp _data)
 		{
 			EditorGUILayout.Separator();
 
 			EditorGUILayout.BeginHorizontal();
 
 			EditorGUI.BeginChangeCheck();
-			
+
 			ListFile = EditorGUILayout.ObjectField("ListFile.txt", ListFile, typeof(TextAsset), false) as TextAsset;
 
 			if (EditorGUI.EndChangeCheck())
@@ -243,10 +255,10 @@ namespace MGFX.Rendering
 			EditorGUILayout.EndHorizontal();
 		}
 
-        void OnGUITemplates(ShaderGenProp _prop)
-        {
+		private void OnGUITemplates(ShaderGenProp _prop)
+		{
 			EditorGUILayout.Separator();
-			
+
 			var _ser = new SerializedObject(_prop);
 			var _field = _ser.FindProperty("LastAssets");
 			if (null != _field)
@@ -258,7 +270,7 @@ namespace MGFX.Rendering
 					_prop.CopyTo(ref Data);
 				}
 			}
-			
+
 			EditorGUILayout.Separator();
 
 			if (GUILayout.Button("Render", UI.LAYOUT_DEFAULT))
@@ -269,46 +281,41 @@ namespace MGFX.Rendering
 					DoRender();
 					DoSaveListFile();
 				}
-				else
-				{
-					DoTest();
-				}
-					
 			}
 
 			EditorGUILayout.Separator();
 		}
 
-        void OnGUIHelp()
-        {
-            EditorGUILayout.Separator();
+		private void OnGUIHelp()
+		{
+			EditorGUILayout.Separator();
 
-            EditorGUILayout.TextArea("Templates should be named in AssetName.type.txt\n"+
-                "For example:\n"+
-                "MYUBER.Shader.txt -> MYUBER.shader", 
-                EditorStyles.helpBox, UI.LAYOUT_DEFAULT);
-            
-            EditorGUILayout.Separator();
-            EditorGUILayout.Separator();
+			EditorGUILayout.TextArea("Templates should be named in AssetName.type.txt\n" +
+				"For example:\n" +
+				"MYUBER.Shader.txt -> MYUBER.shader",
+				EditorStyles.helpBox, UI.LAYOUT_DEFAULT);
 
-            EditorGUILayout.TextArea("DO NOT REPEAT YOURSELF!\n"+
-                "CodeDRYer use the DotLiquid template engine.\n" +
-                "For more information, click the following buttons.", 
-                EditorStyles.helpBox, UI.LAYOUT_DEFAULT);
-            
-            if (GUILayout.Button("DotLiquid References", UI.LAYOUT_DEFAULT))
-            {
-                Application.OpenURL("https://github.com/dotliquid/dotliquid");
-            }
-            if (GUILayout.Button("Liquid References", UI.LAYOUT_DEFAULT))
-            {
-                Application.OpenURL("https://github.com/Shopify/liquid/wiki/Liquid-for-Designers");
-            }
+			EditorGUILayout.Separator();
+			EditorGUILayout.Separator();
 
-            EditorGUILayout.Separator();
-        }
-		
-		void DoSaveListFile()
+			EditorGUILayout.TextArea("DO NOT REPEAT YOURSELF!\n" +
+				"CodeDRYer use the DotLiquid template engine.\n" +
+				"For more information, click the following buttons.",
+				EditorStyles.helpBox, UI.LAYOUT_DEFAULT);
+
+			if (GUILayout.Button("DotLiquid References", UI.LAYOUT_DEFAULT))
+			{
+				Application.OpenURL("https://github.com/dotliquid/dotliquid");
+			}
+			if (GUILayout.Button("Liquid References", UI.LAYOUT_DEFAULT))
+			{
+				Application.OpenURL("https://github.com/Shopify/liquid/wiki/Liquid-for-Designers");
+			}
+
+			EditorGUILayout.Separator();
+		}
+
+		private void DoSaveListFile()
 		{
 			string _js = ShaderGenData.ToJson(Data);
 
@@ -317,11 +324,11 @@ namespace MGFX.Rendering
 				string _assetPath = System.IO.Path.GetDirectoryName(Data.Templates[0]) + "/ListFile.txt";
 				ListFile = CreateAsset<TextAsset>(_assetPath);
 			}
-			
+
 			WriteAsset(ListFile, _js);
 		}
 
-		void DoLoadListFile()
+		private void DoLoadListFile()
 		{
 			if (null == ListFile || !ListFile)
 				return;
@@ -329,38 +336,32 @@ namespace MGFX.Rendering
 			Data = ShaderGenData.FromJson(ListFile.text);
 		}
 
-        void DoRender()
-        {
-            List<string> _refresh = new List<string>();
-            foreach (var _template in Data.Templates)
-            {
-                string _path = System.IO.Path.ChangeExtension(_template, null);
-                string _ext = System.IO.Path.GetExtension(_path);
-                //Log.I("p:{0}, e:{1}", _path, _ext);
+		private void DoRender()
+		{
+			List<string> _refresh = new List<string>();
+			foreach (var _template in Data.Templates)
+			{
+				string _path = System.IO.Path.ChangeExtension(_template, null);
+				string _ext = System.IO.Path.GetExtension(_path);
+				//Log.I("p:{0}, e:{1}", _path, _ext);
 
-                if (_ext.CompareTo(_path) != 0)
-                    _path = System.IO.Path.ChangeExtension(_path, _ext.ToLower());
+				if (_ext.CompareTo(_path) != 0)
+					_path = System.IO.Path.ChangeExtension(_path, _ext.ToLower());
 
 				TextAsset _asset = AssetDatabase.LoadAssetAtPath<TextAsset>(_template);
-                if (new CodeDRYer(_asset).Render(_path))
-                {
-                    Log.I("Rendered to {0}", _path);
-                    _refresh.Add(_path);
-                }
-            }
+				if (new CodeDRYer(_asset).Render(_path))
+				{
+					Log.I("Rendered to {0}", _path);
+					_refresh.Add(_path);
+				}
+			}
 
-            EditorUtility.DisplayDialog(GetType().Name, string.Format("Rendered {0} assets, press OK to refresh.", _refresh.Count), "OK");
+			EditorUtility.DisplayDialog(GetType().Name, string.Format("Rendered {0} assets, press OK to refresh.", _refresh.Count), "OK");
 
 			foreach (var _path in _refresh)
-            {
-                AssetDatabase.ImportAsset(_path);
-            }
-        }
-
-        void DoTest()
-        {
-            new CodeDRYer().Render(null);
-        }
-    }
-
+			{
+				AssetDatabase.ImportAsset(_path);
+			}
+		}
+	}
 }

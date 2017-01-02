@@ -2,16 +2,16 @@ using UnityEngine;
 using UnityEngine.Rendering;
 using System.Collections.Generic;
 
-namespace MGFX
+namespace MGFX.Rendering
 {
 
 	[ExecuteInEditMode]
-	[AddComponentMenu ("Rendering/MGFX/ColorBlend")]
+	[AddComponentMenu ("MGFX.Rendering/ColorBlend")]
 	public class RenderFeatureColorBlend : RenderFeatureBase
 	{
 		#region Material Identifiers
 
-        [Material("Hidden/MGFX/ColorBlend")]
+        [Material("Hidden/Minverse/ColorBlend")]
         [HideInInspector]
         public Material MaterialColorBlend;
 		
@@ -49,20 +49,14 @@ namespace MGFX
 		public override void SetupCameraEvents(Camera _cam, RenderSystem _system)
 		{
 			UpdateMaterialProperties(_cam);
+			
+			var _cmdBuf = _system.Commands.Alloc(_cam, CameraEvent.BeforeImageEffects, "MGFX.Rendering.ColorBlend");
+			_cmdBuf.Clear();
 
-			// update command buffers
-			var _cmdBuf = GetCommandBufferForEvent (_cam, CameraEvent.BeforeImageEffects, "MGFX.ColorBlend");
-			_cmdBuf.Clear ();
-
-			var _idCurr = Shader.PropertyToID("_CurrTexture");
-
-			_cmdBuf.GetTemporaryRT(_idCurr, -1, -1);
-
-			_cmdBuf.Blit(BuiltinRenderTextureType.CameraTarget, _idCurr);
+			var _frameBuf = GrabFrameBuffer(_system, _cam, _cmdBuf);
+			
 			SetFlip(_cmdBuf, _cam);
-            _cmdBuf.Blit(_idCurr, BuiltinRenderTextureType.CameraTarget, MaterialColorBlend, (int)mode);
-
-			_cmdBuf.ReleaseTemporaryRT(_idCurr);
+			_cmdBuf.Blit((RenderTargetIdentifier)_frameBuf, BuiltinRenderTextureType.CameraTarget, MaterialColorBlend, (int)mode);
 		}
 		#endregion
 	}

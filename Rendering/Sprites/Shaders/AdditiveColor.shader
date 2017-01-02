@@ -1,4 +1,4 @@
-Shader "Minv/Sprites/AdditiveColor"
+Shader "MGFX/Sprites/AdditiveColor"
 {
 	Properties
 	{

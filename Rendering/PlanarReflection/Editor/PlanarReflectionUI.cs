@@ -3,7 +3,7 @@ using UnityEditor;
 using System;
 
 
-namespace MGFX
+namespace MGFX.Rendering
 {
 	[CustomEditor (typeof(PlanarReflection))]
 	public class PlanarReflectionUI : Editor

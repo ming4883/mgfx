@@ -2,7 +2,7 @@
 using UnityEngine.Rendering;
 using System.Collections.Generic;
 
-namespace MGFX
+namespace MGFX.Rendering
 {
 
 	[ExecuteInEditMode]
@@ -80,145 +80,10 @@ namespace MGFX
 
 
 		#endregion
-
-		#region Command Buffer Management
-
-		protected class EvtCmdBuf
-		{
-			public CameraEvent Event;
-			public CommandBuffer CommandBuffer;
-		}
-
-		protected class EvtCmdBufList :List<EvtCmdBuf>
-		{
-		}
-
-		protected class EvtCmdBufMapping : Dictionary<Camera, EvtCmdBufList>
-		{
-
-		}
-
-		protected EvtCmdBufMapping m_CameraCommands = new EvtCmdBufMapping ();
-
-		protected CommandBuffer GetCommandBufferForEvent (Camera _cam, CameraEvent _event, string _name)
-		{
-
-			var _curr = m_CameraCommands [_cam].Find ((_evtbuf) =>
-			{
-				return _evtbuf.Event == _event;
-			});
-
-			if (null != _curr)
-				return _curr.CommandBuffer;
-
-			CommandBuffer _cmdBuf = new CommandBuffer ();
-			_cmdBuf.name = _name;
-			_cam.AddCommandBuffer (_event, _cmdBuf);
-
-			m_CameraCommands [_cam].Add (new EvtCmdBuf { Event = _event, CommandBuffer = _cmdBuf });
-
-			return _cmdBuf;
-		}
-
-		#endregion
-
-		#region
-
-        #region Camera GeomBuffer Management
-        protected class CameraGeomBuffer
-        {
-            public RenderTexture Rtt = null;
-
-            public void Cleanup()
-            {
-                if (Rtt)
-                    RenderTexture.DestroyImmediate(Rtt);
-            }
-        }
-
-        protected class CameraGeomBuffers : Dictionary<Camera, CameraGeomBuffer>
-        {
-            public Camera Cam = null;
-        }
-
-        private CameraGeomBuffers m_CameraBuffers = new CameraGeomBuffers();
-
-        protected void RenderGeomBuffer(Camera _cam, Shader _shader, string _tags, Color _clearColor)
-        {
-            if (!m_CameraBuffers.Cam)
-            {
-                m_CameraBuffers.Cam = gameObject.GetComponent<Camera>();
-                if (!m_CameraBuffers.Cam)
-                    m_CameraBuffers.Cam = gameObject.AddComponent<Camera>();
-            }
-
-            m_CameraBuffers.Cam.CopyFrom(_cam);
-            m_CameraBuffers.Cam.depthTextureMode = DepthTextureMode.None;
-            m_CameraBuffers.Cam.hdr = false;
-            m_CameraBuffers.Cam.renderingPath = RenderingPath.VertexLit;
-            m_CameraBuffers.Cam.clearFlags = CameraClearFlags.Color;
-            m_CameraBuffers.Cam.backgroundColor = _clearColor;
-            m_CameraBuffers.Cam.rect = new Rect(0, 0, 1, 1);
-            m_CameraBuffers.Cam.enabled = false;
-            m_CameraBuffers.Cam.hideFlags = HideFlags.HideInInspector;
-            m_CameraBuffers.Cam.nearClipPlane = Mathf.Max(_cam.nearClipPlane, 0.1f);
-            //m_ObjectIdCamera.farClipPlane = Mathf.Min(_cam.farClipPlane, 50.0f);
-
-            var _lastRT = RenderTexture.active;
-
-            CameraGeomBuffer _buffers;
-            // Did we already add the command buffer on this camera? Nothing to do then.
-            if (!m_CameraBuffers.ContainsKey(_cam))
-            {
-                _buffers = new CameraGeomBuffer();
-                m_CameraBuffers[_cam] = _buffers;
-            }
-            else
-            {
-                _buffers = m_CameraBuffers[_cam];
-            }
-
-            if (_buffers.Rtt == null || _buffers.Rtt.width != _cam.pixelWidth || _buffers.Rtt.height != _cam.pixelHeight)
-            {
-                if (_buffers.Rtt)
-                    RenderTexture.DestroyImmediate(_buffers.Rtt);
-
-                int _w = Mathf.CeilToInt(_cam.pixelWidth * 0.5f) * 2;
-                int _h = Mathf.CeilToInt(_cam.pixelHeight * 0.5f) * 2;
-
-                var _rtt = new RenderTexture(_w, _h, 32, RenderTextureFormat.ARGB32);
-                _rtt.generateMips = false;
-                _rtt.filterMode = FilterMode.Point;
-                _rtt.name = "MinvGeomBuffer." + _cam.name;
-                _buffers.Rtt = _rtt;
-            }
-
-            RenderTexture.active = _buffers.Rtt;
-
-            m_CameraBuffers.Cam.targetTexture = _buffers.Rtt;
-            m_CameraBuffers.Cam.RenderWithShader(_shader, _tags);
-
-            m_CameraBuffers.Cam.targetTexture = null;
-            RenderTexture.active = _lastRT;
-        }
-
-
-        public RenderTexture GetGeomBuffer(Camera _cam)
-        {
-            if (!m_CameraBuffers.ContainsKey(_cam))
-                return null;
-
-            return m_CameraBuffers[_cam].Rtt;
-        }
-
-        #endregion
-
-
+		
 		[HideInInspector]
 		public bool affectSceneCamera = true;
-
-		#endregion
-
+		
 		#region MonoBehaviour related
 
 		public virtual void OnEnable ()
@@ -238,17 +103,6 @@ namespace MGFX
 
 		protected virtual void Cleanup ()
 		{
-			foreach (var _pair in m_CameraCommands)
-			{
-				foreach (var _evtCmds in _pair.Value)
-				{
-					if (_pair.Key)
-						_pair.Key.RemoveCommandBuffer (_evtCmds.Event, _evtCmds.CommandBuffer);
-				}
-			}
-
-			m_CameraCommands.Clear ();
-
 			foreach (var _pair in m_Materials)
 			{
 				Material.DestroyImmediate (_pair.Value);
@@ -256,14 +110,8 @@ namespace MGFX
 
 			m_Materials.Clear ();
 
-            foreach (var _pair in m_CameraBuffers)
-            {
-                _pair.Value.Cleanup();
-            }
-
-            m_CameraBuffers.Clear();
 		}
-
+		
 		public virtual void OnPreRenderCamera (Camera _cam, RenderSystem _system)
 		{
 			var _active = gameObject.activeInHierarchy && enabled;
@@ -272,13 +120,7 @@ namespace MGFX
 				Cleanup ();
 				return;
 			}
-
-			if (!m_CameraCommands.ContainsKey (_cam))
-			{
-				var _cmdList = new EvtCmdBufList ();
-				m_CameraCommands [_cam] = _cmdList;
-			}
-
+			
 			SetupCameraEvents (_cam, _system);
 		}
 
@@ -288,8 +130,13 @@ namespace MGFX
 		}
 
 		#endregion
-
+		
 		#region Utils
+
+		protected RenderSystem FindRenderSystem()
+		{
+			return gameObject.GetComponent<RenderSystem>();
+		}
 
 		protected static void Swap (ref RenderTexture _a, ref RenderTexture _b)
 		{
@@ -310,6 +157,64 @@ namespace MGFX
 			bool _flip = _cam.targetTexture == null;
 			_flip = false;
 			_cmdBuf.SetGlobalFloat ("_Flip", (true == _flip) ? -1 : 1);
+		}
+
+
+		const string kGeomBufferName = "GeomBuffer";
+
+		protected void RenderGeomBuffer(RenderSystem _system, Camera _cam, Shader _shader, string _tags, Color _clearColor, bool _highPrecision)
+		{
+			var _lastRT = RenderTexture.active;
+
+			var _camBuffers = _system.CameraBuffers;
+
+			var _bufName = string.Format("{0}@{1}", kGeomBufferName, GetType().Name);
+
+			var _camBuf = _camBuffers.AllocForRender(_cam, _bufName, 32, _highPrecision ? RenderTextureFormat.ARGBHalf : RenderTextureFormat.ARGB32, RenderTextureReadWrite.Linear);
+
+			RenderTexture.active = _camBuf.Rtt;
+
+			var _camRtt = _camBuffers.PrepareForRender(_cam, this.gameObject);
+			_camRtt.backgroundColor = _clearColor;
+			_camRtt.targetTexture = _camBuf.Rtt;
+			_camRtt.RenderWithShader(_shader, _tags);
+
+			_camRtt.targetTexture = null;
+			RenderTexture.active = _lastRT;
+		}
+
+		protected RenderTexture GetGeomBuffer(RenderSystem _system, Camera _cam)
+		{
+			var _bufName = string.Format("{0}@{1}", kGeomBufferName, GetType().Name);
+			return _system.CameraBuffers.GetRtt(_cam, _bufName);
+		}
+
+
+		const string kFrameBufferName = "FrameBuffer";
+
+		protected RenderTexture GrabFrameBuffer(RenderSystem _system, Camera _cam, CommandBuffer _commands, Material _mtl, int _pass)
+		{
+			var _camBuffers = _system.CameraBuffers;
+			var _camBuf = _camBuffers.AllocForPostProc(_cam, kFrameBufferName, _cam.allowHDR ? RenderTextureFormat.ARGBHalf : RenderTextureFormat.ARGB32, RenderTextureReadWrite.Default);
+			_camBuf.Rtt.filterMode = FilterMode.Point;
+
+
+			if (null != _mtl)
+				_commands.Blit(BuiltinRenderTextureType.CameraTarget, _camBuf.Rtt, _mtl, _pass);
+			else
+				_commands.Blit(BuiltinRenderTextureType.CameraTarget, _camBuf.Rtt);
+
+			return _camBuf.Rtt;
+		}
+
+		protected RenderTexture GrabFrameBuffer(RenderSystem _system, Camera _cam, CommandBuffer _commands)
+		{
+			return GrabFrameBuffer(_system, _cam, _commands, null, 0);
+		}
+
+		protected RenderTexture GetFrameBuffer(RenderSystem _system, Camera _cam)
+		{
+			return _system.CameraBuffers.GetRtt(_cam, kFrameBufferName);
 		}
 
 		#endregion

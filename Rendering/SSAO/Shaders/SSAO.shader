@@ -21,7 +21,7 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 //
-Shader "Hidden/MGFX/SSAO"
+Shader "Hidden/MGFX.Rendering/SSAO"
 {
     Properties
     {
@@ -368,7 +368,7 @@ Shader "Hidden/MGFX/SSAO"
         //float vflip = sign(_MainTex_TexelSize.y);
 
         v2f_multitex o;
-        o.pos = mul(UNITY_MATRIX_MVP, v.vertex);
+        o.pos = UnityObjectToClipPos(v.vertex);
         o.uv0 = v.texcoord.xy;
         o.uv1 = (v.texcoord.xy - 0.5) * float2(1, _Flip) + 0.5;
         return o;

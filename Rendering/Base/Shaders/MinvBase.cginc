@@ -12,3 +12,8 @@
 #define unity_ProjectorClip _ProjectorClip
 #define unity_GUIClipTextureMatrix _GUIClipTextureMatrix 
 #endif
+
+
+#define SHADING_QUALITY_LOW		0
+#define SHADING_QUALITY_MEDIUM	1
+#define SHADING_QUALITY_HIGH	2

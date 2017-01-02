@@ -2,7 +2,7 @@
 using UnityEngine.Rendering;
 using System.Collections.Generic;
 
-namespace MGFX
+namespace MGFX.Rendering
 {
 	[ExecuteInEditMode]
     [RequireComponent(typeof(Camera))]

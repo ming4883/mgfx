@@ -2,10 +2,10 @@
 using UnityEngine.Rendering;
 using System.Collections;
 
-namespace MGFX
+namespace MGFX.Rendering
 {
     [ExecuteInEditMode]
-    [AddComponentMenu("Rendering/MGFX/VolumetricLineRenderer")]
+    [AddComponentMenu("MGFX.Rendering/VolumetricLineRenderer")]
     public class RenderFeatureVolumetricLine : RenderFeatureBase
     {
         [Material("MGFX/VolumetricLine")]
@@ -30,8 +30,9 @@ namespace MGFX
         public override void SetupCameraEvents(Camera _cam, RenderSystem _system)
         {
             var _evt = CameraEvent.AfterForwardAlpha;
-            var _cmdBuf = GetCommandBufferForEvent(_cam, _evt, "MGFX.VolLine");
-            _cmdBuf.Clear();
+
+            var _cmdBuf = _system.Commands.Alloc(_cam, _evt, "MGFX.VolLine");
+			_cmdBuf.Clear();
 
             var system = VolumetricLineSystem.instance;
 

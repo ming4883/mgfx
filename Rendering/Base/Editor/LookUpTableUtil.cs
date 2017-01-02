@@ -208,9 +208,35 @@ namespace MGFX.Rendering
 				_imp.wrapMode = TextureWrapMode.Clamp;
 				_imp.anisoLevel = 0;
 				_imp.mipmapEnabled = false;
-				_imp.linearTexture = true;
+				_imp.sRGBTexture = true;
 				_imp.textureFormat = TextureImporterFormat.ARGB32;
 				_imp.SaveAndReimport();
+			}
+		}
+
+		[MenuItem("Assets/Create/MIRendering/LookUpTable")]
+		private static void NewLUT()
+		{
+			int i = 0;
+			bool _ok = false;
+
+			string _dir = GetAssetDatabaseSelectedDir();
+
+			while (!_ok)
+			{
+				string _filename = System.IO.Path.Combine(_dir, string.Format("NewLUT{0}.txt", i));
+				++i;
+
+				if (!System.IO.File.Exists(_filename))
+				{
+					using (var _f = System.IO.File.Open(_filename, System.IO.FileMode.CreateNew))
+					{
+					}
+					_filename = GetAssetPath(_filename);
+					Log.I("Created {0}", _filename);
+					AssetDatabase.ImportAsset(_filename);
+					_ok = true;
+				}
 			}
 		}
 	}

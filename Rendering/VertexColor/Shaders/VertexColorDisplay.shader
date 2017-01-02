@@ -1,4 +1,4 @@
-﻿Shader "Hidden/MGFX/VertexColorDisplay"
+﻿Shader "Hidden/MGFX.Rendering/VertexColorDisplay"
 {
     Properties
     {
@@ -29,7 +29,7 @@
             //float vflip = sign(_MainTex_TexelSize.y);
 
             v2f o;
-            o.vertex = mul(UNITY_MATRIX_MVP, v.vertex);
+            o.vertex = UnityObjectToClipPos(v.vertex);
             o.uv0 = v.texcoord.xy;
             o.uv1 = (v.texcoord.xy - 0.5) * float2(1, _Flip) + 0.5;
             return o;

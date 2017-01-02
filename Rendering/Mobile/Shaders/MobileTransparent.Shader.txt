@@ -1,0 +1,205 @@
+﻿Shader "Minv/Mobile/Transparent"
+{
+	Properties
+	{
+		{% unityasset ./MobileGeneric.Properties.txt %}
+	}
+
+	// High Quality
+	SubShader
+	{
+		LOD 300
+
+		Tags
+		{ 
+			"RenderType"="Transparent"
+			"Queue"="Transparent"
+			"IgnoreProjector"="True"
+		}
+
+		Pass
+		{
+			Tags
+			{
+				"LightMode"="ForwardBase"
+			}
+
+			ZWrite Off
+			Blend SrcAlpha OneMinusSrcAlpha
+			Cull Off
+
+			CGPROGRAM
+			{% unityasset ../../Base/Shaders/MinvBase.cginc %}
+			{% unityasset ../../Base/Shaders/MinvMatCap.cginc %}
+
+			#define SHADING_QUALITY SHADING_QUALITY_HIGH
+			#pragma target 3.0
+
+			{% unityasset ./MobileCommon.cginc %}
+			{% unityasset ./MobileTransparent.FwdBase.cginc %}
+			ENDCG
+		}
+		Pass
+		{
+			Name "META"
+			Tags
+			{
+				"LightMode"="Meta"
+			}
+
+			Cull Off
+
+			CGPROGRAM
+			{% unityasset ./MobileGeneric.Meta.cginc %}
+			ENDCG
+		}
+
+		Pass
+		{
+			Name "ShadowCaster"
+			Tags
+			{
+				"LightMode" = "ShadowCaster"
+			}
+
+			Cull Off
+
+			CGPROGRAM
+			{% unityasset ../../Base/Shaders/MinvShadowCaster.cginc %}
+			ENDCG
+		}
+	}
+
+	// Medium Quality
+	SubShader
+	{
+		LOD 200
+
+		Tags
+		{ 
+			"RenderType"="Transparent"
+			"Queue"="Transparent"
+			"IgnoreProjector"="True"
+		}
+
+		Pass
+		{
+			Tags
+			{
+				"LightMode"="ForwardBase"
+			}
+
+			ZWrite Off
+			Blend SrcAlpha OneMinusSrcAlpha
+			Cull Off
+
+			CGPROGRAM
+			{% unityasset ../../Base/Shaders/MinvBase.cginc %}
+			{% unityasset ../../Base/Shaders/MinvMatCap.cginc %}
+
+			#define SHADING_QUALITY SHADING_QUALITY_MEDIUM
+			#pragma target 2.0
+
+			{% unityasset ./MobileCommon.cginc %}
+			{% unityasset ./MobileTransparent.FwdBase.cginc %}
+			ENDCG
+		}
+		Pass
+		{
+			Name "META"
+			Tags
+			{
+				"LightMode"="Meta"
+			}
+
+			Cull Off
+
+			CGPROGRAM
+			{% unityasset ./MobileGeneric.Meta.cginc %}
+			ENDCG
+		}
+
+		Pass
+		{
+			Name "ShadowCaster"
+			Tags
+			{
+				"LightMode" = "ShadowCaster"
+			}
+
+			Cull Off
+
+			CGPROGRAM
+			{% unityasset ../../Base/Shaders/MinvShadowCaster.cginc %}
+			ENDCG
+		}
+	}
+
+	// Low Quality
+	SubShader
+	{
+		LOD 100
+
+		Tags
+		{ 
+			"RenderType"="Transparent"
+			"Queue"="Transparent"
+			"IgnoreProjector"="True"
+		}
+
+		Pass
+		{
+			Tags
+			{
+				"LightMode"="ForwardBase"
+			}
+
+			ZWrite Off
+			Blend SrcAlpha OneMinusSrcAlpha
+			Cull Off
+
+			CGPROGRAM
+			{% unityasset ../../Base/Shaders/MinvBase.cginc %}
+			{% unityasset ../../Base/Shaders/MinvMatCap.cginc %}
+
+			#define SHADING_QUALITY SHADING_QUALITY_LOW
+			#pragma target 2.0
+			
+			{% unityasset ./MobileCommon.cginc %}
+			{% unityasset ./MobileTransparent.FwdBase.cginc %}
+			ENDCG
+		}
+
+		Pass
+		{
+			Name "META"
+			Tags
+			{
+				"LightMode"="Meta"
+			}
+
+			Cull Off
+
+			CGPROGRAM
+			{% unityasset ./MobileGeneric.Meta.cginc %}
+			ENDCG
+		}
+
+		Pass
+		{
+			Name "ShadowCaster"
+			Tags
+			{
+				"LightMode" = "ShadowCaster"
+			}
+
+			Cull Off
+
+			CGPROGRAM
+			{% unityasset ../../Base/Shaders/MinvShadowCaster.cginc %}
+			ENDCG
+		}
+	}
+
+	CustomEditor "Minv.MobileTransparentUI"
+}

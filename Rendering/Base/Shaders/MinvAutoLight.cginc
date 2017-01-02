@@ -30,13 +30,15 @@
 	fixed destName = tex2D(_LightTexture0, lightCoord).w;
 #endif
 
+// global
+uniform float3 _MGFXAutoLightDir;
+
 
 half3 autoLightDir()
 {
     half3 camRight = UNITY_MATRIX_V[0].xyz;
+    half3 camUp = UNITY_MATRIX_V[1].xyz;
     half3 camFwd = UNITY_MATRIX_V[2].xyz;
-    half3 worldUp = half3(0, 1, 0);
-
-    return normalize(camFwd);
-    //return normalize(camFwd + camRight * -0.125f + worldUp * 0.5);
+    
+    return normalize(_MGFXAutoLightDir.x * camRight + _MGFXAutoLightDir.y * camUp + _MGFXAutoLightDir.z * camFwd);
 }

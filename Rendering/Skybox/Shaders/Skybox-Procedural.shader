@@ -1,4 +1,4 @@
-Shader "Minv/Skybox/Procedural" {
+Shader "MGFX/Skybox/Procedural" {
 Properties {
 	[KeywordEnum(None, Simple, High Quality)] _SunDisk ("Sun", Int) = 2
 	_SunSize ("Sun Size", Range(0,1)) = 0.04
@@ -173,7 +173,7 @@ SubShader {
 		v2f vert (appdata_t v)
 		{
 			v2f OUT;
-			OUT.pos = mul(UNITY_MATRIX_MVP, v.vertex);
+			OUT.pos = UnityObjectToClipPos(v.vertex);
 
 			float3 kSkyTintInGammaSpace = COLOR_2_GAMMA(_SkyTint); // convert tint from Linear back to Gamma
 			float3 kScatteringWavelength = lerp (

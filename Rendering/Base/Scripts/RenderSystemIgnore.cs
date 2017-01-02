@@ -2,10 +2,10 @@
 using UnityEngine.Rendering;
 using System.Collections.Generic;
 
-namespace MGFX
+namespace MGFX.Rendering
 {
 	[ExecuteInEditMode]
-	[AddComponentMenu("Rendering/MGFX/RenderSystemIgnore")]
+	[AddComponentMenu("MGFX.Rendering/RenderSystemIgnore")]
 	[RequireComponent(typeof(Camera))]
 	public class RenderSystemIgnore : MonoBehaviour
 	{

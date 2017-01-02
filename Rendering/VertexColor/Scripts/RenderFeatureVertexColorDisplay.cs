@@ -2,20 +2,20 @@ using UnityEngine;
 using UnityEngine.Rendering;
 using System.Collections.Generic;
 
-namespace MGFX
+namespace MGFX.Rendering
 {
 
     [ExecuteInEditMode]
-    [AddComponentMenu("Rendering/MGFX/VertexColorDisplay")]
+    [AddComponentMenu("MGFX.Rendering/VertexColorDisplay")]
     public class RenderFeatureVertexColorDisplay : RenderFeatureBase
     {
         #region Material Identifiers
 
-        [Material("Hidden/MGFX/VertexColorSelect")]
+        [Material("Hidden/MGFX.Rendering/VertexColorSelect")]
         [HideInInspector]
         public Material MaterialVertexColorSelect;
         
-        [Material("Hidden/MGFX/VertexColorDisplay")]
+        [Material("Hidden/MGFX.Rendering/VertexColorDisplay")]
         [HideInInspector]
         public Material MaterialVertexColorDisplay;
 
@@ -38,12 +38,12 @@ namespace MGFX
         // http://docs.unity3d.com/540/Documentation/ScriptReference/Rendering.BuiltinRenderTextureType.html
         public override void SetupCameraEvents(Camera _cam, RenderSystem _system)
         {
-            RenderGeomBuffer(_cam, MaterialVertexColorSelect.shader, "RenderType", new Color(0, 0, 0, 0));
+            RenderGeomBuffer(_system, _cam, MaterialVertexColorSelect.shader, "RenderType", new Color(0, 0, 0, 0), false);
 
             UpdateMaterialProperties(_cam);
-            var _cmdBuf = GetCommandBufferForEvent(_cam, CameraEvent.BeforeImageEffects, "MGFX.VertexColorDisplay");
+            var _cmdBuf = _system.Commands.Alloc(_cam, CameraEvent.BeforeImageEffects, "MGFX.Rendering.VertexColorDisplay");
             _cmdBuf.Clear();
-            _cmdBuf.Blit(GetGeomBuffer(_cam) as Texture, BuiltinRenderTextureType.CameraTarget, MaterialVertexColorDisplay, showAlpha ? 1 : 0);
+            _cmdBuf.Blit(GetGeomBuffer(_system, _cam) as Texture, BuiltinRenderTextureType.CameraTarget, MaterialVertexColorDisplay, showAlpha ? 1 : 0);
         }
 
         #endregion

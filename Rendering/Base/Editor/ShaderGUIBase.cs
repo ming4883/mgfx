@@ -2,7 +2,7 @@
 using UnityEditor;
 using System.Collections.Generic;
 
-namespace MGFX
+namespace MGFX.Rendering
 {
 	public class ShaderGUIBase : ShaderGUI
 	{
@@ -82,23 +82,16 @@ namespace MGFX
 			return _cnt;
 		}
 
-		//private Dictionary<string, bool> m_groups = new Dictionary<string,bool>();
-
 		protected bool BeginGroup(string _name)
 		{
-			/*
-			if (!m_groups.ContainsKey(_name))
-				m_groups.Add(_name, true);
-
-			m_groups[_name] = EditorGUILayout.Foldout(m_groups[_name], _name, EditorStyles.helpBox);
-
-			return m_groups[_name];
-			*/
+			EditorGUILayout.HelpBox(_name, MessageType.None);
+			EditorGUI.indentLevel++;
 			return true;
 		}
 
 		protected void EndGroup()
 		{
+			EditorGUI.indentLevel--;
 			EditorGUILayout.Space();
 		}
 	}

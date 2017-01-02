@@ -1,6 +1,4 @@
-﻿// Upgrade NOTE: replaced '_Object2World' with 'unity_ObjectToWorld'
-
-Shader "Unlit/RaymarchBase"
+﻿Shader "Unlit/RaymarchBase"
 {
     Properties
     {
@@ -34,7 +32,7 @@ Shader "Unlit/RaymarchBase"
             v2f vert (appdata_base v)
             {
                 v2f o;
-                o.vertex = mul(UNITY_MATRIX_MVP, v.vertex);
+                o.vertex = UnityObjectToClipPos(v.vertex);
                 o.uv = TRANSFORM_TEX(v.texcoord, _MainTex);
                 o.worldPos = mul(unity_ObjectToWorld, v.vertex);
                 return o;

@@ -1,0 +1,28 @@
+﻿[NoScaleOffset] _MainTex ("Texture", 2D) = "white" {}
+[HDR] _Color ("Color", Color) = (1.0, 1.0, 1.0, 0.0)
+
+[Toggle(_REALTIME_LIGHTING_ON)] _RealtimeLightingOn("Enable Realtime Lighting", Int) = 1
+
+[Toggle(_REFLECTION_PROBES_ON)] _ReflectionProbesOn("Enable Reflection Probes", Int) = 0
+_ReflectionIntensity ("Reflection Intensity", Range(0,8)) = 1.0
+
+[NoScaleOffset] _GIAlbedoTex ("GI Albedo Tex", 2D) = "white" {}
+[HDR] _GIAlbedoColor ("GI Albedo Color", Color) = (1.0, 1.0, 1.0, 0.0)
+
+[NoScaleOffset] _GIEmissionTex ("GI Emission Tex", 2D) = "white" {}
+[HDR] _GIEmissionColor ("GI Emission Color", Color) = (0.0, 0.0, 0.0, 0.0)
+
+[Toggle(_GI_IRRADIANCE_ON)] _GIIrradianceOn("Enable GI Irradiance", Int) = 1
+_GIIrradianceIntensity ("Irradiance Intensity", Range(0,8)) = 1.0
+
+[Toggle(_NORMAL_MAP_ON)] _NormalMapOn("Enable NormalMap", Int) = 0
+[NoScaleOffset] _NormalMapTex ("Normal Map", 2D) = "black" {}
+
+[Toggle(_DIFFUSE_LUT_ON)] _DiffuseLUTOn("Enable Diffuse LUT", Int) = 0
+[NoScaleOffset] _DiffuseLUTTex ("Diffuse LUT (R)", 2D) = "white" {}
+
+[Toggle(_MATCAP_ON)] _MatCapOn("Enable MatCap", Int) = 0
+[Toggle(_MATCAP_PLANAR_ON)] _MatCapPlanarOn("MatCap Planar Mode", Int) = 0
+[Toggle(_MATCAP_ALBEDO_ON)] _MatCapAlbedoOn("MatCap Albedo Mode", Int) = 0
+[NoScaleOffset] _MatCapTex ("MatCap", 2D) = "black" {}
+_MatCapIntensity ("MatCapIntensity", Range(0,4)) = 1.0

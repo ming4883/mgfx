@@ -1,4 +1,4 @@
-Shader "Minv/Particles/MultiplyZAlways" {
+Shader "MGFX/Particles/MultiplyZAlways" {
 	Properties {
 		_TintColor ("Tint Color", Color) = (0.5,0.5,0.5,0.5)
 _MainTex ("Particle Texture", 2D) = "white" {}

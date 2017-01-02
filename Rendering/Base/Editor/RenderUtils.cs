@@ -4,20 +4,20 @@ using System.Collections.Generic;
 
 namespace MGFX.Rendering
 {
-    class RenderUtils : EditorWindow
-    {
-        #region IUtil
+	class RenderUtils : EditorWindow
+	{
+		#region IUtil
 
-        public class IUtil
-        {
-            public virtual string Name()
-            {
-                return "";
-            }
+		public class IUtil
+		{
+			public virtual string Name()
+			{
+				return "";
+			}
 
-            public virtual void OnGUI()
-            {
-            }
+			public virtual void OnGUI()
+			{
+			}
 
 			public virtual void OnEnable()
 			{
@@ -29,14 +29,38 @@ namespace MGFX.Rendering
 
 			}
 
-			public static string GetAssetPath(Object _asset)
+			public static string GetAssetDatabaseSelectedDir()
+			{
+				string _path = "";
+				foreach (UnityEngine.Object obj in Selection.GetFiltered(typeof(UnityEngine.Object), SelectionMode.Assets))
+				{
+					_path = AssetDatabase.GetAssetPath(obj);
+					if (!string.IsNullOrEmpty(_path) && System.IO.File.Exists(_path))
+					{
+						_path = System.IO.Path.GetDirectoryName(_path);
+						break;
+					}
+				}
+
+				//Log.I(_path);
+				return System.IO.Path.GetFullPath(Application.dataPath + _path.Remove(0, 6));
+			}
+
+			public static string GetAssetPath(UnityEngine.Object _asset)
 			{
 				return AssetDatabase.GetAssetPath(_asset);
 			}
 
-			public static string GetAssetFullPath(Object _asset)
+			public static string GetAssetFullPath(UnityEngine.Object _asset)
 			{
 				return Application.dataPath + GetAssetPath(_asset).Remove(0, 6);
+			}
+
+			public static string GetAssetPath(string _fullPath)
+			{
+				_fullPath = System.IO.Path.GetFullPath(_fullPath).Replace('\\', '/');
+				_fullPath = _fullPath.Replace(Application.dataPath, "Assets");
+				return _fullPath;
 			}
 
 			public static T CreateAsset<T> (string _assetPath) where T : UnityEngine.Object
@@ -48,7 +72,7 @@ namespace MGFX.Rendering
 				return AssetDatabase.LoadAssetAtPath<T>(_assetPath);
 			}
 
-			public static bool WriteAsset(Object _asset, string _content)
+			public static bool WriteAsset(UnityEngine.Object _asset, string _content)
 			{
 				if (!_asset)
 					return false;
@@ -108,22 +132,23 @@ namespace MGFX.Rendering
 			}
 		}
 
-        void Util(IUtil _util)
-        {
-            if (null == mUtils)
-                mUtils = new List<IUtil>();
+		void Util(IUtil _util)
+		{
+			if (null == mUtils)
+				mUtils = new List<IUtil>();
 
 			if (null == _util)
 				return;
 			
 			mUtils.Add(_util);
-        }
+		}
 
-        void SetupUtils()
-        {
+		void SetupUtils()
+		{
 			if (null == mUtils || mUtils.Count == 0)
 			{
 				Util(new LookUpTableUtil());
+				Util(new LightProbessUtil());
 				Util(new DitherMatrixUtil());
 				Util(new ShaderGenUtil());
 				//Util(CreateInstance<ShadowCascadeUtil>());
@@ -152,42 +177,42 @@ namespace MGFX.Rendering
 			}
 		}
 
-        void OnGUI()
-        {
-            GUILayout.Space(5.0f);
+		void OnGUI()
+		{
+			GUILayout.Space(5.0f);
 
-            GUILayout.BeginHorizontal();
-            for (int _i = 0; _i < mUtils.Count; ++_i)
-            {
-                if (null != mUtils[_i] && 
+			GUILayout.BeginHorizontal();
+			for (int _i = 0; _i < mUtils.Count; ++_i)
+			{
+				if (null != mUtils[_i] && 
 					GUILayout.Toggle(mSelectedUtil == _i, mUtils[_i].Name(), EditorStyles.toolbarButton))
-                {
-                    mSelectedUtil = _i; //Tab click
-                }
-            }
-            GUILayout.EndHorizontal();
+				{
+					mSelectedUtil = _i; //Tab click
+				}
+			}
+			GUILayout.EndHorizontal();
 
-            GUILayout.Space(5.0f);
+			GUILayout.Space(5.0f);
 
-            if (-1 != mSelectedUtil)
-            {
-                GUILayout.BeginVertical();
+			if (-1 != mSelectedUtil)
+			{
+				GUILayout.BeginVertical();
 
-                mUtils[mSelectedUtil].OnGUI();
+				mUtils[mSelectedUtil].OnGUI();
 
-                GUILayout.EndVertical();
-            }
+				GUILayout.EndVertical();
+			}
 
-        }
+		}
 
-        [MenuItem("MGFX/RenderUtils", false, 3001)]
-        public static void MenuItem()
-        {
-            RenderUtils _window = EditorWindow.CreateInstance <RenderUtils>();
-            _window.titleContent = new GUIContent("RenderUtils");
-            _window.minSize = new Vector2(450, 360);
-            _window.Show();
-        }
+		[MenuItem("MGFX.Rendering/RenderUtils", false, 3001)]
+		public static void MenuItem()
+		{
+			RenderUtils _window = EditorWindow.CreateInstance <RenderUtils>();
+			_window.titleContent = new GUIContent("RenderUtils");
+			_window.minSize = new Vector2(450, 360);
+			_window.Show();
+		}
 
 		#endregion
 

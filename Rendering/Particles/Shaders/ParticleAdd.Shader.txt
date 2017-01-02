@@ -1,6 +1,6 @@
 ﻿Shader "Minv/Particles/Add" {
 	Properties {
-		{% unityasset Lib/MGFX/Rendering/Particles/Shaders/Particle.Properties.txt %}
+		{% unityasset Plugins/MIRendering/Particles/Shaders/Particle.Properties.txt %}
 	}
 
 	Category {
@@ -12,9 +12,9 @@
 		SubShader {
 			Pass {
 				CGPROGRAM
-				{% unityasset Lib/MGFX/Rendering/Base/Shaders/MinvBase.cginc %}
-				{% unityasset Lib/MGFX/Rendering/Particles/Shaders/Particle.cginc %}
-				{% unityasset Lib/MGFX/Rendering/Particles/Shaders/ParticleAdd.cginc %}
+				{% unityasset Plugins/MIRendering/Base/Shaders/MinvBase.cginc %}
+				{% unityasset Plugins/MIRendering/Particles/Shaders/Particle.cginc %}
+				{% unityasset Plugins/MIRendering/Particles/Shaders/ParticleAdd.cginc %}
 				ENDCG 
 			}
 		}	

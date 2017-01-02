@@ -24,15 +24,15 @@
 using UnityEngine;
 using UnityEngine.Rendering;
 
-namespace MGFX
+namespace MGFX.Rendering
 {
 	[ExecuteInEditMode]
-	[AddComponentMenu("Rendering/MGFX/SSAO")]
+	[AddComponentMenu("MGFX.Rendering/SSAO")]
 	public class RenderFeatureSSAO : RenderFeatureBase
 	{
 		#region Material Identifiers
 
-		[Material("Hidden/MGFX/SSAO")]
+		[Material("Hidden/MGFX.Rendering/SSAO")]
         [HideInInspector]
         public Material MaterialSSAO;
 		
@@ -176,7 +176,7 @@ namespace MGFX
 
 			// update command buffers
 			{
-				var _cmdBuf = GetCommandBufferForEvent (_cam, CameraEvent.AfterDepthNormalsTexture, "MGFX.SSAO");
+				var _cmdBuf = _system.Commands.Alloc(_cam, CameraEvent.AfterDepthNormalsTexture, "MGFX.Rendering.SSAO");
 				_cmdBuf.Clear ();
 
 				var tw = _cam.pixelWidth;
@@ -238,7 +238,7 @@ namespace MGFX
 			}
 
 			{
-				var _cmdBuf = GetCommandBufferForEvent (_cam, CameraEvent.AfterForwardOpaque, "MGFX.SSAO");
+				var _cmdBuf = _system.Commands.Alloc(_cam, CameraEvent.AfterForwardOpaque, "MGFX.Rendering.SSAO");
 				_cmdBuf.Clear ();
 
 				_cmdBuf.ReleaseTemporaryRT (_idMask);

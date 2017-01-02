@@ -3,10 +3,10 @@ using System.Collections;
 
 // This is in fact just the Water script from Pro Standard Assets,
 // just with refraction stuff removed.
-namespace MGFX
+namespace MGFX.Rendering
 {
 	[ExecuteInEditMode ()]
-	[AddComponentMenu ("Rendering/MGFX/PlanarReflection")]
+	[AddComponentMenu ("MGFX.Rendering/PlanarReflection")]
 	public class PlanarReflection : MonoBehaviour
 	{
 		public bool m_DisablePixelLights = false;
