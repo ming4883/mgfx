@@ -110,7 +110,9 @@ namespace MGFX.Rendering
 
 			if (BeginGroup ("Baking"))
 			{
-				
+				if (m_GIAlbedoTex.textureValue == null)
+					m_GIAlbedoTex.textureValue = m_MainTex.textureValue;
+
 				_materialEditor.ShaderProperty (m_GIAlbedoTex, "GI Albedo Tex");
 				_materialEditor.ShaderProperty (m_GIAlbedoColor, "GI Albedo Color");
 				_materialEditor.ShaderProperty (m_GIEmissionTex, "GI Emission Tex");

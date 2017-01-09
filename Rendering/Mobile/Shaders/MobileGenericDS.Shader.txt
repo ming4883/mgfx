@@ -1,4 +1,4 @@
-﻿Shader "Minv/Mobile/GenericDS"
+﻿Shader "MGFX/Mobile/GenericDS"
 {
 	Properties
 	{
@@ -261,5 +261,5 @@
 		}
 	}
 
-	CustomEditor "Minv.MobileGenericUI"
+	CustomEditor "MGFX.Rendering.MobileGenericUI"
 }

@@ -1,4 +1,4 @@
-﻿Shader "Minv/Mobile/Transparent"
+﻿Shader "MGFX/Mobile/Transparent"
 {
 	Properties
 	{
@@ -201,5 +201,5 @@
 		}
 	}
 
-	CustomEditor "Minv.MobileTransparentUI"
+	CustomEditor "MGFX.Rendering.MobileTransparentUI"
 }

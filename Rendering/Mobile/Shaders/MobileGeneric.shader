@@ -1,4 +1,4 @@
-Shader "Minv/Mobile/Generic"
+Shader "MGFX/Mobile/Generic"
 {
 	Properties
 	{
@@ -3358,5 +3358,5 @@ float4 frag_shadowcaster( v2f_shadowcaster i ) : SV_Target
 		}
 	}
 
-	CustomEditor "Minv.MobileGenericUI"
+	CustomEditor "MGFX.Rendering.MobileGenericUI"
 }

@@ -209,7 +209,7 @@ namespace MGFX.Rendering
 				_imp.anisoLevel = 0;
 				_imp.mipmapEnabled = false;
 				_imp.sRGBTexture = true;
-				_imp.textureFormat = TextureImporterFormat.ARGB32;
+				_imp.textureCompression = TextureImporterCompression.Uncompressed;
 				_imp.SaveAndReimport();
 			}
 		}

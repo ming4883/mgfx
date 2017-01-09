@@ -1,4 +1,4 @@
-Shader "Minv/Mobile/Transparent"
+Shader "MGFX/Mobile/Transparent"
 {
 	Properties
 	{
@@ -1927,5 +1927,5 @@ float4 frag_shadowcaster( v2f_shadowcaster i ) : SV_Target
 		}
 	}
 
-	CustomEditor "Minv.MobileTransparentUI"
+	CustomEditor "MGFX.Rendering.MobileTransparentUI"
 }
