@@ -1,5 +1,4 @@
-﻿#pragma multi_compile_fwdbase LIGHTMAP_OFF DYNAMICLIGHTMAP_OFF
-#pragma skip_variants SHADOWS_SOFT
+﻿#pragma multi_compile_fwdbase
 
 #pragma shader_feature _REALTIME_LIGHTING_ON
 #pragma shader_feature _REFLECTION_PROBES_ON

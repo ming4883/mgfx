@@ -5,201 +5,32 @@
 		{% unityasset ./MobileGeneric.Properties.txt %}
 	}
 
+	// ---------------------
 	// High Quality
-	SubShader
-	{
-		LOD 300
+	{% assign _LOD = "300" %}
+	{% capture _CG_HEADER %}
+	#pragma target 3.0
+	#define SHADING_QUALITY SHADING_QUALITY_HIGH
+	{% endcapture %}
+	{% unityasset ./MobileTransparent.SubShader.txt %}
 
-		Tags
-		{ 
-			"RenderType"="Transparent"
-			"Queue"="Transparent"
-			"IgnoreProjector"="True"
-		}
-
-		Pass
-		{
-			Tags
-			{
-				"LightMode"="ForwardBase"
-			}
-
-			ZWrite Off
-			Blend SrcAlpha OneMinusSrcAlpha
-			Cull Off
-
-			CGPROGRAM
-			{% unityasset ../../Base/Shaders/MinvBase.cginc %}
-			{% unityasset ../../Base/Shaders/MinvMatCap.cginc %}
-
-			#define SHADING_QUALITY SHADING_QUALITY_HIGH
-			#pragma target 3.0
-
-			{% unityasset ./MobileCommon.cginc %}
-			{% unityasset ./MobileTransparent.FwdBase.cginc %}
-			ENDCG
-		}
-		Pass
-		{
-			Name "META"
-			Tags
-			{
-				"LightMode"="Meta"
-			}
-
-			Cull Off
-
-			CGPROGRAM
-			{% unityasset ./MobileGeneric.Meta.cginc %}
-			ENDCG
-		}
-
-		Pass
-		{
-			Name "ShadowCaster"
-			Tags
-			{
-				"LightMode" = "ShadowCaster"
-			}
-
-			Cull Off
-
-			CGPROGRAM
-			{% unityasset ../../Base/Shaders/MinvShadowCaster.cginc %}
-			ENDCG
-		}
-	}
-
+	// ---------------------
 	// Medium Quality
-	SubShader
-	{
-		LOD 200
-
-		Tags
-		{ 
-			"RenderType"="Transparent"
-			"Queue"="Transparent"
-			"IgnoreProjector"="True"
-		}
-
-		Pass
-		{
-			Tags
-			{
-				"LightMode"="ForwardBase"
-			}
-
-			ZWrite Off
-			Blend SrcAlpha OneMinusSrcAlpha
-			Cull Off
-
-			CGPROGRAM
-			{% unityasset ../../Base/Shaders/MinvBase.cginc %}
-			{% unityasset ../../Base/Shaders/MinvMatCap.cginc %}
-
-			#define SHADING_QUALITY SHADING_QUALITY_MEDIUM
-			#pragma target 2.0
-
-			{% unityasset ./MobileCommon.cginc %}
-			{% unityasset ./MobileTransparent.FwdBase.cginc %}
-			ENDCG
-		}
-		Pass
-		{
-			Name "META"
-			Tags
-			{
-				"LightMode"="Meta"
-			}
-
-			Cull Off
-
-			CGPROGRAM
-			{% unityasset ./MobileGeneric.Meta.cginc %}
-			ENDCG
-		}
-
-		Pass
-		{
-			Name "ShadowCaster"
-			Tags
-			{
-				"LightMode" = "ShadowCaster"
-			}
-
-			Cull Off
-
-			CGPROGRAM
-			{% unityasset ../../Base/Shaders/MinvShadowCaster.cginc %}
-			ENDCG
-		}
-	}
-
+	{% assign _LOD = "200" %}
+	{% capture _CG_HEADER %}
+	#pragma target 2.0
+	#define SHADING_QUALITY SHADING_QUALITY_MEDIUM
+	{% endcapture %}
+	{% unityasset ./MobileTransparent.SubShader.txt %}
+	
+	// ---------------------
 	// Low Quality
-	SubShader
-	{
-		LOD 100
-
-		Tags
-		{ 
-			"RenderType"="Transparent"
-			"Queue"="Transparent"
-			"IgnoreProjector"="True"
-		}
-
-		Pass
-		{
-			Tags
-			{
-				"LightMode"="ForwardBase"
-			}
-
-			ZWrite Off
-			Blend SrcAlpha OneMinusSrcAlpha
-			Cull Off
-
-			CGPROGRAM
-			{% unityasset ../../Base/Shaders/MinvBase.cginc %}
-			{% unityasset ../../Base/Shaders/MinvMatCap.cginc %}
-
-			#define SHADING_QUALITY SHADING_QUALITY_LOW
-			#pragma target 2.0
-			
-			{% unityasset ./MobileCommon.cginc %}
-			{% unityasset ./MobileTransparent.FwdBase.cginc %}
-			ENDCG
-		}
-
-		Pass
-		{
-			Name "META"
-			Tags
-			{
-				"LightMode"="Meta"
-			}
-
-			Cull Off
-
-			CGPROGRAM
-			{% unityasset ./MobileGeneric.Meta.cginc %}
-			ENDCG
-		}
-
-		Pass
-		{
-			Name "ShadowCaster"
-			Tags
-			{
-				"LightMode" = "ShadowCaster"
-			}
-
-			Cull Off
-
-			CGPROGRAM
-			{% unityasset ../../Base/Shaders/MinvShadowCaster.cginc %}
-			ENDCG
-		}
-	}
+	{% assign _LOD = "100" %}
+	{% capture _CG_HEADER %}
+	#pragma target 2.0
+	#define SHADING_QUALITY SHADING_QUALITY_LOW
+	{% endcapture %}
+	{% unityasset ./MobileTransparent.SubShader.txt %}
 
 	CustomEditor "MGFX.Rendering.MobileTransparentUI"
 }

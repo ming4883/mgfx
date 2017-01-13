@@ -11,6 +11,7 @@ namespace MGFX.Rendering
 		private class TagUnityAsset : DL.Tag
 		{
 			public string m_Content;
+			public DL.Template m_Template;
 
 			public static string WorkingDir = "";
 
@@ -23,29 +24,17 @@ namespace MGFX.Rendering
 				{
 					_path = System.IO.Path.Combine(WorkingDir, _path);
 					_path = System.IO.Path.GetFullPath(_path);
-					//Log.I(_path);
 				}
 				else
 				{
 					_path = System.IO.Path.Combine(Application.dataPath, _path);
 				}
 
-				try
-				{
-					using (var _f = new System.IO.StreamReader(_path))
-					{
-						m_Content = _f.ReadToEnd();
-					}
-				}
-				catch (Exception _err)
-				{
-					Log.E(_err);
-					m_Content = null;
-				}
+				ReadContentFromPath(_path);
 
 				if (null == m_Content)
 				{
-					Log.E("failed to load TextAsset {0}", _markup);
+					Log.E("Failed to load TagUnityAsset {0}", _markup);
 					return;
 				}
 				else
@@ -56,10 +45,66 @@ namespace MGFX.Rendering
 
 			public override void Render(DL.Context _context, System.IO.TextWriter _result)
 			{
-				if (null != m_Content)
+				if (null != m_Template)
+				{
+					try
+					{
+						var _renderParams = DL.RenderParameters.FromContext(_context);
+						_result.Write(m_Template.Render(_renderParams));
+					}
+					catch(Exception _err)
+					{
+						Log.E(_err);
+						_result.Write("(error)");
+					}
+				}
+				else if (null != m_Content)
+				{
 					_result.Write(m_Content);
+				}
 				else
+				{
 					_result.Write("(null)");
+				}
+			}
+
+			private void ReadContentFromPath(string _path)
+			{
+				try
+				{
+					using (var _f = new System.IO.StreamReader(_path))
+					{
+						m_Content = _f.ReadToEnd();
+
+						if (m_Content.Contains("{%") || m_Content.Contains("{{"))
+						{
+							//Log.I("Processing Template " + _path);
+							// Backup WorkingDir
+							string _lastWorkDir = TagUnityAsset.WorkingDir;
+
+							// Modify the WorkingDir
+							TagUnityAsset.WorkingDir = System.IO.Path.GetDirectoryName(_path);
+
+							try
+							{
+								m_Template = DL.Template.Parse(m_Content);
+							}
+							catch(Exception _errTemplate)
+							{
+								Log.E(_errTemplate);
+								m_Content = null;
+							}
+							
+							// Restore WorkingDir
+							TagUnityAsset.WorkingDir = _lastWorkDir;
+						}
+					}
+				}
+				catch (Exception _err)
+				{
+					Log.E(_err);
+					m_Content = null;
+				}
 			}
 		}
 

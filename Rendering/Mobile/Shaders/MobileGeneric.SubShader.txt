@@ -1,0 +1,77 @@
+﻿SubShader
+	{
+		LOD {{ _LOD }}
+
+		Tags
+		{ 
+			"RenderType"="Opaque"
+		}
+
+		Pass
+		{
+			Tags
+			{
+				"LightMode"="ForwardBase"
+			}
+
+			Cull Back
+
+			CGPROGRAM
+			{% unityasset ../../Base/Shaders/MinvBase.cginc %}
+			{{ _CG_HEADER }}
+			{% unityasset ../../Base/Shaders/MinvMatCap.cginc %}
+			{% unityasset./MobileCommon.cginc %}
+			{% unityasset./MobileGeneric.FwdBase.cginc %}
+			ENDCG
+		}
+		
+		Pass
+		{
+			Tags
+			{
+				"LightMode"="ForwardAdd"
+			}
+
+			ZWrite Off
+			ZTest LEqual
+			Blend One One
+			Cull Back
+
+			CGPROGRAM
+			{% unityasset ../../Base/Shaders/MinvBase.cginc %}
+			{{ _CG_HEADER }}
+			{% unityasset./MobileCommon.cginc %}
+			{% unityasset./MobileGeneric.FwdAdd.cginc %}
+			ENDCG
+		}
+		
+		Pass
+		{
+			Name "META"
+			Tags
+			{
+				"LightMode"="Meta"
+			}
+
+			Cull Off
+
+			CGPROGRAM
+			{% unityasset./MobileGeneric.Meta.cginc %}
+			ENDCG
+		}
+
+		Pass
+		{
+			Name "ShadowCaster"
+			Tags
+			{
+				"LightMode" = "ShadowCaster"
+			}
+
+			Cull Back
+
+			CGPROGRAM
+			{% unityasset ../../Base/Shaders/MinvShadowCaster.cginc %}
+			ENDCG
+		}
+	}

@@ -33,7 +33,10 @@ _MatCapIntensity ("MatCapIntensity", Range(0,4)) = 1.0
 
 	}
 
+	// ---------------------
 	// High Quality
+	
+	
 	SubShader
 	{
 		LOD 300
@@ -78,6 +81,10 @@ _MatCapIntensity ("MatCapIntensity", Range(0,4)) = 1.0
 #define SHADING_QUALITY_HIGH	2
 
 			
+	#pragma target 3.0
+	#define SHADING_QUALITY SHADING_QUALITY_HIGH
+	
+			
 half2 matCapUV(half3 worldNormal, half3 worldViewDir)
 {
 	half3 rx = half3(1, 0, 0);
@@ -109,12 +116,9 @@ half2 matCapUV(half3 worldNormal, half3 worldViewDir)
 	return uv;
 }
 
-
-			#define SHADING_QUALITY SHADING_QUALITY_HIGH
-			#pragma target 3.0
-
 			#include "Lighting.cginc"
 #include "AutoLight.cginc"
+#include "UnityGlobalIllumination.cginc"
 
 #ifndef SHADING_QUALITY
 	#define SHADING_QUALITY SHADING_QUALITY_LOW
@@ -150,15 +154,12 @@ struct appdata
 	float4 vertex : POSITION;
 	float3 normal : NORMAL;
 	float4 vcolor : COLOR;
-	float2 texcoord : TEXCOORD0;
-
-	#ifndef LIGHTMAP_OFF
-	float2 lmapcoord : TEXCOORD1;
-	#endif
-
-	#ifndef DYNAMICLIGHTMAP_OFF
+	float2 texcoord0 : TEXCOORD0;
+	float2 texcoord1 : TEXCOORD1;
+	
+#if defined(DYNAMICLIGHTMAP_ON)
 	float2 dlmapcoord : TEXCOORD2;
-	#endif
+#endif
 
 #if _NORMAL_MAP_ON
 	float4 tangent : TANGENT;
@@ -169,30 +170,53 @@ struct v2f
 {
 	float4 vcolor : COLOR;
 	float4 uv : TEXCOORD0;
-	SHADOW_COORDS(1) // put shadows data into TEXCOORD1
-	float4 worldPosAndZ : TEXCOORD2;
+	UNITY_SHADOW_COORDS(1) // put shadows data into TEXCOORD1
+	float4 ambientOrLightmapUV : TEXCOORD2;
+	float4 worldPosAndZ : TEXCOORD3;
 
 #if _NORMAL_MAP_ON
-	float4 tanSpace0 : TEXCOORD3;
-	float4 tanSpace1 : TEXCOORD4;
-	float4 tanSpace2 : TEXCOORD5;
+	float4 tanSpace0 : TEXCOORD4;
+	float4 tanSpace1 : TEXCOORD5;
+	float4 tanSpace2 : TEXCOORD6;
 #else
-	float3 worldNormal : TEXCOORD3;
-#endif
-
-#if !defined(LIGHTMAP_OFF) || !defined(DYNAMICLIGHTMAP_OFF)
-	float4 lmap : TEXCOORD6;
+	float3 worldNormal : TEXCOORD4;
 #endif
 
 	float4 pos : SV_POSITION;
 };
+
+
+inline half4 VertexGIForward(appdata v, float3 posWorld, half3 normalWorld)
+{
+	half4 ambientOrLightmapUV = 0;
+	// Static lightmaps
+	#ifdef LIGHTMAP_ON
+	{
+		ambientOrLightmapUV.xy = v.texcoord1.xy * unity_LightmapST.xy + unity_LightmapST.zw;
+		ambientOrLightmapUV.zw = 0;
+	}
+	#elif UNITY_SHOULD_SAMPLE_SH
+	{
+		// Sample light probe for Dynamic objects only (no static or dynamic lightmaps)
+		ambientOrLightmapUV.rgb = ShadeSHPerVertex(normalWorld, ambientOrLightmapUV.rgb);
+	}
+	#endif
+
+	#ifdef DYNAMICLIGHTMAP_ON
+	{
+		ambientOrLightmapUV.zw = v.uv2.xy * unity_DynamicLightmapST.xy + unity_DynamicLightmapST.zw;
+	}
+	#endif
+
+	return ambientOrLightmapUV;
+}
 
 v2f vert (appdata v)
 {
 	v2f o = (v2f)0;
 	o.pos = UnityObjectToClipPos(v.vertex);
 	o.vcolor = v.vcolor;
-	o.uv = v.texcoord.xyxy;
+	o.uv = float4(v.texcoord0.xy, v.texcoord1.xy);
 
 	o.worldPosAndZ.xyz = mul(unity_ObjectToWorld, v.vertex).xyz;
 
@@ -220,18 +244,7 @@ v2f vert (appdata v)
 	}
 	#endif
 
-
-	#ifndef LIGHTMAP_OFF
-	{
-		o.lmap = v.lmapcoord.xyxy * unity_LightmapST.xyxy + unity_LightmapST.zwzw;
-	}
-	#endif
-
-	#ifndef DYNAMICLIGHTMAP_OFF
-	{
-		o.lmap.zw = v.dlmapcoord.xy * unity_DynamicLightmapST.xy + unity_DynamicLightmapST.zw;
-	}
-	#endif
+	o.ambientOrLightmapUV = VertexGIForward(v, o.worldPosAndZ.xyz, o.worldNormal);
 
 	COMPUTE_EYEDEPTH(o.worldPosAndZ.w);
 	// compute shadows data
@@ -273,12 +286,13 @@ struct ShadingContext
 	half3 worldNormal;
 	half3 worldViewDir;
 	half3 worldPos;
+	half eyeDepth;
 	half4 uv;
-	half4 lmapUV;
+	half4 ambientOrLightmapUV;
 	half4 albedo;
 	half occlusion;
 	fixed vface;
-	fixed shadow;
+	half3 shadow;
 	half4 result;
 	half4 sv_pos;
 };
@@ -301,9 +315,13 @@ void shadingContext(inout ShadingContext ctx, in v2f i, in fixed vface)
 	}
 	else
 	{
-		UNITY_LIGHT_ATTENUATION(attenWithShadow, i, ctx.worldPos);
-		ctx.shadow = attenWithShadow;
+		half3 worldPos = i.worldPosAndZ.xyz;
+
+		UNITY_LIGHT_ATTENUATION(atten, i, worldPos);
+		ctx.shadow = atten;
 	}
+
+	ctx.ambientOrLightmapUV = i.ambientOrLightmapUV;
 
 	#if _NORMAL_MAP_ON
 	{
@@ -328,113 +346,86 @@ void shadingContext(inout ShadingContext ctx, in v2f i, in fixed vface)
 
 	ctx.worldPos = i.worldPosAndZ.xyz;
 	ctx.worldViewDir = normalize(_WorldSpaceCameraPos.xyz - i.worldPosAndZ.xyz);
-
-	#if !defined(LIGHTMAP_OFF) || !defined(DYNAMICLIGHTMAP_OFF)
-	{
-		ctx.lmapUV = i.lmap;
-	}
-	#else
-	{
-		ctx.lmapUV = i.uv;
-	}
-	#endif
-
+	ctx.eyeDepth = i.worldPosAndZ.w;
 	ctx.result = half4(0, 0, 0, ctx.albedo.a);
+}
+
+UnityLight MainLight ()
+{
+	UnityLight l;
+
+	l.color = _LightColor0.rgb;
+	l.dir = _WorldSpaceLightPos0.xyz;
+	return l;
 }
 
 void applyLightingFwdBase(inout ShadingContext ctx)
 {
 	#if _REALTIME_LIGHTING_ON
 	{
-		#ifdef LIGHTMAP_OFF
+		UnityLight light = MainLight();
+
+		half ndotl = dot(ctx.worldNormal, light.dir);
+
+		#if _DIFFUSE_LUT_ON
 		{
-			half ndotl = dot(ctx.worldNormal, _WorldSpaceLightPos0.xyz);
-
-			#if _DIFFUSE_LUT_ON
-			{
-				ndotl = tex2D(_DiffuseLUTTex, saturate(ndotl * 0.5 + 0.5) * ctx.shadow).r;
-			}
-			#else
-			{
-				ndotl = saturate(ndotl) * ctx.shadow;
-			}
-			#endif
-
-			half3 lighting = ctx.albedo * ndotl * _LightColor0.rgb;
-			
-			#if _GI_IRRADIANCE_ON
-			{
-				half3 irrad = half3(0, 0, 0);
-
-				#if (SHADING_QUALITY >= SHADING_QUALITY_MEDIUM)
-				{
-					#ifndef DYNAMICLIGHTMAP_OFF
-					{
-						irrad = DecodeRealtimeLightmap (UNITY_SAMPLE_TEX2D(unity_DynamicLightmap, ctx.lmapUV.zw));
-
-						#if (SHADING_QUALITY == SHADING_QUALITY_HIGH) && DIRLIGHTMAP_COMBINED
-						{
-							fixed4 dirmap = UNITY_SAMPLE_TEX2D_SAMPLER (unity_DynamicDirectionality, unity_DynamicLightmap, ctx.lmapUV.zw);
-							irrad = DecodeDirectionalLightmap (irrad, dirmap, ctx.worldNormal);
-						}
-						#endif
-
-						ctx.occlusion = saturate(Luminance(irrad));
-						ctx.occlusion = ctx.occlusion * ctx.occlusion;
-						//ctx.occlusion = 1.0;
-					}
-					#elif UNITY_SHOULD_SAMPLE_SH
-					{
-						#if (SHADING_QUALITY == SHADING_QUALITY_HIGH)
-						{
-							irrad = ShadeSHPerPixel (ctx.worldNormal, irrad, ctx.worldPos);
-						}
-						#else
-						{
-							irrad = ShadeSHPerVertex (ctx.worldNormal, irrad);
-						}
-						#endif
-					}
-					#endif
-				}
-				#else
-				{
-					irrad = lerp(unity_AmbientSky, unity_AmbientGround, ctx.worldNormal * 0.5 + 0.5);
-				}
-				#endif
-
-				lighting += irrad * ctx.albedo.rgb * _GIIrradianceIntensity;
-			}
-			#endif
-
-			ctx.result.rgb += lighting * ctx.occlusion;
+			ndotl = tex2D(_DiffuseLUTTex, saturate(ndotl * 0.5 + 0.5)).r;
 		}
-		#else // LIGHTMAP_OFF
+		#else
 		{
-			half3 lmap = DecodeLightmap (UNITY_SAMPLE_TEX2D(unity_Lightmap, ctx.lmapUV.xy));
-
-			#if (SHADING_QUALITY == SHADING_QUALITY_HIGH) && DIRLIGHTMAP_COMBINED
-			{
-				fixed4 dirmap = UNITY_SAMPLE_TEX2D_SAMPLER (unity_LightmapInd, unity_Lightmap, ctx.lmapUV.xy);
-				lmap = DecodeDirectionalLightmap (lmap, dirmap, ctx.worldNormal);
-			}
-			#endif
-
-			ctx.result.rgb += lerp(ctx.albedo * 0.25, ctx.albedo, ctx.shadow) * lmap;
-			ctx.occlusion = saturate(Luminance(lmap));
-			ctx.occlusion = ctx.occlusion * ctx.occlusion;
+			ndotl = saturate(ndotl);
 		}
 		#endif
+
+		half3 diff = 0;
+
+		#if _GI_IRRADIANCE_ON && (SHADING_QUALITY >= SHADING_QUALITY_MEDIUM)
+		{
+			UnityGIInput d;
+			d.light = light;
+			d.worldPos = ctx.worldPos;
+			d.worldViewDir = ctx.worldViewDir;
+			d.atten = ctx.shadow;
+			#if defined(LIGHTMAP_ON) || defined(DYNAMICLIGHTMAP_ON)
+				d.ambient = 0;
+				d.lightmapUV = ctx.ambientOrLightmapUV;
+			#else
+				d.ambient = ctx.ambientOrLightmapUV.rgb;
+				d.lightmapUV = 0;
+			#endif
+
+			#if defined(LIGHTMAP_ON) && (SHADING_QUALITY >= SHADING_QUALITY_HIGH)
+			{
+				half bakedAtten = UnitySampleLightMask(d.lightmapUV.xy, ctx.worldPos);
+				//float fadeDist = UnityComputeShadowFadeDistance(ctx.worldPos, dot(_WorldSpaceCameraPos - ctx.worldPos, UNITY_MATRIX_V[2].xyz));
+				float fadeDist = UnityComputeShadowFadeDistance(ctx.worldPos, -ctx.eyeDepth);
+				d.atten = UnityMixRealtimeShadowAndShadowMask(d.atten, bakedAtten, UnityComputeShadowFade(fadeDist));
+			}
+			#endif
+
+			UnityGI gi = UnityGI_Base(d, 1.0, ctx.worldNormal);
+
+			diff += gi.indirect.diffuse + gi.light.color * ndotl;
+
+			ctx.occlusion = saturate(Luminance(gi.indirect.diffuse));
+		}
+		#else // _GI_IRRADIANCE_ON
+		{
+			diff += ctx.shadow * ndotl * light.color;
+		}
+		#endif
+
+		ctx.result.rgb = ctx.albedo.rgb * diff;
 	}
 	#else // _REALTIME_LIGHTING_ON
 	{
 		#if _GI_IRRADIANCE_ON
 		{
-			ctx.result.rgb = lerp(ctx.albedo * 0.25, ctx.albedo, ctx.shadow) * unity_AmbientSky;
+			ctx.result.rgb = ctx.albedo * ctx.shadow * unity_AmbientSky;
 		}
 		#else // _GI_IRRADIANCE_ON
 		{
-			ctx.result.rgb = lerp(ctx.albedo * 0.25, ctx.albedo, ctx.shadow);
+			ctx.result.rgb = ctx.albedo * ctx.shadow;
 		}
 		#endif
 	}
@@ -453,6 +444,7 @@ void applyLightingFwdAdd(inout ShadingContext ctx)
 		ndotl = saturate(ndotl) * ctx.shadow;
 	}
 	#endif
+	
 	ctx.result.rgb += ctx.albedo * ndotl * _LightColor0.rgb;
 }
 
@@ -545,8 +537,7 @@ half4 frag_add(v2f i, fixed vface : VFACE) : SV_Target
 
 	return ctx.result;
 }
-			#pragma multi_compile_fwdbase LIGHTMAP_OFF DYNAMICLIGHTMAP_OFF
-#pragma skip_variants SHADOWS_SOFT
+			#pragma multi_compile_fwdbase
 
 #pragma shader_feature _REALTIME_LIGHTING_ON
 #pragma shader_feature _REFLECTION_PROBES_ON
@@ -561,6 +552,7 @@ half4 frag_add(v2f i, fixed vface : VFACE) : SV_Target
 #pragma fragment frag_base
 			ENDCG
 		}
+		
 		Pass
 		{
 			Name "META"
@@ -664,7 +656,10 @@ float4 frag_shadowcaster( v2f_shadowcaster i ) : SV_Target
 		}
 	}
 
+	// ---------------------
 	// Medium Quality
+	
+	
 	SubShader
 	{
 		LOD 200
@@ -709,6 +704,10 @@ float4 frag_shadowcaster( v2f_shadowcaster i ) : SV_Target
 #define SHADING_QUALITY_HIGH	2
 
 			
+	#pragma target 2.0
+	#define SHADING_QUALITY SHADING_QUALITY_MEDIUM
+	
+			
 half2 matCapUV(half3 worldNormal, half3 worldViewDir)
 {
 	half3 rx = half3(1, 0, 0);
@@ -740,12 +739,9 @@ half2 matCapUV(half3 worldNormal, half3 worldViewDir)
 	return uv;
 }
 
-
-			#define SHADING_QUALITY SHADING_QUALITY_MEDIUM
-			#pragma target 2.0
-
 			#include "Lighting.cginc"
 #include "AutoLight.cginc"
+#include "UnityGlobalIllumination.cginc"
 
 #ifndef SHADING_QUALITY
 	#define SHADING_QUALITY SHADING_QUALITY_LOW
@@ -781,15 +777,12 @@ struct appdata
 	float4 vertex : POSITION;
 	float3 normal : NORMAL;
 	float4 vcolor : COLOR;
-	float2 texcoord : TEXCOORD0;
-
-	#ifndef LIGHTMAP_OFF
-	float2 lmapcoord : TEXCOORD1;
-	#endif
-
-	#ifndef DYNAMICLIGHTMAP_OFF
+	float2 texcoord0 : TEXCOORD0;
+	float2 texcoord1 : TEXCOORD1;
+	
+#if defined(DYNAMICLIGHTMAP_ON)
 	float2 dlmapcoord : TEXCOORD2;
-	#endif
+#endif
 
 #if _NORMAL_MAP_ON
 	float4 tangent : TANGENT;
@@ -800,30 +793,53 @@ struct v2f
 {
 	float4 vcolor : COLOR;
 	float4 uv : TEXCOORD0;
-	SHADOW_COORDS(1) // put shadows data into TEXCOORD1
-	float4 worldPosAndZ : TEXCOORD2;
+	UNITY_SHADOW_COORDS(1) // put shadows data into TEXCOORD1
+	float4 ambientOrLightmapUV : TEXCOORD2;
+	float4 worldPosAndZ : TEXCOORD3;
 
 #if _NORMAL_MAP_ON
-	float4 tanSpace0 : TEXCOORD3;
-	float4 tanSpace1 : TEXCOORD4;
-	float4 tanSpace2 : TEXCOORD5;
+	float4 tanSpace0 : TEXCOORD4;
+	float4 tanSpace1 : TEXCOORD5;
+	float4 tanSpace2 : TEXCOORD6;
 #else
-	float3 worldNormal : TEXCOORD3;
-#endif
-
-#if !defined(LIGHTMAP_OFF) || !defined(DYNAMICLIGHTMAP_OFF)
-	float4 lmap : TEXCOORD6;
+	float3 worldNormal : TEXCOORD4;
 #endif
 
 	float4 pos : SV_POSITION;
 };
+
+
+inline half4 VertexGIForward(appdata v, float3 posWorld, half3 normalWorld)
+{
+	half4 ambientOrLightmapUV = 0;
+	// Static lightmaps
+	#ifdef LIGHTMAP_ON
+	{
+		ambientOrLightmapUV.xy = v.texcoord1.xy * unity_LightmapST.xy + unity_LightmapST.zw;
+		ambientOrLightmapUV.zw = 0;
+	}
+	#elif UNITY_SHOULD_SAMPLE_SH
+	{
+		// Sample light probe for Dynamic objects only (no static or dynamic lightmaps)
+		ambientOrLightmapUV.rgb = ShadeSHPerVertex(normalWorld, ambientOrLightmapUV.rgb);
+	}
+	#endif
+
+	#ifdef DYNAMICLIGHTMAP_ON
+	{
+		ambientOrLightmapUV.zw = v.uv2.xy * unity_DynamicLightmapST.xy + unity_DynamicLightmapST.zw;
+	}
+	#endif
+
+	return ambientOrLightmapUV;
+}
 
 v2f vert (appdata v)
 {
 	v2f o = (v2f)0;
 	o.pos = UnityObjectToClipPos(v.vertex);
 	o.vcolor = v.vcolor;
-	o.uv = v.texcoord.xyxy;
+	o.uv = float4(v.texcoord0.xy, v.texcoord1.xy);
 
 	o.worldPosAndZ.xyz = mul(unity_ObjectToWorld, v.vertex).xyz;
 
@@ -851,18 +867,7 @@ v2f vert (appdata v)
 	}
 	#endif
 
-
-	#ifndef LIGHTMAP_OFF
-	{
-		o.lmap = v.lmapcoord.xyxy * unity_LightmapST.xyxy + unity_LightmapST.zwzw;
-	}
-	#endif
-
-	#ifndef DYNAMICLIGHTMAP_OFF
-	{
-		o.lmap.zw = v.dlmapcoord.xy * unity_DynamicLightmapST.xy + unity_DynamicLightmapST.zw;
-	}
-	#endif
+	o.ambientOrLightmapUV = VertexGIForward(v, o.worldPosAndZ.xyz, o.worldNormal);
 
 	COMPUTE_EYEDEPTH(o.worldPosAndZ.w);
 	// compute shadows data
@@ -904,12 +909,13 @@ struct ShadingContext
 	half3 worldNormal;
 	half3 worldViewDir;
 	half3 worldPos;
+	half eyeDepth;
 	half4 uv;
-	half4 lmapUV;
+	half4 ambientOrLightmapUV;
 	half4 albedo;
 	half occlusion;
 	fixed vface;
-	fixed shadow;
+	half3 shadow;
 	half4 result;
 	half4 sv_pos;
 };
@@ -932,9 +938,13 @@ void shadingContext(inout ShadingContext ctx, in v2f i, in fixed vface)
 	}
 	else
 	{
-		UNITY_LIGHT_ATTENUATION(attenWithShadow, i, ctx.worldPos);
-		ctx.shadow = attenWithShadow;
+		half3 worldPos = i.worldPosAndZ.xyz;
+
+		UNITY_LIGHT_ATTENUATION(atten, i, worldPos);
+		ctx.shadow = atten;
 	}
+
+	ctx.ambientOrLightmapUV = i.ambientOrLightmapUV;
 
 	#if _NORMAL_MAP_ON
 	{
@@ -959,113 +969,86 @@ void shadingContext(inout ShadingContext ctx, in v2f i, in fixed vface)
 
 	ctx.worldPos = i.worldPosAndZ.xyz;
 	ctx.worldViewDir = normalize(_WorldSpaceCameraPos.xyz - i.worldPosAndZ.xyz);
-
-	#if !defined(LIGHTMAP_OFF) || !defined(DYNAMICLIGHTMAP_OFF)
-	{
-		ctx.lmapUV = i.lmap;
-	}
-	#else
-	{
-		ctx.lmapUV = i.uv;
-	}
-	#endif
-
+	ctx.eyeDepth = i.worldPosAndZ.w;
 	ctx.result = half4(0, 0, 0, ctx.albedo.a);
+}
+
+UnityLight MainLight ()
+{
+	UnityLight l;
+
+	l.color = _LightColor0.rgb;
+	l.dir = _WorldSpaceLightPos0.xyz;
+	return l;
 }
 
 void applyLightingFwdBase(inout ShadingContext ctx)
 {
 	#if _REALTIME_LIGHTING_ON
 	{
-		#ifdef LIGHTMAP_OFF
+		UnityLight light = MainLight();
+
+		half ndotl = dot(ctx.worldNormal, light.dir);
+
+		#if _DIFFUSE_LUT_ON
 		{
-			half ndotl = dot(ctx.worldNormal, _WorldSpaceLightPos0.xyz);
-
-			#if _DIFFUSE_LUT_ON
-			{
-				ndotl = tex2D(_DiffuseLUTTex, saturate(ndotl * 0.5 + 0.5) * ctx.shadow).r;
-			}
-			#else
-			{
-				ndotl = saturate(ndotl) * ctx.shadow;
-			}
-			#endif
-
-			half3 lighting = ctx.albedo * ndotl * _LightColor0.rgb;
-			
-			#if _GI_IRRADIANCE_ON
-			{
-				half3 irrad = half3(0, 0, 0);
-
-				#if (SHADING_QUALITY >= SHADING_QUALITY_MEDIUM)
-				{
-					#ifndef DYNAMICLIGHTMAP_OFF
-					{
-						irrad = DecodeRealtimeLightmap (UNITY_SAMPLE_TEX2D(unity_DynamicLightmap, ctx.lmapUV.zw));
-
-						#if (SHADING_QUALITY == SHADING_QUALITY_HIGH) && DIRLIGHTMAP_COMBINED
-						{
-							fixed4 dirmap = UNITY_SAMPLE_TEX2D_SAMPLER (unity_DynamicDirectionality, unity_DynamicLightmap, ctx.lmapUV.zw);
-							irrad = DecodeDirectionalLightmap (irrad, dirmap, ctx.worldNormal);
-						}
-						#endif
-
-						ctx.occlusion = saturate(Luminance(irrad));
-						ctx.occlusion = ctx.occlusion * ctx.occlusion;
-						//ctx.occlusion = 1.0;
-					}
-					#elif UNITY_SHOULD_SAMPLE_SH
-					{
-						#if (SHADING_QUALITY == SHADING_QUALITY_HIGH)
-						{
-							irrad = ShadeSHPerPixel (ctx.worldNormal, irrad, ctx.worldPos);
-						}
-						#else
-						{
-							irrad = ShadeSHPerVertex (ctx.worldNormal, irrad);
-						}
-						#endif
-					}
-					#endif
-				}
-				#else
-				{
-					irrad = lerp(unity_AmbientSky, unity_AmbientGround, ctx.worldNormal * 0.5 + 0.5);
-				}
-				#endif
-
-				lighting += irrad * ctx.albedo.rgb * _GIIrradianceIntensity;
-			}
-			#endif
-
-			ctx.result.rgb += lighting * ctx.occlusion;
+			ndotl = tex2D(_DiffuseLUTTex, saturate(ndotl * 0.5 + 0.5)).r;
 		}
-		#else // LIGHTMAP_OFF
+		#else
 		{
-			half3 lmap = DecodeLightmap (UNITY_SAMPLE_TEX2D(unity_Lightmap, ctx.lmapUV.xy));
-
-			#if (SHADING_QUALITY == SHADING_QUALITY_HIGH) && DIRLIGHTMAP_COMBINED
-			{
-				fixed4 dirmap = UNITY_SAMPLE_TEX2D_SAMPLER (unity_LightmapInd, unity_Lightmap, ctx.lmapUV.xy);
-				lmap = DecodeDirectionalLightmap (lmap, dirmap, ctx.worldNormal);
-			}
-			#endif
-
-			ctx.result.rgb += lerp(ctx.albedo * 0.25, ctx.albedo, ctx.shadow) * lmap;
-			ctx.occlusion = saturate(Luminance(lmap));
-			ctx.occlusion = ctx.occlusion * ctx.occlusion;
+			ndotl = saturate(ndotl);
 		}
 		#endif
+
+		half3 diff = 0;
+
+		#if _GI_IRRADIANCE_ON && (SHADING_QUALITY >= SHADING_QUALITY_MEDIUM)
+		{
+			UnityGIInput d;
+			d.light = light;
+			d.worldPos = ctx.worldPos;
+			d.worldViewDir = ctx.worldViewDir;
+			d.atten = ctx.shadow;
+			#if defined(LIGHTMAP_ON) || defined(DYNAMICLIGHTMAP_ON)
+				d.ambient = 0;
+				d.lightmapUV = ctx.ambientOrLightmapUV;
+			#else
+				d.ambient = ctx.ambientOrLightmapUV.rgb;
+				d.lightmapUV = 0;
+			#endif
+
+			#if defined(LIGHTMAP_ON) && (SHADING_QUALITY >= SHADING_QUALITY_HIGH)
+			{
+				half bakedAtten = UnitySampleLightMask(d.lightmapUV.xy, ctx.worldPos);
+				//float fadeDist = UnityComputeShadowFadeDistance(ctx.worldPos, dot(_WorldSpaceCameraPos - ctx.worldPos, UNITY_MATRIX_V[2].xyz));
+				float fadeDist = UnityComputeShadowFadeDistance(ctx.worldPos, -ctx.eyeDepth);
+				d.atten = UnityMixRealtimeShadowAndShadowMask(d.atten, bakedAtten, UnityComputeShadowFade(fadeDist));
+			}
+			#endif
+
+			UnityGI gi = UnityGI_Base(d, 1.0, ctx.worldNormal);
+
+			diff += gi.indirect.diffuse + gi.light.color * ndotl;
+
+			ctx.occlusion = saturate(Luminance(gi.indirect.diffuse));
+		}
+		#else // _GI_IRRADIANCE_ON
+		{
+			diff += ctx.shadow * ndotl * light.color;
+		}
+		#endif
+
+		ctx.result.rgb = ctx.albedo.rgb * diff;
 	}
 	#else // _REALTIME_LIGHTING_ON
 	{
 		#if _GI_IRRADIANCE_ON
 		{
-			ctx.result.rgb = lerp(ctx.albedo * 0.25, ctx.albedo, ctx.shadow) * unity_AmbientSky;
+			ctx.result.rgb = ctx.albedo * ctx.shadow * unity_AmbientSky;
 		}
 		#else // _GI_IRRADIANCE_ON
 		{
-			ctx.result.rgb = lerp(ctx.albedo * 0.25, ctx.albedo, ctx.shadow);
+			ctx.result.rgb = ctx.albedo * ctx.shadow;
 		}
 		#endif
 	}
@@ -1084,6 +1067,7 @@ void applyLightingFwdAdd(inout ShadingContext ctx)
 		ndotl = saturate(ndotl) * ctx.shadow;
 	}
 	#endif
+	
 	ctx.result.rgb += ctx.albedo * ndotl * _LightColor0.rgb;
 }
 
@@ -1176,8 +1160,7 @@ half4 frag_add(v2f i, fixed vface : VFACE) : SV_Target
 
 	return ctx.result;
 }
-			#pragma multi_compile_fwdbase LIGHTMAP_OFF DYNAMICLIGHTMAP_OFF
-#pragma skip_variants SHADOWS_SOFT
+			#pragma multi_compile_fwdbase
 
 #pragma shader_feature _REALTIME_LIGHTING_ON
 #pragma shader_feature _REFLECTION_PROBES_ON
@@ -1192,6 +1175,7 @@ half4 frag_add(v2f i, fixed vface : VFACE) : SV_Target
 #pragma fragment frag_base
 			ENDCG
 		}
+		
 		Pass
 		{
 			Name "META"
@@ -1294,8 +1278,11 @@ float4 frag_shadowcaster( v2f_shadowcaster i ) : SV_Target
 			ENDCG
 		}
 	}
-
+	
+	// ---------------------
 	// Low Quality
+	
+	
 	SubShader
 	{
 		LOD 100
@@ -1340,6 +1327,10 @@ float4 frag_shadowcaster( v2f_shadowcaster i ) : SV_Target
 #define SHADING_QUALITY_HIGH	2
 
 			
+	#pragma target 2.0
+	#define SHADING_QUALITY SHADING_QUALITY_LOW
+	
+			
 half2 matCapUV(half3 worldNormal, half3 worldViewDir)
 {
 	half3 rx = half3(1, 0, 0);
@@ -1371,12 +1362,9 @@ half2 matCapUV(half3 worldNormal, half3 worldViewDir)
 	return uv;
 }
 
-
-			#define SHADING_QUALITY SHADING_QUALITY_LOW
-			#pragma target 2.0
-			
 			#include "Lighting.cginc"
 #include "AutoLight.cginc"
+#include "UnityGlobalIllumination.cginc"
 
 #ifndef SHADING_QUALITY
 	#define SHADING_QUALITY SHADING_QUALITY_LOW
@@ -1412,15 +1400,12 @@ struct appdata
 	float4 vertex : POSITION;
 	float3 normal : NORMAL;
 	float4 vcolor : COLOR;
-	float2 texcoord : TEXCOORD0;
-
-	#ifndef LIGHTMAP_OFF
-	float2 lmapcoord : TEXCOORD1;
-	#endif
-
-	#ifndef DYNAMICLIGHTMAP_OFF
+	float2 texcoord0 : TEXCOORD0;
+	float2 texcoord1 : TEXCOORD1;
+	
+#if defined(DYNAMICLIGHTMAP_ON)
 	float2 dlmapcoord : TEXCOORD2;
-	#endif
+#endif
 
 #if _NORMAL_MAP_ON
 	float4 tangent : TANGENT;
@@ -1431,30 +1416,53 @@ struct v2f
 {
 	float4 vcolor : COLOR;
 	float4 uv : TEXCOORD0;
-	SHADOW_COORDS(1) // put shadows data into TEXCOORD1
-	float4 worldPosAndZ : TEXCOORD2;
+	UNITY_SHADOW_COORDS(1) // put shadows data into TEXCOORD1
+	float4 ambientOrLightmapUV : TEXCOORD2;
+	float4 worldPosAndZ : TEXCOORD3;
 
 #if _NORMAL_MAP_ON
-	float4 tanSpace0 : TEXCOORD3;
-	float4 tanSpace1 : TEXCOORD4;
-	float4 tanSpace2 : TEXCOORD5;
+	float4 tanSpace0 : TEXCOORD4;
+	float4 tanSpace1 : TEXCOORD5;
+	float4 tanSpace2 : TEXCOORD6;
 #else
-	float3 worldNormal : TEXCOORD3;
-#endif
-
-#if !defined(LIGHTMAP_OFF) || !defined(DYNAMICLIGHTMAP_OFF)
-	float4 lmap : TEXCOORD6;
+	float3 worldNormal : TEXCOORD4;
 #endif
 
 	float4 pos : SV_POSITION;
 };
+
+
+inline half4 VertexGIForward(appdata v, float3 posWorld, half3 normalWorld)
+{
+	half4 ambientOrLightmapUV = 0;
+	// Static lightmaps
+	#ifdef LIGHTMAP_ON
+	{
+		ambientOrLightmapUV.xy = v.texcoord1.xy * unity_LightmapST.xy + unity_LightmapST.zw;
+		ambientOrLightmapUV.zw = 0;
+	}
+	#elif UNITY_SHOULD_SAMPLE_SH
+	{
+		// Sample light probe for Dynamic objects only (no static or dynamic lightmaps)
+		ambientOrLightmapUV.rgb = ShadeSHPerVertex(normalWorld, ambientOrLightmapUV.rgb);
+	}
+	#endif
+
+	#ifdef DYNAMICLIGHTMAP_ON
+	{
+		ambientOrLightmapUV.zw = v.uv2.xy * unity_DynamicLightmapST.xy + unity_DynamicLightmapST.zw;
+	}
+	#endif
+
+	return ambientOrLightmapUV;
+}
 
 v2f vert (appdata v)
 {
 	v2f o = (v2f)0;
 	o.pos = UnityObjectToClipPos(v.vertex);
 	o.vcolor = v.vcolor;
-	o.uv = v.texcoord.xyxy;
+	o.uv = float4(v.texcoord0.xy, v.texcoord1.xy);
 
 	o.worldPosAndZ.xyz = mul(unity_ObjectToWorld, v.vertex).xyz;
 
@@ -1482,18 +1490,7 @@ v2f vert (appdata v)
 	}
 	#endif
 
-
-	#ifndef LIGHTMAP_OFF
-	{
-		o.lmap = v.lmapcoord.xyxy * unity_LightmapST.xyxy + unity_LightmapST.zwzw;
-	}
-	#endif
-
-	#ifndef DYNAMICLIGHTMAP_OFF
-	{
-		o.lmap.zw = v.dlmapcoord.xy * unity_DynamicLightmapST.xy + unity_DynamicLightmapST.zw;
-	}
-	#endif
+	o.ambientOrLightmapUV = VertexGIForward(v, o.worldPosAndZ.xyz, o.worldNormal);
 
 	COMPUTE_EYEDEPTH(o.worldPosAndZ.w);
 	// compute shadows data
@@ -1535,12 +1532,13 @@ struct ShadingContext
 	half3 worldNormal;
 	half3 worldViewDir;
 	half3 worldPos;
+	half eyeDepth;
 	half4 uv;
-	half4 lmapUV;
+	half4 ambientOrLightmapUV;
 	half4 albedo;
 	half occlusion;
 	fixed vface;
-	fixed shadow;
+	half3 shadow;
 	half4 result;
 	half4 sv_pos;
 };
@@ -1563,9 +1561,13 @@ void shadingContext(inout ShadingContext ctx, in v2f i, in fixed vface)
 	}
 	else
 	{
-		UNITY_LIGHT_ATTENUATION(attenWithShadow, i, ctx.worldPos);
-		ctx.shadow = attenWithShadow;
+		half3 worldPos = i.worldPosAndZ.xyz;
+
+		UNITY_LIGHT_ATTENUATION(atten, i, worldPos);
+		ctx.shadow = atten;
 	}
+
+	ctx.ambientOrLightmapUV = i.ambientOrLightmapUV;
 
 	#if _NORMAL_MAP_ON
 	{
@@ -1590,113 +1592,86 @@ void shadingContext(inout ShadingContext ctx, in v2f i, in fixed vface)
 
 	ctx.worldPos = i.worldPosAndZ.xyz;
 	ctx.worldViewDir = normalize(_WorldSpaceCameraPos.xyz - i.worldPosAndZ.xyz);
-
-	#if !defined(LIGHTMAP_OFF) || !defined(DYNAMICLIGHTMAP_OFF)
-	{
-		ctx.lmapUV = i.lmap;
-	}
-	#else
-	{
-		ctx.lmapUV = i.uv;
-	}
-	#endif
-
+	ctx.eyeDepth = i.worldPosAndZ.w;
 	ctx.result = half4(0, 0, 0, ctx.albedo.a);
+}
+
+UnityLight MainLight ()
+{
+	UnityLight l;
+
+	l.color = _LightColor0.rgb;
+	l.dir = _WorldSpaceLightPos0.xyz;
+	return l;
 }
 
 void applyLightingFwdBase(inout ShadingContext ctx)
 {
 	#if _REALTIME_LIGHTING_ON
 	{
-		#ifdef LIGHTMAP_OFF
+		UnityLight light = MainLight();
+
+		half ndotl = dot(ctx.worldNormal, light.dir);
+
+		#if _DIFFUSE_LUT_ON
 		{
-			half ndotl = dot(ctx.worldNormal, _WorldSpaceLightPos0.xyz);
-
-			#if _DIFFUSE_LUT_ON
-			{
-				ndotl = tex2D(_DiffuseLUTTex, saturate(ndotl * 0.5 + 0.5) * ctx.shadow).r;
-			}
-			#else
-			{
-				ndotl = saturate(ndotl) * ctx.shadow;
-			}
-			#endif
-
-			half3 lighting = ctx.albedo * ndotl * _LightColor0.rgb;
-			
-			#if _GI_IRRADIANCE_ON
-			{
-				half3 irrad = half3(0, 0, 0);
-
-				#if (SHADING_QUALITY >= SHADING_QUALITY_MEDIUM)
-				{
-					#ifndef DYNAMICLIGHTMAP_OFF
-					{
-						irrad = DecodeRealtimeLightmap (UNITY_SAMPLE_TEX2D(unity_DynamicLightmap, ctx.lmapUV.zw));
-
-						#if (SHADING_QUALITY == SHADING_QUALITY_HIGH) && DIRLIGHTMAP_COMBINED
-						{
-							fixed4 dirmap = UNITY_SAMPLE_TEX2D_SAMPLER (unity_DynamicDirectionality, unity_DynamicLightmap, ctx.lmapUV.zw);
-							irrad = DecodeDirectionalLightmap (irrad, dirmap, ctx.worldNormal);
-						}
-						#endif
-
-						ctx.occlusion = saturate(Luminance(irrad));
-						ctx.occlusion = ctx.occlusion * ctx.occlusion;
-						//ctx.occlusion = 1.0;
-					}
-					#elif UNITY_SHOULD_SAMPLE_SH
-					{
-						#if (SHADING_QUALITY == SHADING_QUALITY_HIGH)
-						{
-							irrad = ShadeSHPerPixel (ctx.worldNormal, irrad, ctx.worldPos);
-						}
-						#else
-						{
-							irrad = ShadeSHPerVertex (ctx.worldNormal, irrad);
-						}
-						#endif
-					}
-					#endif
-				}
-				#else
-				{
-					irrad = lerp(unity_AmbientSky, unity_AmbientGround, ctx.worldNormal * 0.5 + 0.5);
-				}
-				#endif
-
-				lighting += irrad * ctx.albedo.rgb * _GIIrradianceIntensity;
-			}
-			#endif
-
-			ctx.result.rgb += lighting * ctx.occlusion;
+			ndotl = tex2D(_DiffuseLUTTex, saturate(ndotl * 0.5 + 0.5)).r;
 		}
-		#else // LIGHTMAP_OFF
+		#else
 		{
-			half3 lmap = DecodeLightmap (UNITY_SAMPLE_TEX2D(unity_Lightmap, ctx.lmapUV.xy));
-
-			#if (SHADING_QUALITY == SHADING_QUALITY_HIGH) && DIRLIGHTMAP_COMBINED
-			{
-				fixed4 dirmap = UNITY_SAMPLE_TEX2D_SAMPLER (unity_LightmapInd, unity_Lightmap, ctx.lmapUV.xy);
-				lmap = DecodeDirectionalLightmap (lmap, dirmap, ctx.worldNormal);
-			}
-			#endif
-
-			ctx.result.rgb += lerp(ctx.albedo * 0.25, ctx.albedo, ctx.shadow) * lmap;
-			ctx.occlusion = saturate(Luminance(lmap));
-			ctx.occlusion = ctx.occlusion * ctx.occlusion;
+			ndotl = saturate(ndotl);
 		}
 		#endif
+
+		half3 diff = 0;
+
+		#if _GI_IRRADIANCE_ON && (SHADING_QUALITY >= SHADING_QUALITY_MEDIUM)
+		{
+			UnityGIInput d;
+			d.light = light;
+			d.worldPos = ctx.worldPos;
+			d.worldViewDir = ctx.worldViewDir;
+			d.atten = ctx.shadow;
+			#if defined(LIGHTMAP_ON) || defined(DYNAMICLIGHTMAP_ON)
+				d.ambient = 0;
+				d.lightmapUV = ctx.ambientOrLightmapUV;
+			#else
+				d.ambient = ctx.ambientOrLightmapUV.rgb;
+				d.lightmapUV = 0;
+			#endif
+
+			#if defined(LIGHTMAP_ON) && (SHADING_QUALITY >= SHADING_QUALITY_HIGH)
+			{
+				half bakedAtten = UnitySampleLightMask(d.lightmapUV.xy, ctx.worldPos);
+				//float fadeDist = UnityComputeShadowFadeDistance(ctx.worldPos, dot(_WorldSpaceCameraPos - ctx.worldPos, UNITY_MATRIX_V[2].xyz));
+				float fadeDist = UnityComputeShadowFadeDistance(ctx.worldPos, -ctx.eyeDepth);
+				d.atten = UnityMixRealtimeShadowAndShadowMask(d.atten, bakedAtten, UnityComputeShadowFade(fadeDist));
+			}
+			#endif
+
+			UnityGI gi = UnityGI_Base(d, 1.0, ctx.worldNormal);
+
+			diff += gi.indirect.diffuse + gi.light.color * ndotl;
+
+			ctx.occlusion = saturate(Luminance(gi.indirect.diffuse));
+		}
+		#else // _GI_IRRADIANCE_ON
+		{
+			diff += ctx.shadow * ndotl * light.color;
+		}
+		#endif
+
+		ctx.result.rgb = ctx.albedo.rgb * diff;
 	}
 	#else // _REALTIME_LIGHTING_ON
 	{
 		#if _GI_IRRADIANCE_ON
 		{
-			ctx.result.rgb = lerp(ctx.albedo * 0.25, ctx.albedo, ctx.shadow) * unity_AmbientSky;
+			ctx.result.rgb = ctx.albedo * ctx.shadow * unity_AmbientSky;
 		}
 		#else // _GI_IRRADIANCE_ON
 		{
-			ctx.result.rgb = lerp(ctx.albedo * 0.25, ctx.albedo, ctx.shadow);
+			ctx.result.rgb = ctx.albedo * ctx.shadow;
 		}
 		#endif
 	}
@@ -1715,6 +1690,7 @@ void applyLightingFwdAdd(inout ShadingContext ctx)
 		ndotl = saturate(ndotl) * ctx.shadow;
 	}
 	#endif
+	
 	ctx.result.rgb += ctx.albedo * ndotl * _LightColor0.rgb;
 }
 
@@ -1807,8 +1783,7 @@ half4 frag_add(v2f i, fixed vface : VFACE) : SV_Target
 
 	return ctx.result;
 }
-			#pragma multi_compile_fwdbase LIGHTMAP_OFF DYNAMICLIGHTMAP_OFF
-#pragma skip_variants SHADOWS_SOFT
+			#pragma multi_compile_fwdbase
 
 #pragma shader_feature _REALTIME_LIGHTING_ON
 #pragma shader_feature _REFLECTION_PROBES_ON
@@ -1823,7 +1798,7 @@ half4 frag_add(v2f i, fixed vface : VFACE) : SV_Target
 #pragma fragment frag_base
 			ENDCG
 		}
-
+		
 		Pass
 		{
 			Name "META"

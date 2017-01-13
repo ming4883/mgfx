@@ -1,0 +1,61 @@
+﻿SubShader
+	{
+		LOD {{ _LOD }}
+
+		Tags
+		{ 
+			"RenderType"="Transparent"
+			"Queue"="Transparent"
+			"IgnoreProjector"="True"
+		}
+
+		Pass
+		{
+			Tags
+			{
+				"LightMode"="ForwardBase"
+			}
+
+			ZWrite Off
+			Blend SrcAlpha OneMinusSrcAlpha
+			Cull Off
+
+			CGPROGRAM
+			{% unityasset ../../Base/Shaders/MinvBase.cginc %}
+			{{ _CG_HEADER }}
+			{% unityasset ../../Base/Shaders/MinvMatCap.cginc %}
+			{% unityasset./MobileCommon.cginc %}
+			{% unityasset./MobileTransparent.FwdBase.cginc %}
+			ENDCG
+		}
+		
+		Pass
+		{
+			Name "META"
+			Tags
+			{
+				"LightMode"="Meta"
+			}
+
+			Cull Off
+
+			CGPROGRAM
+			{% unityasset./MobileGeneric.Meta.cginc %}
+			ENDCG
+		}
+
+		Pass
+		{
+			Name "ShadowCaster"
+			Tags
+			{
+				"LightMode" = "ShadowCaster"
+			}
+
+			Cull Off
+
+			CGPROGRAM
+			{% unityasset ../../Base/Shaders/MinvShadowCaster.cginc %}
+			ENDCG
+		}
+	}
