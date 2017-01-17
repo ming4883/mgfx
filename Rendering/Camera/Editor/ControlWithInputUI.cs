@@ -71,13 +71,13 @@ namespace MGFX.Rendering
             }
         }
 
-        [MenuItem("MGFX.Rendering/Camera/Add 1st-Person Control", false, 2000)]
+        [MenuItem("MGFX/Camera/Add 1st-Person Control", false, 2000)]
         public static void MenuItem()
         {
             AddControl(ControlWithInput.ControlStyles.FirstPerson);
         }
 
-        [MenuItem("MGFX.Rendering/Camera/Add 3rd-Person Control", false, 2001)]
+        [MenuItem("MGFX/Camera/Add 3rd-Person Control", false, 2001)]
         public static void MenuItem3rd()
         {
             AddControl(ControlWithInput.ControlStyles.ThirdPerson);

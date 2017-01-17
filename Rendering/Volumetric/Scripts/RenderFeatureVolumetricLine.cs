@@ -5,7 +5,7 @@ using System.Collections;
 namespace MGFX.Rendering
 {
     [ExecuteInEditMode]
-    [AddComponentMenu("MGFX.Rendering/VolumetricLineRenderer")]
+    [AddComponentMenu("MGFX/VolumetricLineRenderer")]
     public class RenderFeatureVolumetricLine : RenderFeatureBase
     {
         [Material("MGFX/VolumetricLine")]

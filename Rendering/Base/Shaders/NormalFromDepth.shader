@@ -1,5 +1,5 @@
 ﻿
-Shader "Hidden/MGFX.Rendering/NormalFromDepth"
+Shader "Hidden/MGFX/NormalFromDepth"
 {
 	Properties
 	{

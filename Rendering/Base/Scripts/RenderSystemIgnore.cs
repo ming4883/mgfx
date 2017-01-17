@@ -5,7 +5,7 @@ using System.Collections.Generic;
 namespace MGFX.Rendering
 {
 	[ExecuteInEditMode]
-	[AddComponentMenu("MGFX.Rendering/RenderSystemIgnore")]
+	[AddComponentMenu("MGFX/RenderSystemIgnore")]
 	[RequireComponent(typeof(Camera))]
 	public class RenderSystemIgnore : MonoBehaviour
 	{

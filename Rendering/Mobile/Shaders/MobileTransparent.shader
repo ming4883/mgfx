@@ -62,27 +62,13 @@ _MatCapIntensity ("MatCapIntensity", Range(0,4)) = 1.0
 			CGPROGRAM
 			#include "UnityCG.cginc"
 
-#if UNITY_VERSION < 540
-#define UNITY_SHADER_NO_UPGRADE
-#define unity_ObjectToWorld _Object2World 
-#define unity_WorldToObject _World2Object
-#define unity_WorldToLight _LightMatrix0
-#define unity_WorldToCamera _WorldToCamera
-#define unity_CameraToWorld _CameraToWorld
-#define unity_Projector _Projector
-#define unity_ProjectorDistance _ProjectorDistance
-#define unity_ProjectorClip _ProjectorClip
-#define unity_GUIClipTextureMatrix _GUIClipTextureMatrix 
-#endif
-
-
 #define SHADING_QUALITY_LOW		0
 #define SHADING_QUALITY_MEDIUM	1
 #define SHADING_QUALITY_HIGH	2
 
 			
-	#pragma target 3.0
-	#define SHADING_QUALITY SHADING_QUALITY_HIGH
+		#pragma target 3.0
+		#define SHADING_QUALITY SHADING_QUALITY_HIGH
 	
 			
 half2 matCapUV(half3 worldNormal, half3 worldViewDir)
@@ -308,20 +294,19 @@ void shadingContext(inout ShadingContext ctx, in v2f i, in fixed vface)
 	ctx.vface = vface > 0 ? 1.0 : -1.0;
 	ctx.albedo = tex2D(_MainTex, i.uv.xy) * _Color;
 	ctx.occlusion = 1.0;
+	ctx.ambientOrLightmapUV = i.ambientOrLightmapUV;
+	ctx.shadow = 1.0;
 
-	if (ctx.vface < 0 || (SHADING_QUALITY == SHADING_QUALITY_LOW))
+	#if _REALTIME_LIGHTING_ON
+	{
+		UNITY_LIGHT_ATTENUATION(atten, i, i.worldPosAndZ.xyz);
+		ctx.shadow = atten;
+	}
+	#else // _REALTIME_LIGHTING_ON
 	{
 		ctx.shadow = 1;
 	}
-	else
-	{
-		half3 worldPos = i.worldPosAndZ.xyz;
-
-		UNITY_LIGHT_ATTENUATION(atten, i, worldPos);
-		ctx.shadow = atten;
-	}
-
-	ctx.ambientOrLightmapUV = i.ambientOrLightmapUV;
+	#endif
 
 	#if _NORMAL_MAP_ON
 	{
@@ -379,7 +364,7 @@ void applyLightingFwdBase(inout ShadingContext ctx)
 
 		half3 diff = 0;
 
-		#if _GI_IRRADIANCE_ON && (SHADING_QUALITY >= SHADING_QUALITY_MEDIUM)
+		#if _GI_IRRADIANCE_ON
 		{
 			UnityGIInput d;
 			d.light = light;
@@ -387,19 +372,30 @@ void applyLightingFwdBase(inout ShadingContext ctx)
 			d.worldViewDir = ctx.worldViewDir;
 			d.atten = ctx.shadow;
 			#if defined(LIGHTMAP_ON) || defined(DYNAMICLIGHTMAP_ON)
+			{
 				d.ambient = 0;
 				d.lightmapUV = ctx.ambientOrLightmapUV;
+			}
 			#else
+			{
 				d.ambient = ctx.ambientOrLightmapUV.rgb;
 				d.lightmapUV = 0;
+			}
 			#endif
 
-			#if defined(LIGHTMAP_ON) && (SHADING_QUALITY >= SHADING_QUALITY_HIGH)
+			#if defined(LIGHTMAP_ON)
 			{
 				half bakedAtten = UnitySampleLightMask(d.lightmapUV.xy, ctx.worldPos);
-				//float fadeDist = UnityComputeShadowFadeDistance(ctx.worldPos, dot(_WorldSpaceCameraPos - ctx.worldPos, UNITY_MATRIX_V[2].xyz));
-				float fadeDist = UnityComputeShadowFadeDistance(ctx.worldPos, -ctx.eyeDepth);
-				d.atten = UnityMixRealtimeShadowAndShadowMask(d.atten, bakedAtten, UnityComputeShadowFade(fadeDist));
+
+				#if SHADING_QUALITY >= SHADING_QUALITY_HIGH
+				{
+					//float fadeDist = UnityComputeShadowFadeDistance(ctx.worldPos, dot(_WorldSpaceCameraPos - ctx.worldPos, UNITY_MATRIX_V[2].xyz));
+					float fadeDist = UnityComputeShadowFadeDistance(ctx.worldPos, -ctx.eyeDepth);
+					bakedAtten = UnityMixRealtimeShadowAndShadowMask(d.atten, bakedAtten, UnityComputeShadowFade(fadeDist));
+				}
+				#endif
+
+				d.atten = bakedAtten;
 			}
 			#endif
 
@@ -421,7 +417,7 @@ void applyLightingFwdBase(inout ShadingContext ctx)
 	{
 		#if _GI_IRRADIANCE_ON
 		{
-			ctx.result.rgb = ctx.albedo * ctx.shadow * unity_AmbientSky;
+			ctx.result.rgb = ctx.albedo * ctx.shadow + unity_AmbientSky;
 		}
 		#else // _GI_IRRADIANCE_ON
 		{
@@ -537,19 +533,20 @@ half4 frag_add(v2f i, fixed vface : VFACE) : SV_Target
 
 	return ctx.result;
 }
+
 			#pragma multi_compile_fwdbase
 
-#pragma shader_feature _REALTIME_LIGHTING_ON
-#pragma shader_feature _REFLECTION_PROBES_ON
-#pragma shader_feature _GI_IRRADIANCE_ON
-#pragma shader_feature _NORMAL_MAP_ON
-#pragma shader_feature _DIFFUSE_LUT_ON
-#pragma shader_feature _MATCAP_ON
-#pragma shader_feature _MATCAP_PLANAR_ON
-#pragma shader_feature _MATCAP_ALBEDO_ON
+			#pragma shader_feature _REALTIME_LIGHTING_ON
+			#pragma shader_feature _REFLECTION_PROBES_ON
+			#pragma shader_feature _GI_IRRADIANCE_ON
+			#pragma shader_feature _NORMAL_MAP_ON
+			#pragma shader_feature _DIFFUSE_LUT_ON
+			#pragma shader_feature _MATCAP_ON
+			#pragma shader_feature _MATCAP_PLANAR_ON
+			#pragma shader_feature _MATCAP_ALBEDO_ON
 
-#pragma vertex vert
-#pragma fragment frag_base
+			#pragma vertex vert
+			#pragma fragment frag_base
 			ENDCG
 		}
 		
@@ -685,27 +682,13 @@ float4 frag_shadowcaster( v2f_shadowcaster i ) : SV_Target
 			CGPROGRAM
 			#include "UnityCG.cginc"
 
-#if UNITY_VERSION < 540
-#define UNITY_SHADER_NO_UPGRADE
-#define unity_ObjectToWorld _Object2World 
-#define unity_WorldToObject _World2Object
-#define unity_WorldToLight _LightMatrix0
-#define unity_WorldToCamera _WorldToCamera
-#define unity_CameraToWorld _CameraToWorld
-#define unity_Projector _Projector
-#define unity_ProjectorDistance _ProjectorDistance
-#define unity_ProjectorClip _ProjectorClip
-#define unity_GUIClipTextureMatrix _GUIClipTextureMatrix 
-#endif
-
-
 #define SHADING_QUALITY_LOW		0
 #define SHADING_QUALITY_MEDIUM	1
 #define SHADING_QUALITY_HIGH	2
 
 			
-	#pragma target 2.0
-	#define SHADING_QUALITY SHADING_QUALITY_MEDIUM
+		#pragma target 2.0
+		#define SHADING_QUALITY SHADING_QUALITY_MEDIUM
 	
 			
 half2 matCapUV(half3 worldNormal, half3 worldViewDir)
@@ -931,20 +914,19 @@ void shadingContext(inout ShadingContext ctx, in v2f i, in fixed vface)
 	ctx.vface = vface > 0 ? 1.0 : -1.0;
 	ctx.albedo = tex2D(_MainTex, i.uv.xy) * _Color;
 	ctx.occlusion = 1.0;
+	ctx.ambientOrLightmapUV = i.ambientOrLightmapUV;
+	ctx.shadow = 1.0;
 
-	if (ctx.vface < 0 || (SHADING_QUALITY == SHADING_QUALITY_LOW))
+	#if _REALTIME_LIGHTING_ON
+	{
+		UNITY_LIGHT_ATTENUATION(atten, i, i.worldPosAndZ.xyz);
+		ctx.shadow = atten;
+	}
+	#else // _REALTIME_LIGHTING_ON
 	{
 		ctx.shadow = 1;
 	}
-	else
-	{
-		half3 worldPos = i.worldPosAndZ.xyz;
-
-		UNITY_LIGHT_ATTENUATION(atten, i, worldPos);
-		ctx.shadow = atten;
-	}
-
-	ctx.ambientOrLightmapUV = i.ambientOrLightmapUV;
+	#endif
 
 	#if _NORMAL_MAP_ON
 	{
@@ -1002,7 +984,7 @@ void applyLightingFwdBase(inout ShadingContext ctx)
 
 		half3 diff = 0;
 
-		#if _GI_IRRADIANCE_ON && (SHADING_QUALITY >= SHADING_QUALITY_MEDIUM)
+		#if _GI_IRRADIANCE_ON
 		{
 			UnityGIInput d;
 			d.light = light;
@@ -1010,19 +992,30 @@ void applyLightingFwdBase(inout ShadingContext ctx)
 			d.worldViewDir = ctx.worldViewDir;
 			d.atten = ctx.shadow;
 			#if defined(LIGHTMAP_ON) || defined(DYNAMICLIGHTMAP_ON)
+			{
 				d.ambient = 0;
 				d.lightmapUV = ctx.ambientOrLightmapUV;
+			}
 			#else
+			{
 				d.ambient = ctx.ambientOrLightmapUV.rgb;
 				d.lightmapUV = 0;
+			}
 			#endif
 
-			#if defined(LIGHTMAP_ON) && (SHADING_QUALITY >= SHADING_QUALITY_HIGH)
+			#if defined(LIGHTMAP_ON)
 			{
 				half bakedAtten = UnitySampleLightMask(d.lightmapUV.xy, ctx.worldPos);
-				//float fadeDist = UnityComputeShadowFadeDistance(ctx.worldPos, dot(_WorldSpaceCameraPos - ctx.worldPos, UNITY_MATRIX_V[2].xyz));
-				float fadeDist = UnityComputeShadowFadeDistance(ctx.worldPos, -ctx.eyeDepth);
-				d.atten = UnityMixRealtimeShadowAndShadowMask(d.atten, bakedAtten, UnityComputeShadowFade(fadeDist));
+
+				#if SHADING_QUALITY >= SHADING_QUALITY_HIGH
+				{
+					//float fadeDist = UnityComputeShadowFadeDistance(ctx.worldPos, dot(_WorldSpaceCameraPos - ctx.worldPos, UNITY_MATRIX_V[2].xyz));
+					float fadeDist = UnityComputeShadowFadeDistance(ctx.worldPos, -ctx.eyeDepth);
+					bakedAtten = UnityMixRealtimeShadowAndShadowMask(d.atten, bakedAtten, UnityComputeShadowFade(fadeDist));
+				}
+				#endif
+
+				d.atten = bakedAtten;
 			}
 			#endif
 
@@ -1044,7 +1037,7 @@ void applyLightingFwdBase(inout ShadingContext ctx)
 	{
 		#if _GI_IRRADIANCE_ON
 		{
-			ctx.result.rgb = ctx.albedo * ctx.shadow * unity_AmbientSky;
+			ctx.result.rgb = ctx.albedo * ctx.shadow + unity_AmbientSky;
 		}
 		#else // _GI_IRRADIANCE_ON
 		{
@@ -1160,19 +1153,20 @@ half4 frag_add(v2f i, fixed vface : VFACE) : SV_Target
 
 	return ctx.result;
 }
+
 			#pragma multi_compile_fwdbase
 
-#pragma shader_feature _REALTIME_LIGHTING_ON
-#pragma shader_feature _REFLECTION_PROBES_ON
-#pragma shader_feature _GI_IRRADIANCE_ON
-#pragma shader_feature _NORMAL_MAP_ON
-#pragma shader_feature _DIFFUSE_LUT_ON
-#pragma shader_feature _MATCAP_ON
-#pragma shader_feature _MATCAP_PLANAR_ON
-#pragma shader_feature _MATCAP_ALBEDO_ON
+			#pragma shader_feature _REALTIME_LIGHTING_ON
+			#pragma shader_feature _REFLECTION_PROBES_ON
+			#pragma shader_feature _GI_IRRADIANCE_ON
+			#pragma shader_feature _NORMAL_MAP_ON
+			#pragma shader_feature _DIFFUSE_LUT_ON
+			#pragma shader_feature _MATCAP_ON
+			#pragma shader_feature _MATCAP_PLANAR_ON
+			#pragma shader_feature _MATCAP_ALBEDO_ON
 
-#pragma vertex vert
-#pragma fragment frag_base
+			#pragma vertex vert
+			#pragma fragment frag_base
 			ENDCG
 		}
 		
@@ -1308,27 +1302,13 @@ float4 frag_shadowcaster( v2f_shadowcaster i ) : SV_Target
 			CGPROGRAM
 			#include "UnityCG.cginc"
 
-#if UNITY_VERSION < 540
-#define UNITY_SHADER_NO_UPGRADE
-#define unity_ObjectToWorld _Object2World 
-#define unity_WorldToObject _World2Object
-#define unity_WorldToLight _LightMatrix0
-#define unity_WorldToCamera _WorldToCamera
-#define unity_CameraToWorld _CameraToWorld
-#define unity_Projector _Projector
-#define unity_ProjectorDistance _ProjectorDistance
-#define unity_ProjectorClip _ProjectorClip
-#define unity_GUIClipTextureMatrix _GUIClipTextureMatrix 
-#endif
-
-
 #define SHADING_QUALITY_LOW		0
 #define SHADING_QUALITY_MEDIUM	1
 #define SHADING_QUALITY_HIGH	2
 
 			
-	#pragma target 2.0
-	#define SHADING_QUALITY SHADING_QUALITY_LOW
+		#pragma target 2.0
+		#define SHADING_QUALITY SHADING_QUALITY_LOW
 	
 			
 half2 matCapUV(half3 worldNormal, half3 worldViewDir)
@@ -1554,20 +1534,19 @@ void shadingContext(inout ShadingContext ctx, in v2f i, in fixed vface)
 	ctx.vface = vface > 0 ? 1.0 : -1.0;
 	ctx.albedo = tex2D(_MainTex, i.uv.xy) * _Color;
 	ctx.occlusion = 1.0;
+	ctx.ambientOrLightmapUV = i.ambientOrLightmapUV;
+	ctx.shadow = 1.0;
 
-	if (ctx.vface < 0 || (SHADING_QUALITY == SHADING_QUALITY_LOW))
+	#if _REALTIME_LIGHTING_ON
+	{
+		UNITY_LIGHT_ATTENUATION(atten, i, i.worldPosAndZ.xyz);
+		ctx.shadow = atten;
+	}
+	#else // _REALTIME_LIGHTING_ON
 	{
 		ctx.shadow = 1;
 	}
-	else
-	{
-		half3 worldPos = i.worldPosAndZ.xyz;
-
-		UNITY_LIGHT_ATTENUATION(atten, i, worldPos);
-		ctx.shadow = atten;
-	}
-
-	ctx.ambientOrLightmapUV = i.ambientOrLightmapUV;
+	#endif
 
 	#if _NORMAL_MAP_ON
 	{
@@ -1625,7 +1604,7 @@ void applyLightingFwdBase(inout ShadingContext ctx)
 
 		half3 diff = 0;
 
-		#if _GI_IRRADIANCE_ON && (SHADING_QUALITY >= SHADING_QUALITY_MEDIUM)
+		#if _GI_IRRADIANCE_ON
 		{
 			UnityGIInput d;
 			d.light = light;
@@ -1633,19 +1612,30 @@ void applyLightingFwdBase(inout ShadingContext ctx)
 			d.worldViewDir = ctx.worldViewDir;
 			d.atten = ctx.shadow;
 			#if defined(LIGHTMAP_ON) || defined(DYNAMICLIGHTMAP_ON)
+			{
 				d.ambient = 0;
 				d.lightmapUV = ctx.ambientOrLightmapUV;
+			}
 			#else
+			{
 				d.ambient = ctx.ambientOrLightmapUV.rgb;
 				d.lightmapUV = 0;
+			}
 			#endif
 
-			#if defined(LIGHTMAP_ON) && (SHADING_QUALITY >= SHADING_QUALITY_HIGH)
+			#if defined(LIGHTMAP_ON)
 			{
 				half bakedAtten = UnitySampleLightMask(d.lightmapUV.xy, ctx.worldPos);
-				//float fadeDist = UnityComputeShadowFadeDistance(ctx.worldPos, dot(_WorldSpaceCameraPos - ctx.worldPos, UNITY_MATRIX_V[2].xyz));
-				float fadeDist = UnityComputeShadowFadeDistance(ctx.worldPos, -ctx.eyeDepth);
-				d.atten = UnityMixRealtimeShadowAndShadowMask(d.atten, bakedAtten, UnityComputeShadowFade(fadeDist));
+
+				#if SHADING_QUALITY >= SHADING_QUALITY_HIGH
+				{
+					//float fadeDist = UnityComputeShadowFadeDistance(ctx.worldPos, dot(_WorldSpaceCameraPos - ctx.worldPos, UNITY_MATRIX_V[2].xyz));
+					float fadeDist = UnityComputeShadowFadeDistance(ctx.worldPos, -ctx.eyeDepth);
+					bakedAtten = UnityMixRealtimeShadowAndShadowMask(d.atten, bakedAtten, UnityComputeShadowFade(fadeDist));
+				}
+				#endif
+
+				d.atten = bakedAtten;
 			}
 			#endif
 
@@ -1667,7 +1657,7 @@ void applyLightingFwdBase(inout ShadingContext ctx)
 	{
 		#if _GI_IRRADIANCE_ON
 		{
-			ctx.result.rgb = ctx.albedo * ctx.shadow * unity_AmbientSky;
+			ctx.result.rgb = ctx.albedo * ctx.shadow + unity_AmbientSky;
 		}
 		#else // _GI_IRRADIANCE_ON
 		{
@@ -1783,19 +1773,20 @@ half4 frag_add(v2f i, fixed vface : VFACE) : SV_Target
 
 	return ctx.result;
 }
+
 			#pragma multi_compile_fwdbase
 
-#pragma shader_feature _REALTIME_LIGHTING_ON
-#pragma shader_feature _REFLECTION_PROBES_ON
-#pragma shader_feature _GI_IRRADIANCE_ON
-#pragma shader_feature _NORMAL_MAP_ON
-#pragma shader_feature _DIFFUSE_LUT_ON
-#pragma shader_feature _MATCAP_ON
-#pragma shader_feature _MATCAP_PLANAR_ON
-#pragma shader_feature _MATCAP_ALBEDO_ON
+			#pragma shader_feature _REALTIME_LIGHTING_ON
+			#pragma shader_feature _REFLECTION_PROBES_ON
+			#pragma shader_feature _GI_IRRADIANCE_ON
+			#pragma shader_feature _NORMAL_MAP_ON
+			#pragma shader_feature _DIFFUSE_LUT_ON
+			#pragma shader_feature _MATCAP_ON
+			#pragma shader_feature _MATCAP_PLANAR_ON
+			#pragma shader_feature _MATCAP_ALBEDO_ON
 
-#pragma vertex vert
-#pragma fragment frag_base
+			#pragma vertex vert
+			#pragma fragment frag_base
 			ENDCG
 		}
 		

@@ -9,8 +9,8 @@
 	// High Quality
 	{% assign _LOD = "300" %}
 	{% capture _CG_HEADER %}
-	#pragma target 3.0
-	#define SHADING_QUALITY SHADING_QUALITY_HIGH
+		#pragma target 3.0
+		#define SHADING_QUALITY SHADING_QUALITY_HIGH
 	{% endcapture %}
 	{% unityasset ./MobileTransparent.SubShader.txt %}
 
@@ -18,8 +18,8 @@
 	// Medium Quality
 	{% assign _LOD = "200" %}
 	{% capture _CG_HEADER %}
-	#pragma target 2.0
-	#define SHADING_QUALITY SHADING_QUALITY_MEDIUM
+		#pragma target 2.0
+		#define SHADING_QUALITY SHADING_QUALITY_MEDIUM
 	{% endcapture %}
 	{% unityasset ./MobileTransparent.SubShader.txt %}
 	
@@ -27,8 +27,8 @@
 	// Low Quality
 	{% assign _LOD = "100" %}
 	{% capture _CG_HEADER %}
-	#pragma target 2.0
-	#define SHADING_QUALITY SHADING_QUALITY_LOW
+		#pragma target 2.0
+		#define SHADING_QUALITY SHADING_QUALITY_LOW
 	{% endcapture %}
 	{% unityasset ./MobileTransparent.SubShader.txt %}
 

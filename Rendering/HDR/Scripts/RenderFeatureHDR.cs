@@ -5,12 +5,12 @@ using UnityEngine.Rendering;
 namespace MGFX.Rendering
 {
 	[ExecuteInEditMode]
-	[AddComponentMenu("MGFX.Rendering/HDR")]
+	[AddComponentMenu("MGFX/HDR")]
 	public class RenderFeatureHDR : RenderFeatureBase
 	{
 		#region Material Identifiers
 
-		[Material("Hidden/MGFX.Rendering/HDR")]
+		[Material("Hidden/MGFX/HDR")]
 		[HideInInspector]
 		public Material MaterialBloom;
 

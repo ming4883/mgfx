@@ -205,7 +205,7 @@ namespace MGFX.Rendering
 
 		}
 
-		[MenuItem("MGFX.Rendering/RenderUtils", false, 3001)]
+		[MenuItem("MGFX/RenderUtils", false, 3001)]
 		public static void MenuItem()
 		{
 			RenderUtils _window = EditorWindow.CreateInstance <RenderUtils>();

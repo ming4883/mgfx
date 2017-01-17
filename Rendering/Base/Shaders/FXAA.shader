@@ -1,4 +1,4 @@
-Shader "Hidden/MGFX.Rendering/FXAA" {
+Shader "Hidden/MGFX/FXAA" {
     Properties{
         _MainTex("Base (RGB)", 2D) = "white" {}
     }

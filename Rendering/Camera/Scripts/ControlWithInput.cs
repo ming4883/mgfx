@@ -5,7 +5,7 @@ namespace MGFX.Rendering
 {
 
 [RequireComponent(typeof(Camera))]
-[AddComponentMenu("MGFX.Rendering/Camera/ContolWithInput")]
+[AddComponentMenu("MGFX/Camera/ContolWithInput")]
 public class ControlWithInput : MonoBehaviour
 {
     public class DragState

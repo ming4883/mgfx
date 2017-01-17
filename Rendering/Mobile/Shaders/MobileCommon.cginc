@@ -190,20 +190,19 @@ void shadingContext(inout ShadingContext ctx, in v2f i, in fixed vface)
 	ctx.vface = vface > 0 ? 1.0 : -1.0;
 	ctx.albedo = tex2D(_MainTex, i.uv.xy) * _Color;
 	ctx.occlusion = 1.0;
+	ctx.ambientOrLightmapUV = i.ambientOrLightmapUV;
+	ctx.shadow = 1.0;
 
-	if (ctx.vface < 0 || (SHADING_QUALITY == SHADING_QUALITY_LOW))
+	#if _REALTIME_LIGHTING_ON
+	{
+		UNITY_LIGHT_ATTENUATION(atten, i, i.worldPosAndZ.xyz);
+		ctx.shadow = atten;
+	}
+	#else // _REALTIME_LIGHTING_ON
 	{
 		ctx.shadow = 1;
 	}
-	else
-	{
-		half3 worldPos = i.worldPosAndZ.xyz;
-
-		UNITY_LIGHT_ATTENUATION(atten, i, worldPos);
-		ctx.shadow = atten;
-	}
-
-	ctx.ambientOrLightmapUV = i.ambientOrLightmapUV;
+	#endif
 
 	#if _NORMAL_MAP_ON
 	{
@@ -261,7 +260,7 @@ void applyLightingFwdBase(inout ShadingContext ctx)
 
 		half3 diff = 0;
 
-		#if _GI_IRRADIANCE_ON && (SHADING_QUALITY >= SHADING_QUALITY_MEDIUM)
+		#if _GI_IRRADIANCE_ON
 		{
 			UnityGIInput d;
 			d.light = light;
@@ -269,19 +268,30 @@ void applyLightingFwdBase(inout ShadingContext ctx)
 			d.worldViewDir = ctx.worldViewDir;
 			d.atten = ctx.shadow;
 			#if defined(LIGHTMAP_ON) || defined(DYNAMICLIGHTMAP_ON)
+			{
 				d.ambient = 0;
 				d.lightmapUV = ctx.ambientOrLightmapUV;
+			}
 			#else
+			{
 				d.ambient = ctx.ambientOrLightmapUV.rgb;
 				d.lightmapUV = 0;
+			}
 			#endif
 
-			#if defined(LIGHTMAP_ON) && (SHADING_QUALITY >= SHADING_QUALITY_HIGH)
+			#if defined(LIGHTMAP_ON)
 			{
 				half bakedAtten = UnitySampleLightMask(d.lightmapUV.xy, ctx.worldPos);
-				//float fadeDist = UnityComputeShadowFadeDistance(ctx.worldPos, dot(_WorldSpaceCameraPos - ctx.worldPos, UNITY_MATRIX_V[2].xyz));
-				float fadeDist = UnityComputeShadowFadeDistance(ctx.worldPos, -ctx.eyeDepth);
-				d.atten = UnityMixRealtimeShadowAndShadowMask(d.atten, bakedAtten, UnityComputeShadowFade(fadeDist));
+
+				#if SHADING_QUALITY >= SHADING_QUALITY_HIGH
+				{
+					//float fadeDist = UnityComputeShadowFadeDistance(ctx.worldPos, dot(_WorldSpaceCameraPos - ctx.worldPos, UNITY_MATRIX_V[2].xyz));
+					float fadeDist = UnityComputeShadowFadeDistance(ctx.worldPos, -ctx.eyeDepth);
+					bakedAtten = UnityMixRealtimeShadowAndShadowMask(d.atten, bakedAtten, UnityComputeShadowFade(fadeDist));
+				}
+				#endif
+
+				d.atten = bakedAtten;
 			}
 			#endif
 
@@ -303,7 +313,7 @@ void applyLightingFwdBase(inout ShadingContext ctx)
 	{
 		#if _GI_IRRADIANCE_ON
 		{
-			ctx.result.rgb = ctx.albedo * ctx.shadow * unity_AmbientSky;
+			ctx.result.rgb = ctx.albedo * ctx.shadow + unity_AmbientSky;
 		}
 		#else // _GI_IRRADIANCE_ON
 		{

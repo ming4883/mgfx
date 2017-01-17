@@ -6,7 +6,7 @@ namespace MGFX.Rendering
 {
 
 	[ExecuteInEditMode]
-	[AddComponentMenu("MGFX.Rendering/RenderSystem")]
+	[AddComponentMenu("MGFX/RenderSystem")]
 	public class RenderSystem : MonoBehaviour
 	{
 		RenderSystemSceneData m_SceneData;

@@ -6,7 +6,7 @@ namespace MGFX.Rendering
 {
 
 	[ExecuteInEditMode]
-	[AddComponentMenu ("MGFX.Rendering/ColorBlend")]
+	[AddComponentMenu ("MGFX/ColorBlend")]
 	public class RenderFeatureColorBlend : RenderFeatureBase
 	{
 		#region Material Identifiers

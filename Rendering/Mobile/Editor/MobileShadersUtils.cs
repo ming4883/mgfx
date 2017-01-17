@@ -16,11 +16,11 @@ namespace MGFX.Rendering
 			};
 		}
 
-		private const string kMobileShaderHighQuality = "MGFX.Rendering/Mobile Shaders/High Quality";
-		private const string kMobileShaderMediumQuality = "MGFX.Rendering/Mobile Shaders/Medium Quality";
-		private const string kMobileShaderLowQuality = "MGFX.Rendering/Mobile Shaders/Low Quality";
-		private const string kMobileForceRefresh = "MGFX.Rendering/Mobile Shaders/Force Refresh";
-		private const string kMobileGenReflectionMask = "MGFX.Rendering/Mobile Shaders/Generate Reflection Mask";
+		private const string kMobileShaderHighQuality = "MGFX/Mobile Shaders/High Quality";
+		private const string kMobileShaderMediumQuality = "MGFX/Mobile Shaders/Medium Quality";
+		private const string kMobileShaderLowQuality = "MGFX/Mobile Shaders/Low Quality";
+		private const string kMobileForceRefresh = "MGFX/Mobile Shaders/Force Refresh";
+		private const string kMobileGenReflectionMask = "MGFX/Mobile Shaders/Generate Reflection Mask";
 
 		public static void MenuItemQualityUpdate()
 		{
@@ -34,6 +34,8 @@ namespace MGFX.Rendering
 			{
 
 			}
+
+			SceneView.RepaintAll();
 		}
 
 		[MenuItem(kMobileShaderHighQuality, false, 1001)]

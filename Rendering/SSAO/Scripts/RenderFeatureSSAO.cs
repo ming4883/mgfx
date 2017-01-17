@@ -27,12 +27,12 @@ using UnityEngine.Rendering;
 namespace MGFX.Rendering
 {
 	[ExecuteInEditMode]
-	[AddComponentMenu("MGFX.Rendering/SSAO")]
+	[AddComponentMenu("MGFX/SSAO")]
 	public class RenderFeatureSSAO : RenderFeatureBase
 	{
 		#region Material Identifiers
 
-		[Material("Hidden/MGFX.Rendering/SSAO")]
+		[Material("Hidden/MGFX/SSAO")]
         [HideInInspector]
         public Material MaterialSSAO;
 		

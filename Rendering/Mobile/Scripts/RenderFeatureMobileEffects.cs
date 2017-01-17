@@ -4,20 +4,20 @@ using UnityEngine.Rendering;
 namespace MGFX.Rendering
 {
 	[ExecuteInEditMode]
-	[AddComponentMenu("MGFX.Rendering/MobileEffects")]
+	[AddComponentMenu("MGFX/MobileEffects")]
 	public class RenderFeatureMobileEffects : RenderFeatureBase
 	{
 		#region Material Identifiers
 
-		[Material("Hidden/MGFX.Rendering/NPR2")]
+		[Material("Hidden/MGFX/NPR2")]
         [HideInInspector]
         public Material MaterialNPR2;
 
-		[Material("Hidden/MGFX.Rendering/FXAA")]
+		[Material("Hidden/MGFX/FXAA")]
 		[HideInInspector]
 		public Material MaterialFAXX;
 
-		[Material("Hidden/MGFX.Rendering/NPR2GeomBuffer")]
+		[Material("Hidden/MGFX/NPR2GeomBuffer")]
         [HideInInspector]
         public Material MaterialNPR2GeomBuffer;
 		

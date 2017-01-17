@@ -1,4 +1,4 @@
-﻿Shader "Hidden/MGFX.Rendering/VertexColorDisplay"
+﻿Shader "Hidden/MGFX/VertexColorDisplay"
 {
     Properties
     {

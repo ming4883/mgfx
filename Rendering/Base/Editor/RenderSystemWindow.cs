@@ -386,7 +386,7 @@ namespace MGFX.Rendering
 			EditorGUILayout.EndScrollView();
 		}
 
-		[MenuItem("MGFX.Rendering/RenderSystem", false, 3001)]
+		[MenuItem("MGFX/RenderSystem", false, 3001)]
 		public static void MenuItem()
 		{
 			RenderSystemWindow _window = EditorWindow.CreateInstance <RenderSystemWindow>();

@@ -1,5 +1,5 @@
 
-Shader "Hidden/MGFX.Rendering/HDR" {
+Shader "Hidden/MGFX/HDR" {
 	Properties {
 		_MainTex ("Base (RGB)", 2D) = "white" {}
 	}
@@ -8,10 +8,10 @@ Shader "Hidden/MGFX.Rendering/HDR" {
 
 		#include "UnityCG.cginc"
 
-        sampler2D _MainTex;
-        uniform half4 _MainTex_TexelSize;
+		sampler2D _MainTex;
+		uniform half4 _MainTex_TexelSize;
 
-        uniform half4 _OffsetsA;
+		uniform half4 _OffsetsA;
 		uniform half4 _OffsetsB;
 		
 		#define ONE_MINUS_THRESHHOLD_TIMES_INTENSITY _BloomParameter.w
@@ -31,15 +31,15 @@ Shader "Hidden/MGFX.Rendering/HDR" {
 			v2f_tap o;
 
 			o.pos = UnityObjectToClipPos (v.vertex);
-			o.uv20 = v.texcoord + _MainTex_TexelSize.xy;				
-			o.uv21 = v.texcoord + _MainTex_TexelSize.xy * half2(-0.5h,-0.5h);	
-			o.uv22 = v.texcoord + _MainTex_TexelSize.xy * half2(0.5h,-0.5h);		
-			o.uv23 = v.texcoord + _MainTex_TexelSize.xy * half2(-0.5h,0.5h);		
+			o.uv20 = v.texcoord + _MainTex_TexelSize.xy;
+			o.uv21 = v.texcoord + _MainTex_TexelSize.xy * half2(-0.5h,-0.5h);
+			o.uv22 = v.texcoord + _MainTex_TexelSize.xy * half2(0.5h,-0.5h);
+			o.uv23 = v.texcoord + _MainTex_TexelSize.xy * half2(-0.5h,0.5h);
 
 			return o; 
 		}
 
-        #include "./HDR.cginc"
+		#include "./HDR.cginc"
 
 		half4 fragHDR ( v2f_hdr i ) : SV_Target
 		{	

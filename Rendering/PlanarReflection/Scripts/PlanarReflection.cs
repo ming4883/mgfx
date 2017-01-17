@@ -6,7 +6,7 @@ using System.Collections;
 namespace MGFX.Rendering
 {
 	[ExecuteInEditMode ()]
-	[AddComponentMenu ("MGFX.Rendering/PlanarReflection")]
+	[AddComponentMenu ("MGFX/PlanarReflection")]
 	public class PlanarReflection : MonoBehaviour
 	{
 		public bool m_DisablePixelLights = false;

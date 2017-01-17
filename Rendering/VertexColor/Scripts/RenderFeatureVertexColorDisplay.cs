@@ -6,16 +6,16 @@ namespace MGFX.Rendering
 {
 
     [ExecuteInEditMode]
-    [AddComponentMenu("MGFX.Rendering/VertexColorDisplay")]
+    [AddComponentMenu("MGFX/VertexColorDisplay")]
     public class RenderFeatureVertexColorDisplay : RenderFeatureBase
     {
         #region Material Identifiers
 
-        [Material("Hidden/MGFX.Rendering/VertexColorSelect")]
+        [Material("Hidden/MGFX/VertexColorSelect")]
         [HideInInspector]
         public Material MaterialVertexColorSelect;
         
-        [Material("Hidden/MGFX.Rendering/VertexColorDisplay")]
+        [Material("Hidden/MGFX/VertexColorDisplay")]
         [HideInInspector]
         public Material MaterialVertexColorDisplay;
 

@@ -1,5 +1,5 @@
 
-Shader "Hidden/MGFX.Rendering/VertexColorSelect" {
+Shader "Hidden/MGFX/VertexColorSelect" {
 Properties {
 	//_MainTex ("", 2D) = "white" {}
 }

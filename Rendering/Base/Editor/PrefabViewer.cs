@@ -240,7 +240,7 @@ namespace MGFX.Rendering
 			};
 		}
 
-		[MenuItem("MGFX.Rendering/PrefabViewer", false, 3003)]
+		[MenuItem("MGFX/PrefabViewer", false, 3003)]
 		public static void MenuItem()
 		{
 			PrefabViewer _window = EditorWindow.CreateInstance<PrefabViewer>();
