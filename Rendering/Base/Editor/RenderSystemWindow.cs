@@ -1,22 +1,36 @@
-﻿using UnityEngine;
-using UnityEditor;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Reflection;
+using UnityEditor;
+using UnityEngine;
 
 namespace MGFX.Rendering
 {
-	class RenderSystemWindow : EditorWindow
+	internal class RenderSystemWindow : EditorWindow
 	{
-		
-		Vector2 m_ScrollPos = Vector2.zero;
-		List<bool> m_Toggle = new List<bool>();
+		private Vector2 m_ScrollPos = Vector2.zero;
+		private List<bool> m_Toggle = new List<bool>();
 
-		bool m_BakingToggle = true;
-		bool m_RenderSystemToggle = true;
-		
+		private bool m_BakingToggle = true;
+		private bool m_RenderSystemToggle = true;
+
 		//GUIContent m_txtUseLinear = new GUIContent("Use Linear Color Space");
-		string kColorSpaceWarningString = "This project is using Gamma color space, please consider switching to Linear color space";
-		ColorPickerHDRConfig kHdrConfig = new ColorPickerHDRConfig(0, 5, 0, 2);
+		private string kColorSpaceWarningString = "This project is using Gamma color space, please consider switching to Linear color space";
+
+		private ColorPickerHDRConfig kHdrConfig = new ColorPickerHDRConfig(0, 5, 0, 2);
+
+		public static readonly GUIContent[] kAmbientModeStrings = new GUIContent[]
+		{
+			new GUIContent("Skybox"),
+			new GUIContent("Gradient"),
+			new GUIContent("Color")
+		};
+
+		public static readonly int[] kAmbientModeValues = new int[]
+		{
+			0,
+			1,
+			3
+		};
 
 		private GUIContent[] kMaxAtlasSizeStrings = new GUIContent[]
 		{
@@ -56,12 +70,12 @@ namespace MGFX.Rendering
 
 		public GUIContent[] kRuntimeCPUUsageStrings = new GUIContent[]
 		{
-				new GUIContent("Low (default)"),
-				new GUIContent("Medium"),
-				new GUIContent("High"),
-				new GUIContent("Unlimited")
+			new GUIContent("Low (default)"),
+			new GUIContent("Medium"),
+			new GUIContent("High"),
+			new GUIContent("Unlimited")
 		};
-		
+
 		public int[] kRuntimeCPUUsageValues = new int[]
 		{
 			25,
@@ -69,12 +83,12 @@ namespace MGFX.Rendering
 			75,
 			100
 		};
-		
-		void OnEnable()
+
+		private void OnEnable()
 		{
 		}
 
-		void OnDisable()
+		private void OnDisable()
 		{
 		}
 
@@ -83,16 +97,16 @@ namespace MGFX.Rendering
 			Repaint();
 		}
 
-		void Line()
+		private void Line()
 		{
 			GUILayout.Box(GUIContent.none, GUILayout.ExpandWidth(true), GUILayout.Height(1.0f));
 		}
 
-		bool Toggle(SerializedProperty _spBool, GUIContent _label)
+		private bool Toggle(SerializedProperty _spBool, GUIContent _label)
 		{
 			bool _boolValue = _spBool.boolValue;
 			EditorGUI.BeginChangeCheck();
-			
+
 			_boolValue = EditorGUILayout.ToggleLeft(_label, _boolValue);
 			if (EditorGUI.EndChangeCheck())
 			{
@@ -101,8 +115,8 @@ namespace MGFX.Rendering
 
 			return _boolValue;
 		}
-		
-		void OnGUIRenderSystem()
+
+		private void OnGUIRenderSystem()
 		{
 			var _renderSys = GameObject.FindObjectOfType<RenderSystem>();
 
@@ -139,14 +153,14 @@ namespace MGFX.Rendering
 
 				if (_features.Length == 0)
 					return;
-				
+
 				for (int _it = 0; _it < _features.Length; ++_it)
 				{
 					var _f = _features[_it];
 
 					// toggle group
 					m_Toggle[_it] = EditorGUILayout.BeginToggleGroup(_f.GetType().Name, m_Toggle[_it]);
-					
+
 					if (m_Toggle[_it])
 					{
 						EditorGUI.indentLevel += 1;
@@ -162,20 +176,25 @@ namespace MGFX.Rendering
 					EditorGUILayout.EndToggleGroup();
 					// separator
 					Line();
-
 				}
 			}
 		}
 
-		static SerializedObject GetLighmapSettings()
+		private static SerializedObject GetLighmapSettings()
 		{
-			var getLightmapSettingsMethod = typeof(LightmapEditorSettings).GetMethod("GetLightmapSettings", BindingFlags.Static | BindingFlags.NonPublic);
-			var lightmapSettings = getLightmapSettingsMethod.Invoke(null, null) as Object;
-			return new SerializedObject(lightmapSettings);
+			var _method = typeof(LightmapEditorSettings).GetMethod("GetLightmapSettings", BindingFlags.Static | BindingFlags.NonPublic);
+			var _inst = _method.Invoke(null, null) as UnityEngine.Object;
+			return new SerializedObject(_inst);
 		}
 
+		private static SerializedObject GetRenderSettings()
+		{
+			var _method = typeof(RenderSettings).GetMethod("GetRenderSettings", BindingFlags.Static | BindingFlags.NonPublic);
+			var _inst = _method.Invoke(null, null) as UnityEngine.Object;
+			return new SerializedObject(_inst);
+		}
 
-		void OnGUILighting()
+		private void OnGUILighting()
 		{
 			if (m_BakingToggle = EditorGUILayout.BeginToggleGroup("Lighting And Baking", m_BakingToggle))
 			{
@@ -192,38 +211,50 @@ namespace MGFX.Rendering
 						EditorApplication.ExecuteMenuItem("Edit/Project Settings/Player");
 					}
 				}
-				
+
 				EditorGUILayout.Separator();
-				
-				SerializedObject _so = GetLighmapSettings();
+
+				SerializedObject _soRend = GetRenderSettings();
 
 				//
 				EditorGUILayout.HelpBox("Lighting", MessageType.None);
-				RenderSettings.ambientSkyColor = EditorGUILayout.ColorField(new GUIContent("Ambient color"), RenderSettings.ambientSkyColor, true, false, true, kHdrConfig);
+				SerializedProperty _spAmbientSkyColor = _soRend.FindProperty("m_AmbientSkyColor");
+				SerializedProperty _spAmbientIntensity = _soRend.FindProperty("m_AmbientIntensity");
+				SerializedProperty _spAmbientMode = _soRend.FindProperty("m_AmbientMode");
+				SerializedProperty _spSkybox = _soRend.FindProperty("m_SkyboxMaterial");
 
-				RenderSettings.ambientMode = (UnityEngine.Rendering.AmbientMode)EditorGUILayout.EnumPopup(new GUIContent("Ambient Source"), RenderSettings.ambientMode);
+				EditorGUI.BeginChangeCheck();
+				var _skyColor = EditorGUILayout.ColorField(new GUIContent("Ambient color"), _spAmbientSkyColor.colorValue, true, false, true, kHdrConfig);
+				if (EditorGUI.EndChangeCheck())
+				{
+					_spAmbientSkyColor.colorValue = _skyColor;
+				}
 
-				RenderSettings.ambientIntensity = EditorGUILayout.FloatField(new GUIContent("Ambient intensity"), RenderSettings.ambientIntensity);
+				EditorGUILayout.IntPopup(_spAmbientMode, kAmbientModeStrings, kAmbientModeValues, new GUIContent("Ambient Source"));
 
-				RenderSettings.skybox = (Material)EditorGUILayout.ObjectField(new GUIContent("Skybox"), RenderSettings.skybox, typeof(Material), false);
+				EditorGUILayout.Slider(_spAmbientIntensity, 0f, 8f, new GUIContent("Ambient intensity"));
+
+				EditorGUILayout.PropertyField(_spSkybox, new GUIContent("Skybox Material"));
 
 				EditorGUILayout.Separator();
 
-				SerializedProperty _spRealTime = _so.FindProperty("m_GISettings.m_EnableRealtimeLightmaps");
-				SerializedProperty _spBaked = _so.FindProperty("m_GISettings.m_EnableBakedLightmaps");
+				SerializedObject _soLmap = GetLighmapSettings();
+
+				SerializedProperty _spRealTime = _soLmap.FindProperty("m_GISettings.m_EnableRealtimeLightmaps");
+				SerializedProperty _spBaked = _soLmap.FindProperty("m_GISettings.m_EnableBakedLightmaps");
 
 				if (Toggle(_spRealTime, new GUIContent("Pre-Realtime GI")))
 				{
 					EditorGUI.indentLevel++;
 
-					SerializedProperty _spResolution = _so.FindProperty("m_LightmapEditorSettings.m_Resolution");
+					SerializedProperty _spResolution = _soLmap.FindProperty("m_LightmapEditorSettings.m_Resolution");
 
 					EditorGUILayout.BeginHorizontal();
 					EditorGUILayout.PropertyField(_spResolution, new GUIContent("Realtime Resolution"));
 					EditorGUILayout.LabelField("texels per unit");
 					EditorGUILayout.EndHorizontal();
 
-					SerializedProperty _spCPU = _so.FindProperty("m_RuntimeCPUUsage");
+					SerializedProperty _spCPU = _soLmap.FindProperty("m_RuntimeCPUUsage");
 					EditorGUILayout.IntPopup(_spCPU, kRuntimeCPUUsageStrings, kRuntimeCPUUsageValues, new GUIContent("CPU Usage"));
 
 					EditorGUILayout.Separator();
@@ -237,18 +268,18 @@ namespace MGFX.Rendering
 
 					EditorGUI.BeginDisabledGroup(Lightmapping.isRunning);
 
-					SerializedProperty _spBakeMode = _so.FindProperty("m_LightmapEditorSettings.m_LightmapsBakeMode");
-					SerializedProperty _spCompress = _so.FindProperty("m_LightmapEditorSettings.m_TextureCompression");
+					SerializedProperty _spBakeMode = _soLmap.FindProperty("m_LightmapEditorSettings.m_LightmapsBakeMode");
+					SerializedProperty _spCompress = _soLmap.FindProperty("m_LightmapEditorSettings.m_TextureCompression");
 
 					EditorGUILayout.IntPopup(_spBakeMode, kBakeModeStrings, kBakeModeValues, new GUIContent("Baking Mode"));
 					EditorGUILayout.PropertyField(_spCompress, new GUIContent("Compressed"));
 
 					EditorGUILayout.Separator();
-					
-					SerializedProperty _spDirectRes = _so.FindProperty("m_LightmapEditorSettings.m_BakeResolution");
-					SerializedProperty _spIndirectRes = _so.FindProperty("m_LightmapEditorSettings.m_Resolution");
-					SerializedProperty _spPadding = _so.FindProperty("m_LightmapEditorSettings.m_Padding");
-					SerializedProperty _spAtlasSize = _so.FindProperty("m_LightmapEditorSettings.m_TextureWidth");
+
+					SerializedProperty _spDirectRes = _soLmap.FindProperty("m_LightmapEditorSettings.m_BakeResolution");
+					SerializedProperty _spIndirectRes = _soLmap.FindProperty("m_LightmapEditorSettings.m_Resolution");
+					SerializedProperty _spPadding = _soLmap.FindProperty("m_LightmapEditorSettings.m_Padding");
+					SerializedProperty _spAtlasSize = _soLmap.FindProperty("m_LightmapEditorSettings.m_TextureWidth");
 
 					EditorGUILayout.BeginHorizontal();
 					EditorGUILayout.PropertyField(_spDirectRes, new GUIContent("Direct Resolution"));
@@ -275,12 +306,12 @@ namespace MGFX.Rendering
 
 					EditorGUILayout.Separator();
 
-					SerializedProperty _spAO = _so.FindProperty("m_LightmapEditorSettings.m_AO");
-					SerializedProperty _spAODist = _so.FindProperty("m_LightmapEditorSettings.m_AOMaxDistance");
-					SerializedProperty _spAOExpIndirect = _so.FindProperty("m_LightmapEditorSettings.m_CompAOExponent");
-					SerializedProperty _spAOExpDirect = _so.FindProperty("m_LightmapEditorSettings.m_CompAOExponentDirect");
-					
-					if (Toggle(_spAO, new GUIContent("Ambient Occlusion"))) 
+					SerializedProperty _spAO = _soLmap.FindProperty("m_LightmapEditorSettings.m_AO");
+					SerializedProperty _spAODist = _soLmap.FindProperty("m_LightmapEditorSettings.m_AOMaxDistance");
+					SerializedProperty _spAOExpIndirect = _soLmap.FindProperty("m_LightmapEditorSettings.m_CompAOExponent");
+					SerializedProperty _spAOExpDirect = _soLmap.FindProperty("m_LightmapEditorSettings.m_CompAOExponentDirect");
+
+					if (Toggle(_spAO, new GUIContent("Ambient Occlusion")))
 					{
 						EditorGUI.indentLevel++;
 						EditorGUILayout.PropertyField(_spAODist, new GUIContent("Max Distance"));
@@ -291,9 +322,9 @@ namespace MGFX.Rendering
 
 					EditorGUILayout.Separator();
 
-					SerializedProperty _spFinalGather = _so.FindProperty("m_LightmapEditorSettings.m_FinalGather");
-					SerializedProperty _spFinalGatherRayCnt = _so.FindProperty("m_LightmapEditorSettings.m_FinalGatherRayCount");
-					SerializedProperty _spFinalGatherFilter = _so.FindProperty("m_LightmapEditorSettings.m_FinalGatherFiltering");
+					SerializedProperty _spFinalGather = _soLmap.FindProperty("m_LightmapEditorSettings.m_FinalGather");
+					SerializedProperty _spFinalGatherRayCnt = _soLmap.FindProperty("m_LightmapEditorSettings.m_FinalGatherRayCount");
+					SerializedProperty _spFinalGatherFilter = _soLmap.FindProperty("m_LightmapEditorSettings.m_FinalGatherFiltering");
 
 					if (Toggle(_spFinalGather, new GUIContent("Final Gather")))
 					{
@@ -305,20 +336,21 @@ namespace MGFX.Rendering
 
 					EditorGUI.indentLevel--;
 				}
-				
-				SerializedProperty _spAlbedoBoost = _so.FindProperty("m_GISettings.m_AlbedoBoost");
-				SerializedProperty _spIndirectOuputScale = _so.FindProperty("m_GISettings.m_IndirectOutputScale");
-				SerializedProperty _spParams = _so.FindProperty("m_LightmapEditorSettings.m_LightmapParameters");
+
+				SerializedProperty _spAlbedoBoost = _soLmap.FindProperty("m_GISettings.m_AlbedoBoost");
+				SerializedProperty _spIndirectOuputScale = _soLmap.FindProperty("m_GISettings.m_IndirectOutputScale");
+				SerializedProperty _spParams = _soLmap.FindProperty("m_LightmapEditorSettings.m_LightmapParameters");
 
 				EditorGUILayout.Slider(_spAlbedoBoost, 1, 10, new GUIContent("Bounce Boost"));
 				EditorGUILayout.Slider(_spIndirectOuputScale, 0, 5, new GUIContent("Indirect Intensity"));
 				EditorGUILayout.PropertyField(_spParams, new GUIContent("Default Parameters"));
 
-				_so.ApplyModifiedProperties();
-				
+				_soLmap.ApplyModifiedProperties();
+				_soRend.ApplyModifiedProperties();
+
 				EditorGUILayout.Separator();
 				EditorGUILayout.Separator();
-				
+
 				if (GUILayout.Button("Bake All"))
 				{
 					Lightmapping.BakeAsync();
@@ -363,10 +395,10 @@ namespace MGFX.Rendering
 			Line();
 		}
 
-		float m_LastDirRes;
-		float m_LasrIndRes;
+		private float m_LastDirRes;
+		private float m_LasrIndRes;
 
-		void OnBakeCompleted()
+		private void OnBakeCompleted()
 		{
 			LightmapEditorSettings.bakeResolution = m_LastDirRes;
 			LightmapEditorSettings.realtimeResolution = m_LasrIndRes;
@@ -375,23 +407,23 @@ namespace MGFX.Rendering
 
 			Log.I("Settings Restored.");
 		}
-		
-		void OnGUI()
+
+		private void OnGUI()
 		{
 			m_ScrollPos = EditorGUILayout.BeginScrollView(m_ScrollPos);
 
 			OnGUILighting();
 			OnGUIRenderSystem();
-			
+
 			EditorGUILayout.EndScrollView();
 		}
 
 		[MenuItem("MGFX/RenderSystem", false, 3001)]
 		public static void MenuItem()
 		{
-			RenderSystemWindow _window = EditorWindow.CreateInstance <RenderSystemWindow>();
+			RenderSystemWindow _window = EditorWindow.CreateInstance<RenderSystemWindow>();
 			_window.titleContent = new GUIContent("RenderSystem");
-			_window.minSize = new Vector2(200, 500);
+			_window.minSize = new Vector2(350, 500);
 			_window.Show();
 		}
 	}
