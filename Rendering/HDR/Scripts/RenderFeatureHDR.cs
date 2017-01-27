@@ -5,7 +5,7 @@ using UnityEngine.Rendering;
 namespace MGFX.Rendering
 {
 	[ExecuteInEditMode]
-	[AddComponentMenu("MGFX/HDR")]
+	[AddComponentMenu("Rendering/MGFX/HDR")]
 	public class RenderFeatureHDR : RenderFeatureBase
 	{
 		#region Material Identifiers
@@ -45,7 +45,7 @@ namespace MGFX.Rendering
 		private Resolution resolution = Resolution.High;
 		private float adaptionRate
 		{
-			get { return Mathf.Clamp(adaptionSpeed * Time.deltaTime, 1.0f / 64.0f, 1.0f); }
+			get { return Mathf.Clamp(adaptionSpeed * Time.deltaTime, 1.0f / 128.0f, 1.0f); }
 		}
 
 		private RenderFeatureHDRSceneData m_SceneData;
@@ -67,7 +67,6 @@ namespace MGFX.Rendering
 
 		#region MonoBehaviour Functions
 		
-
 		protected void SetupCommandBufferForHDR(CommandBuffer _cmdBuf, Camera _cam, RenderSystem _system, RenderTexture _frameBuf, RenderTargetIdentifier _outputTarget, Material _outputMtl, int _outputPass)
 		{
 			var _mtl = MaterialBloom;
@@ -90,7 +89,10 @@ namespace MGFX.Rendering
 
 			// downsample
 			float _edgeIntensity = 1.0f;
-			_cmdBuf.SetGlobalVector("_ToneMappingParameter", new Vector4(exposure, whitePointBias, adaptionRate, _edgeIntensity));
+			float _adaptionRate = adaptionRate;
+			if (RenderSystem.IsSceneCamera(_cam))
+				_adaptionRate = 0.5f;
+			_cmdBuf.SetGlobalVector("_ToneMappingParameter", new Vector4(exposure, whitePointBias, _adaptionRate, _edgeIntensity));
 
 			_cmdBuf.SetGlobalVector("_BloomParameter", new Vector4(blurSize * _widthMod, 0.0f, bloomThreshold, bloomIntensity));
 			
@@ -123,7 +125,7 @@ namespace MGFX.Rendering
 		public override void SetupCameraEvents(Camera _cam, RenderSystem _system)
 		{
 			// update command buffers
-			var _cmdBuf = _system.Commands.Alloc(_cam, CameraEvent.BeforeImageEffects, "MGFX.Rendering.HDR");
+			var _cmdBuf = _system.Commands.Alloc(_cam, CameraEvent.BeforeImageEffects, "MGFX.HDR");
 			_cmdBuf.Clear();
 
 

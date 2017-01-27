@@ -20,7 +20,7 @@ namespace MGFX.Rendering
 		[Range(0.0f, 100.0f)]
 		public float whitePointBias = 15.0f;
 
-		[Range(0.125f, 2.0f)]
+		[Range(1 / 32.0f, 4.0f)]
 		public float adaptionSpeed = 1.0f;
 
 		[Header("Bloom")]

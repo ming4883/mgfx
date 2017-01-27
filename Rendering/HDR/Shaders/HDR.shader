@@ -10,13 +10,10 @@ Shader "Hidden/MGFX/HDR" {
 
 		sampler2D _MainTex;
 		uniform half4 _MainTex_TexelSize;
-
+		
 		uniform half4 _OffsetsA;
 		uniform half4 _OffsetsB;
 		
-		#define ONE_MINUS_THRESHHOLD_TIMES_INTENSITY _BloomParameter.w
-		#define THRESHHOLD _BloomParameter.z
-
 		struct v2f_tap
 		{
 			float4 pos : SV_POSITION;
@@ -30,7 +27,7 @@ Shader "Hidden/MGFX/HDR" {
 		{
 			v2f_tap o;
 
-			o.pos = UnityObjectToClipPos (v.vertex);
+			o.pos = mul (UNITY_MATRIX_MVP, v.vertex);
 			o.uv20 = v.texcoord + _MainTex_TexelSize.xy;
 			o.uv21 = v.texcoord + _MainTex_TexelSize.xy * half2(-0.5h,-0.5h);
 			o.uv22 = v.texcoord + _MainTex_TexelSize.xy * half2(0.5h,-0.5h);
@@ -54,18 +51,34 @@ Shader "Hidden/MGFX/HDR" {
 			color += tex2D (_MainTex, i.uv23);
 			color = color * 0.25;
 
-			return half4(max(color - THRESHHOLD, 0).rgb * ONE_MINUS_THRESHHOLD_TIMES_INTENSITY, Luminance(color));
+			return half4(max(color - BLOOM_THRESHOLD, 0).rgb, Luminance(color));
 		}
 
 		half4 fragWhitePoint(v2f_hdr i) : SV_Target
 		{
-			half4 wp = tex2D(_MainTex, half2(0.5, 0.5));
-			wp += tex2D(_MainTex, half2(0.25, 0.25));
-			wp += tex2D(_MainTex, half2(0.75, 0.25));
-			wp += tex2D(_MainTex, half2(0.25, 0.75));
-			wp += tex2D(_MainTex, half2(0.75, 0.75));
+			half s = 0.125;
+			half2 uv[8] = {
+				half2(0.0 + s, 0.0 + s), half2(1.0 - s, 0.0 + s), half2(0.0 + s, 1.0 - s), half2(1.0 - s, 1.0 - s),
+				half2(0.5 - s, 0.5 - s), half2(0.5 + s, 0.5 - s), half2(0.5 - s, 0.5 + s), half2(0.5 + s, 0.5 + s),
+			};
 
-			return half4(wp.aaa * 0.2, _ToneMappingParameter.z);
+			half4 wp[8];
+			int t;
+			for( t = 0; t < 8; ++t)
+				wp[t] = tex2Dlod(_MainTex, half4(uv[t], 0, 0));
+
+			half maxWp = max(wp[0].a, wp[1].a);
+			half minWp = min(wp[0].a, wp[1].a);
+
+			for ( t = 2; t < 8; ++t)
+			{
+				maxWp = max(maxWp, wp[t].a);
+				minWp = min(minWp, wp[t].a);
+			}
+
+			half outWp = (minWp + maxWp) * 4.0;
+
+			return half4(outWp, outWp, outWp, _ToneMappingParameter.z);
 		}
 
 		// weight curves
@@ -98,7 +111,7 @@ Shader "Hidden/MGFX/HDR" {
 		v2f_withBlurCoords8 vertBlurHorizontal (appdata_img v)
 		{
 			v2f_withBlurCoords8 o;
-			o.pos = UnityObjectToClipPos (v.vertex);
+			o.pos = mul (UNITY_MATRIX_MVP, v.vertex);
 			
 			o.uv = half4(v.texcoord.xy,1,1);
 			o.offs = _MainTex_TexelSize.xy * half2(1.0, 0.0) * _BloomParameter.x;
@@ -109,7 +122,7 @@ Shader "Hidden/MGFX/HDR" {
 		v2f_withBlurCoords8 vertBlurVertical (appdata_img v)
 		{
 			v2f_withBlurCoords8 o;
-			o.pos = UnityObjectToClipPos (v.vertex);
+			o.pos = mul (UNITY_MATRIX_MVP, v.vertex);
 			
 			o.uv = half4(v.texcoord.xy,1,1);
 			o.offs = _MainTex_TexelSize.xy * half2(0.0, 1.0) * _BloomParameter.x;
@@ -136,7 +149,7 @@ Shader "Hidden/MGFX/HDR" {
 		v2f_withBlurCoordsSGX vertBlurHorizontalSGX (appdata_img v)
 		{
 			v2f_withBlurCoordsSGX o;
-			o.pos = UnityObjectToClipPos (v.vertex);
+			o.pos = mul (UNITY_MATRIX_MVP, v.vertex);
 			
 			o.uv = v.texcoord.xy;
 
@@ -151,7 +164,7 @@ Shader "Hidden/MGFX/HDR" {
 		v2f_withBlurCoordsSGX vertBlurVerticalSGX (appdata_img v)
 		{
 			v2f_withBlurCoordsSGX o;
-			o.pos = UnityObjectToClipPos (v.vertex);
+			o.pos = mul (UNITY_MATRIX_MVP, v.vertex);
 			
 			o.uv = half4(v.texcoord.xy,1,1);
 

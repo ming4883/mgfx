@@ -19,17 +19,17 @@ namespace MGFX.Rendering
 		private ColorPickerHDRConfig kHdrConfig = new ColorPickerHDRConfig(0, 5, 0, 2);
 
 		public static readonly GUIContent[] kAmbientModeStrings = new GUIContent[]
-		{
-			new GUIContent("Skybox"),
-			new GUIContent("Gradient"),
-			new GUIContent("Color")
-		};
+			{
+				new GUIContent("Skybox"),
+				new GUIContent("Gradient"),
+				new GUIContent("Color")
+			};
 
 		public static readonly int[] kAmbientModeValues = new int[]
 		{
-			0,
-			1,
-			3
+				0,
+				1,
+				3
 		};
 
 		private GUIContent[] kMaxAtlasSizeStrings = new GUIContent[]
@@ -70,10 +70,10 @@ namespace MGFX.Rendering
 
 		public GUIContent[] kRuntimeCPUUsageStrings = new GUIContent[]
 		{
-			new GUIContent("Low (default)"),
-			new GUIContent("Medium"),
-			new GUIContent("High"),
-			new GUIContent("Unlimited")
+				new GUIContent("Low (default)"),
+				new GUIContent("Medium"),
+				new GUIContent("High"),
+				new GUIContent("Unlimited")
 		};
 
 		public int[] kRuntimeCPUUsageValues = new int[]
@@ -116,6 +116,8 @@ namespace MGFX.Rendering
 			return _boolValue;
 		}
 
+		private Editor m_RenderSystemEditor;
+
 		private void OnGUIRenderSystem()
 		{
 			var _renderSys = GameObject.FindObjectOfType<RenderSystem>();
@@ -131,9 +133,13 @@ namespace MGFX.Rendering
 				{
 					EditorGUI.indentLevel += 1;
 
-					var _syseditor = Editor.CreateEditor(_renderSys);
-					_syseditor.OnInspectorGUI();
-					DestroyImmediate(_syseditor);
+					Editor.CreateCachedEditor(_renderSys, null, ref m_RenderSystemEditor);
+					m_RenderSystemEditor.OnInspectorGUI();
+
+					if (GUILayout.Button(new GUIContent("Select")))
+					{
+						Selection.activeObject = _renderSys;
+					}
 
 					EditorGUI.indentLevel -= 1;
 				}
