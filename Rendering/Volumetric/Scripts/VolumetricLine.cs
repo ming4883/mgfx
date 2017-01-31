@@ -5,7 +5,7 @@ using System.Collections.Generic;
 namespace MGFX
 {
     [ExecuteInEditMode]
-    [AddComponentMenu("Rendering/MGFX/VolumetricLine")]
+    [AddComponentMenu("MGFX/VolumetricLine")]
     public class VolumetricLine : MonoBehaviour
     {
         public Color m_Color = Color.white;

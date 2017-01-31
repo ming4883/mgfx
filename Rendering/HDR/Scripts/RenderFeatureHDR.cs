@@ -5,7 +5,7 @@ using UnityEngine.Rendering;
 namespace MGFX.Rendering
 {
 	[ExecuteInEditMode]
-	[AddComponentMenu("Rendering/MGFX/HDR")]
+	[AddComponentMenu("MGFX/HDR")]
 	public class RenderFeatureHDR : RenderFeatureBase
 	{
 		#region Material Identifiers
