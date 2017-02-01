@@ -6,39 +6,18 @@ namespace MGFX.Rendering
 	[CustomEditor(typeof(WaterFlow))]
 	public class WaterFlowEditor : Editor
 	{
-		private static Color m_HeadColor = new Color(1, 1, 1, 1.0f);
-		private static Color m_LineColor = new Color(1, 1, 0, 1.0f);
+		private static Color m_ConeColor = new Color(0, 1, 1, 0.5f);
+		private static Color m_LineColor = new Color(0, 1, 1, 1.0f);
+		private static Color m_PivotColor = new Color(1, 1, 1, 1.0f);
+
+		private float m_HandleSize = 0.04f;
+		private float m_PickSize = 0.06f;
 
 		private int m_SelectedIndex = -1;
 
 		public override void OnInspectorGUI()
 		{
 			base.DrawDefaultInspector();
-		}
-		
-		public bool OnSceneGUIPoint(ref Vector3 _pt, int _index)
-		{
-			float _scale = HandleUtility.GetHandleSize(_pt);
-			float _handleSize = 0.04f * _scale;
-			float _pickSize = 0.06f * _scale;
-			
-			if (Handles.Button(_pt, Quaternion.identity, _handleSize, _pickSize, Handles.DotCap))
-			{
-				m_SelectedIndex = _index;
-			}
-
-			if (_index == m_SelectedIndex)
-			{
-				EditorGUI.BeginChangeCheck();
-				_pt = Handles.DoPositionHandle(_pt, Quaternion.identity);
-
-				if(EditorGUI.EndChangeCheck())
-				{
-					Undo.RecordObject(target, "WaterFlow Move Point");
-					return true;
-				}	
-			}
-			return false;
 		}
 
 		public void OnEnable()
@@ -51,6 +30,69 @@ namespace MGFX.Rendering
 			//Tools.hidden = false;
 		}
 
+		public void OnSceneGUIPivot()
+		{
+			var _inst = target as WaterFlow;
+			var _tran = _inst.transform;
+
+			float _scale = HandleUtility.GetHandleSize(_tran.position);
+
+			Handles.color = m_PivotColor;
+
+			if (Handles.Button(_tran.position, Quaternion.identity, m_HandleSize * _scale, m_PickSize * _scale, Handles.DotCap))
+			{
+				m_SelectedIndex = -1;
+			}
+
+			Tools.hidden = m_SelectedIndex != -1;
+		}
+
+		public bool OnSceneGUIPoint(int _index)
+		{
+			var _inst = target as WaterFlow;
+			var _tran = _inst.transform;
+			var _pt = _inst.points[_index];
+			_pt = _tran.TransformPoint(_pt);
+			float _scale = HandleUtility.GetHandleSize(_pt);
+
+			Handles.color = m_ConeColor;
+
+			if (_index > 0)
+			{
+				var _pt2 = _inst.points[_index - 1];
+				_pt2 = _tran.TransformPoint(_pt2);
+
+				var _dir = _pt - _pt2;
+
+				Handles.ConeCap(0, _pt2 + _dir * 0.75f, Quaternion.FromToRotation(Vector3.forward, _dir), 0.25f * _scale);
+			}
+
+			Handles.color = m_LineColor;
+
+			_scale = _index == 0 ? 2 * _scale : _scale;
+			if (Handles.Button(_pt, Quaternion.identity, m_HandleSize * _scale, m_PickSize * _scale, Handles.DotCap))
+			{
+				m_SelectedIndex = _index;
+			}
+
+			Tools.hidden = m_SelectedIndex != -1;
+
+			if (_index == m_SelectedIndex)
+			{
+				EditorGUI.BeginChangeCheck();
+
+				_pt = Handles.DoPositionHandle(_pt, _tran.rotation);
+
+				if (EditorGUI.EndChangeCheck())
+				{
+					Undo.RecordObject(target, "WaterFlow Move Point");
+					_inst.points[_index] = _tran.InverseTransformPoint(_pt);
+					return true;
+				}
+			}
+			return false;
+		}
+
 		public void OnSceneGUI()
 		{
 			var _inst = target as WaterFlow;
@@ -60,26 +102,19 @@ namespace MGFX.Rendering
 			if (_numOfPts < 1)
 				return;
 
-			Handles.color = m_HeadColor;
-
-			var _p0 = _inst.points[0];
-			if (OnSceneGUIPoint(ref _p0, 0))
-				_inst.points[0] = _p0;
+			OnSceneGUIPoint(0);
 
 			if (_numOfPts < 2)
 				return;
 
-			Handles.color = m_LineColor;
+			var _tran = _inst.transform;
 
-			for(int _it = 1; _it < _numOfPts; _it++)
+			for (int _it = 1; _it < _numOfPts; _it++)
 			{
-				var _beg = _inst.points[_it-1];
-				var _end = _inst.points[_it];
-				Handles.DrawLine(_beg, _end);
-
-				if (OnSceneGUIPoint(ref _end, _it))
-					_inst.points[_it] = _end;
+				OnSceneGUIPoint(_it);
 			}
+
+			OnSceneGUIPivot();
 		}
 	}
 }
