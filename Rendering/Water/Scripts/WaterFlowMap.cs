@@ -1,4 +1,5 @@
 ﻿using UnityEngine;
+using System.Collections.Generic;
 
 namespace MGFX.Rendering
 {
@@ -38,6 +39,21 @@ namespace MGFX.Rendering
 			Gizmos.DrawLine(new Vector3(-_halfSize.x, 0, _halfSize.y), new Vector3(-_halfSize.x, 0,-_halfSize.y));
 			Gizmos.DrawLine(new Vector3(-_halfSize.x, 0,-_halfSize.y), new Vector3( _halfSize.x, 0,-_halfSize.y));
 			Gizmos.DrawLine(new Vector3( _halfSize.x, 0,-_halfSize.y), new Vector3( _halfSize.x, 0, _halfSize.y));
+		}
+
+		public List<WaterFlow.Sample> GatherSamples()
+		{
+			List<WaterFlow.Sample> _samples = new List<WaterFlow.Sample>();
+
+			foreach (var _flow in flows)
+			{
+				if (null == _flow || !_flow)
+					continue;
+				
+				_flow.GatherSamples(_samples);
+			}
+
+			return _samples;	
 		}
 	}
 }

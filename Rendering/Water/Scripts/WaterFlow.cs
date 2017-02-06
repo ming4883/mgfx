@@ -1,4 +1,5 @@
 ﻿using UnityEngine;
+using System.Collections.Generic;
 
 namespace MGFX.Rendering
 {
@@ -6,6 +7,15 @@ namespace MGFX.Rendering
 	[AddComponentMenu("MGFX/WaterFlow")]
 	public class WaterFlow : MonoBehaviour
 	{
+		public struct Sample
+		{
+			public Vector3 position;
+			public Vector3 direction;
+		}
+
+		[Range(0, 100)]
+		public float delta = 0.125f;
+
 		public Vector3[] points = new Vector3[] {
 			new Vector3(0, 0, 0),
 			new Vector3(0, 0, 1),
@@ -47,11 +57,31 @@ namespace MGFX.Rendering
 		{
 		}
 
-		public void SetupTransform(Vector3 _beg, Vector3 _end)
+		public void GatherSamples(List<Sample> _outList)
 		{
-			transform.localScale = new Vector3(1, 1, 1);
-			transform.position = _beg;
-			transform.LookAt(_end);
+			if (points.Length == 0)
+				return;
+
+			if (points.Length == 1)
+			{
+				_outList.Add(new Sample {position = points[0], direction = Vector3.zero});
+				return;
+			}
+
+			for (int _it = 1; _it < points.Length; _it++)
+			{
+				var _beg = points[_it - 1];
+				var _end = points[_it];
+				var _dir = (_end - _beg);
+				var _sample = new Sample();
+				_sample.direction = _dir.normalized;
+
+				_sample.position = _beg + _sample.direction * delta;
+				_outList.Add(_sample);
+
+				_sample.position = _end - _sample.direction * delta;
+				_outList.Add(_sample);
+			}
 		}
 	}
 }
