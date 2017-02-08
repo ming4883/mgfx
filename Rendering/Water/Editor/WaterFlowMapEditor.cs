@@ -10,6 +10,7 @@ namespace MGFX.Rendering
 		private GUIContent kShowSampleText = new GUIContent("Show Samples");
 		private GUIContent kBakeText = new GUIContent("Bake");
 		private static bool m_ShowSamples = false;
+		private static Color m_CachedColor = new Color(0, 0, 1, 0.5f);
 		private static Color m_SampleColor = new Color(1, 1, 1, 0.5f);
 		private static Color m_OffsetUColor = new Color(1, 0, 0, 0.5f);
 		private static Color m_OffsetVColor = new Color(0, 1, 0, 0.5f);
@@ -56,6 +57,18 @@ namespace MGFX.Rendering
 
 				Handles.color = m_OffsetVColor;
 				Handles.ConeCap(0, _pt + _dv * _scale, Quaternion.FromToRotation(Vector3.forward, _dv), _scale);
+			}
+
+			if (_inst.cached != null)
+			{
+				Handles.color = m_CachedColor;
+				foreach (var _samp in _inst.cached)
+				{
+					float _scale = HandleUtility.GetHandleSize(_samp.position) * 0.0625f;
+
+					if (_samp.direction.sqrMagnitude > 0)
+						Handles.ConeCap(0, _samp.position, Quaternion.FromToRotation(Vector3.forward, _samp.direction), _scale);
+				}
 			}
 
 			if (m_ShowSamples)
@@ -111,7 +124,11 @@ namespace MGFX.Rendering
 
 			Vector2 _offset = _inst.size * -0.5f;
 			Vector2 _delta = new Vector2(_inst.size.x / _tw, _inst.size.y / _th);
+			_offset += _delta * 0.5f;
 			var _transform = _inst.transform;
+
+			_inst.cached = new WaterFlow.Sample[_tw * _th];
+			int _c = 0;
 
 			for(int _y = 0; _y < _th; ++_y)
 			{
@@ -122,6 +139,10 @@ namespace MGFX.Rendering
 
 					_worldPos = _transform.TransformPoint(_worldPos);
 
+					_inst.cached[_c] = new WaterFlow.Sample() {
+						position = _worldPos,
+						direction = Vector3.zero,
+					};
 
 					Color _clr = new Color(0.5f, 0.5f, 0.5f, 0.0f);
 
@@ -133,9 +154,13 @@ namespace MGFX.Rendering
 						_clr.g = _samp.direction.y * 0.5f + 0.5f;
 						_clr.b = _samp.direction.z * 0.5f + 0.5f;
 						_clr.a = 1.0f;
+
+						_inst.cached[_c].direction = _samp.direction;
 					}
 
 					_tex.SetPixel(_x, _y, _clr);
+
+					_c++;
 				}
 			}
 

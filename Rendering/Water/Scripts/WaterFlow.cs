@@ -72,6 +72,10 @@ namespace MGFX.Rendering
 			{
 				var _beg = points[_it - 1];
 				var _end = points[_it];
+
+				_beg = transform.TransformPoint(_beg);
+				_end = transform.TransformPoint(_end);
+
 				var _dir = (_end - _beg);
 				var _sample = new Sample();
 				_sample.direction = _dir.normalized;

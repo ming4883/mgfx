@@ -14,6 +14,10 @@ namespace MGFX.Rendering
 		public Vector2 size = new Vector2(10, 10);
 		public Vector2 resolution = new Vector2(512, 512);
 
+		[HideInInspector]
+		[System.NonSerialized]
+		public WaterFlow.Sample[] cached;
+
 		public void OnEnable()
 		{
 		}
