@@ -150,14 +150,20 @@ namespace MGFX.Rendering
 					if (_knn.Length > 1)
 					{
 						var _samp = _samples[_knn[0]];
-						_clr.r = _samp.direction.x * 0.5f + 0.5f;
-						_clr.g = _samp.direction.y * 0.5f + 0.5f;
-						_clr.b = _samp.direction.z * 0.5f + 0.5f;
+						_clr.r = -_samp.direction.x * 0.5f + 0.5f;
+						_clr.g = -_samp.direction.z * 0.5f + 0.5f;
+						_clr.b = 0.0f;// _samp.direction.y * 0.5f + 0.5f;
+						
 						_clr.a = 1.0f;
 
 						_inst.cached[_c].direction = _samp.direction;
 					}
-
+#if false
+					// debug uv mapping
+					_clr.r = (float)_x / _tw;
+					_clr.g = (float)_y / _th;
+					_clr.b = 0;
+#endif
 					_tex.SetPixel(_x, _y, _clr);
 
 					_c++;
@@ -180,9 +186,6 @@ namespace MGFX.Rendering
 			_imp.sRGBTexture = true;
 			_imp.textureCompression = TextureImporterCompression.Uncompressed;
 			_imp.SaveAndReimport();
-			
-			//Texture2D.DestroyImmediate(_tex);
-
 		}
 	}
 }

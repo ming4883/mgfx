@@ -32,6 +32,26 @@ namespace MGFX.Rendering
 
 		private static Color m_LineColor = new Color(0.25f, 1.0f, 1.0f, 0.5f);
 
+		public Matrix4x4 GetTextureMatrix()
+		{
+			Matrix4x4 _world2Local = transform.worldToLocalMatrix;
+
+			Matrix4x4 _offset = Matrix4x4.Translate(new Vector3(0.5f * size.x, 0, 0.5f * size.y));
+
+			Matrix4x4 _scale = Matrix4x4.identity;
+			_scale.m00 = 1.0f / size.x;
+			_scale.m11 = 1.0f;
+			_scale.m22 = 1.0f / size.y;
+
+			Matrix4x4 _swizzle = new Matrix4x4();
+			_swizzle.SetRow(0, new Vector4(1, 0, 0, 0));
+			_swizzle.SetRow(1, new Vector4(0, 0, 1, 0));
+			_swizzle.SetRow(2, new Vector4(0, 1, 0, 0));
+			_swizzle.SetRow(3, new Vector4(0, 0, 0, 1));
+
+			return _swizzle * _scale * _offset * _world2Local;
+		}
+
 		public void OnDrawGizmos()
 		{
 			Gizmos.matrix = Matrix4x4.TRS(transform.position, transform.rotation, transform.lossyScale);
