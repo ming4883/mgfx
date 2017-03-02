@@ -1,5 +1,6 @@
 using UnityEditor;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 using System.Collections.Generic;
 
 namespace MGFX.Rendering
@@ -170,11 +171,11 @@ namespace MGFX.Rendering
 				}
 			}
 
-			string _path = Application.dataPath + "/-WaterFlowMap.png";
-
-			System.IO.File.WriteAllBytes(_path, _tex.EncodeToPNG());
-
-			_path = "Assets/-WaterFlowMap.png";
+			Scene _scene = SceneManager.GetActiveScene();
+			string _path = System.IO.Path.GetDirectoryName(_scene.path);
+			_path = _path + "/" + _inst.Filename;
+			
+			System.IO.File.WriteAllBytes(Application.dataPath + _path.Remove(0, 6), _tex.EncodeToPNG());
 
 			AssetDatabase.ImportAsset(_path);
 
