@@ -11,6 +11,8 @@ namespace MGFX.Rendering
 			null
 		};
 
+		public float minimumDistance = 1.0f;
+
 		public Vector2 size = new Vector2(10, 10);
 		public Vector2 resolution = new Vector2(512, 512);
 		public string Filename = "FlowMap.png";
@@ -68,17 +70,66 @@ namespace MGFX.Rendering
 
 		public List<WaterFlow.Sample> GatherSamples(Vector2 _sampleSize)
 		{
-			List<WaterFlow.Sample> _samples = new List<WaterFlow.Sample>();
+			var _rawSamples = new List<WaterFlow.Sample>();
 
 			foreach (var _flow in flows)
 			{
 				if (null == _flow || !_flow)
 					continue;
 				
-				_flow.GatherSamples(_samples, _sampleSize);
+				_flow.GatherSamples(_rawSamples, _sampleSize);
 			}
 
-			return _samples;	
+			KdTree.Entry[] _kdEnt = new KdTree.Entry[_rawSamples.Count];
+			for (int _it = 0; _it < _rawSamples.Count; ++_it)
+			{
+				_kdEnt[_it] = new KdTree.Entry(_rawSamples[_it].position, _it);
+			}
+
+			KdTree _kdTree = new KdTree();
+			_kdTree.build(_kdEnt);
+
+			KdTree.RQueue _rqueue = new KdTree.RQueue();
+
+			var _processed = new System.Collections.Generic.HashSet<int>();
+
+			float _range = Mathf.Min(_sampleSize.x, _sampleSize.y);
+
+			var _filteredSamples = new List<WaterFlow.Sample>();
+
+			for (int _it = 0; _it < _rawSamples.Count; ++_it)
+			{
+				if (_processed.Contains(_it))
+					continue;
+
+				int[] _neighbours = _kdTree.rquery(_rqueue, _rawSamples[_it].position, _range);
+
+				if (_neighbours.Length == 1)
+				{
+					_filteredSamples.Add(_rawSamples[_it]);
+					_processed.Add(_it);
+				}
+				else
+				{
+					Vector3 _pos = Vector3.zero;
+					Vector3 _dir = Vector3.zero;
+
+					foreach(int _id in _neighbours)
+					{
+						_pos += _rawSamples[_id].position;
+						_dir += _rawSamples[_id].direction;
+						_processed.Add(_id);
+					}
+
+					WaterFlow.Sample _samp = new WaterFlow.Sample();
+					_samp.position = _pos * (1.0f / _neighbours.Length);
+					_samp.direction = _dir.normalized;
+
+					_filteredSamples.Add(_samp);					
+				}
+			}
+
+			return _filteredSamples;	
 		}
 	}
 }

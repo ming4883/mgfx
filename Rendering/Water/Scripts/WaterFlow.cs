@@ -56,7 +56,7 @@ namespace MGFX.Rendering
 
 		public void GatherSamples(List<Sample> _outList, Vector2 _sampleSize)
 		{
-			float _delta = Mathf.Min(_sampleSize.x, _sampleSize.y) * 5.0f;
+			float _delta = Mathf.Min(_sampleSize.x, _sampleSize.y);
 
 			if (points.Length == 0)
 				return;
@@ -79,13 +79,11 @@ namespace MGFX.Rendering
 				var _sample = new Sample();
 				_sample.direction = _dir;
 
-				/// TODO filter duplicated samples
-
 				_sample.position = _beg;
-				//_outList.Add(_sample);
+				_outList.Add(_sample);
 
 				_sample.position = _end;
-				//_outList.Add(_sample);
+				_outList.Add(_sample);
 
 				GatherSamples(_outList, _beg, _end, _dir, _delta * _delta);
 			}

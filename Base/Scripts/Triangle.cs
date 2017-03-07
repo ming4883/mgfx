@@ -12,8 +12,6 @@ namespace MGFX
 
         public static bool GetBarycentricCoords(out Vector3 _ret, Vector3 _a, Vector3 _b, Vector3 _c, Vector3 _p)
         {
-            Plane _plane = new Plane(_a, _b, _c);
-
             Vector3 v0 = _b - _a;
             Vector3 v1 = _c - _a;
             Vector3 v2 = _p - _a;

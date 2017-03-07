@@ -78,29 +78,20 @@ namespace MGFX.Rendering
 				int _th = Mathf.NextPowerOfTwo((int)_inst.resolution.y);
 
 				Vector2 _delta = new Vector2(_inst.size.x / _tw, _inst.size.y / _th);
+				List<WaterFlow.Sample> _samples = _inst.GatherSamples(_delta * _inst.minimumDistance);
 
-				List<WaterFlow.Sample> _samples = new List<WaterFlow.Sample>();
-
-				foreach (var _flow in _inst.flows)
+				if (_samples.Count > 0)
 				{
-					if (null == _flow || !_flow)
-						continue;
-					
-					_flow.GatherSamples(_samples, _delta);
-				}
+					Handles.color = m_SampleColor;
 
-				if (_samples.Count == 0)
-					return;
+					for(int _it = 0; _it < _samples.Count; ++_it)
+					{
+						var _samp = _samples[_it];
+						float _scale = HandleUtility.GetHandleSize(_samp.position) * 0.0625f;
 
-				Handles.color = m_SampleColor;
-
-				for(int _it = 0; _it < _samples.Count; ++_it)
-				{
-					var _samp = _samples[_it];
-					float _scale = HandleUtility.GetHandleSize(_samp.position) * 0.0625f;
-
-					if (_samp.direction.sqrMagnitude > 0)
-						Handles.ConeCap(0, _samp.position, Quaternion.FromToRotation(Vector3.forward, _samp.direction), _scale);
+						if (_samp.direction.sqrMagnitude > 0)
+							Handles.ConeCap(0, _samp.position, Quaternion.FromToRotation(Vector3.forward, _samp.direction), _scale);
+					}
 				}
 			} // if (m_ShowSamples)
 
@@ -113,7 +104,7 @@ namespace MGFX.Rendering
 
 			Vector2 _delta = new Vector2(_inst.size.x / _tw, _inst.size.y / _th);
 
-			List<WaterFlow.Sample> _samples = _inst.GatherSamples(_delta);
+			List<WaterFlow.Sample> _samples = _inst.GatherSamples(_delta * _inst.minimumDistance);
 
 			if (_samples.Count == 0)
 				return;
