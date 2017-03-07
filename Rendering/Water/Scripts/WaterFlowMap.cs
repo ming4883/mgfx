@@ -66,7 +66,7 @@ namespace MGFX.Rendering
 			Gizmos.DrawLine(new Vector3( _halfSize.x, 0,-_halfSize.y), new Vector3( _halfSize.x, 0, _halfSize.y));
 		}
 
-		public List<WaterFlow.Sample> GatherSamples()
+		public List<WaterFlow.Sample> GatherSamples(Vector2 _sampleSize)
 		{
 			List<WaterFlow.Sample> _samples = new List<WaterFlow.Sample>();
 
@@ -75,7 +75,7 @@ namespace MGFX.Rendering
 				if (null == _flow || !_flow)
 					continue;
 				
-				_flow.GatherSamples(_samples);
+				_flow.GatherSamples(_samples, _sampleSize);
 			}
 
 			return _samples;	

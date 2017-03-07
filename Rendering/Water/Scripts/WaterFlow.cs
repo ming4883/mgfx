@@ -13,9 +13,6 @@ namespace MGFX.Rendering
 			public Vector3 direction;
 		}
 
-		[Range(0, 100)]
-		public float delta = 0.125f;
-
 		public Vector3[] points = new Vector3[] {
 			new Vector3(0, 0, 0),
 			new Vector3(0, 0, 1),
@@ -57,8 +54,10 @@ namespace MGFX.Rendering
 		{
 		}
 
-		public void GatherSamples(List<Sample> _outList)
+		public void GatherSamples(List<Sample> _outList, Vector2 _sampleSize)
 		{
+			float _delta = Mathf.Min(_sampleSize.x, _sampleSize.y) * 5.0f;
+
 			if (points.Length == 0)
 				return;
 
@@ -76,15 +75,36 @@ namespace MGFX.Rendering
 				_beg = transform.TransformPoint(_beg);
 				_end = transform.TransformPoint(_end);
 
-				var _dir = (_end - _beg);
+				var _dir = (_end - _beg).normalized;
 				var _sample = new Sample();
-				_sample.direction = _dir.normalized;
+				_sample.direction = _dir;
 
-				_sample.position = _beg + _sample.direction * delta;
+				/// TODO filter duplicated samples
+
+				_sample.position = _beg;
+				//_outList.Add(_sample);
+
+				_sample.position = _end;
+				//_outList.Add(_sample);
+
+				GatherSamples(_outList, _beg, _end, _dir, _delta * _delta);
+			}
+		}
+
+		private void GatherSamples(List<Sample> _outList, Vector3 _beg, Vector3 _end, Vector3 _dir, float _maxSqrDist)
+		{
+			Vector3 _v = _end - _beg;
+			Vector3 _mid = _beg + _v * 0.5f;
+
+			if (_v.sqrMagnitude > _maxSqrDist)
+			{				
+				var _sample = new Sample();
+				_sample.direction = _dir;
+				_sample.position = _mid;
 				_outList.Add(_sample);
 
-				_sample.position = _end - _sample.direction * delta;
-				_outList.Add(_sample);
+				GatherSamples(_outList, _beg, _mid, _dir, _maxSqrDist);
+				GatherSamples(_outList, _mid, _end, _dir, _maxSqrDist);
 			}
 		}
 	}

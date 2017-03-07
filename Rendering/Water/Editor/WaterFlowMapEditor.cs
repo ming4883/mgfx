@@ -11,7 +11,7 @@ namespace MGFX.Rendering
 		private GUIContent kShowSampleText = new GUIContent("Show Samples");
 		private GUIContent kBakeText = new GUIContent("Bake");
 		private static bool m_ShowSamples = false;
-		private static Color m_CachedColor = new Color(0, 0, 1, 0.5f);
+		private static Color m_CachedColor = new Color(1.0f, 0.5f, 0.5f, 0.5f);
 		private static Color m_SampleColor = new Color(1, 1, 1, 0.5f);
 		private static Color m_OffsetUColor = new Color(1, 0, 0, 0.5f);
 		private static Color m_OffsetVColor = new Color(0, 1, 0, 0.5f);
@@ -74,6 +74,11 @@ namespace MGFX.Rendering
 
 			if (m_ShowSamples)
 			{
+				int _tw = Mathf.NextPowerOfTwo((int)_inst.resolution.x);
+				int _th = Mathf.NextPowerOfTwo((int)_inst.resolution.y);
+
+				Vector2 _delta = new Vector2(_inst.size.x / _tw, _inst.size.y / _th);
+
 				List<WaterFlow.Sample> _samples = new List<WaterFlow.Sample>();
 
 				foreach (var _flow in _inst.flows)
@@ -81,7 +86,7 @@ namespace MGFX.Rendering
 					if (null == _flow || !_flow)
 						continue;
 					
-					_flow.GatherSamples(_samples);
+					_flow.GatherSamples(_samples, _delta);
 				}
 
 				if (_samples.Count == 0)
@@ -103,7 +108,12 @@ namespace MGFX.Rendering
 
 		private void Bake(WaterFlowMap _inst)
 		{
-			List<WaterFlow.Sample> _samples = _inst.GatherSamples();
+			int _tw = Mathf.NextPowerOfTwo((int)_inst.resolution.x);
+			int _th = Mathf.NextPowerOfTwo((int)_inst.resolution.y);
+
+			Vector2 _delta = new Vector2(_inst.size.x / _tw, _inst.size.y / _th);
+
+			List<WaterFlow.Sample> _samples = _inst.GatherSamples(_delta);
 
 			if (_samples.Count == 0)
 				return;
@@ -119,14 +129,11 @@ namespace MGFX.Rendering
 
 			var _kqueue = new KdTree.KQueue(3);
 
-			int _tw = Mathf.NextPowerOfTwo((int)_inst.resolution.x);
-			int _th = Mathf.NextPowerOfTwo((int)_inst.resolution.y);
 			Texture2D _tex = new Texture2D(_tw, _th, TextureFormat.ARGB32, false);
 
-			Vector2 _offset = _inst.size * -0.5f;
-			Vector2 _delta = new Vector2(_inst.size.x / _tw, _inst.size.y / _th);
-			_offset += _delta * 0.5f;
 			var _transform = _inst.transform;
+			
+			Vector2 _offset = _inst.size * -0.5f +  _delta * 0.5f;
 
 			_inst.cached = new WaterFlow.Sample[_tw * _th];
 			int _c = 0;
@@ -148,16 +155,28 @@ namespace MGFX.Rendering
 					Color _clr = new Color(0.5f, 0.5f, 0.5f, 0.0f);
 
 					int[] _knn = _kdTree.knearest(_kqueue, _worldPos, 3);
-					if (_knn.Length > 1)
+					//if (_knn.Length == 1)
 					{
-						var _samp = _samples[_knn[0]];
-						_clr.r = -_samp.direction.x * 0.5f + 0.5f;
-						_clr.g = -_samp.direction.z * 0.5f + 0.5f;
-						_clr.b = 0.0f;// _samp.direction.y * 0.5f + 0.5f;
+						var _sampA = _samples[_knn[0]];
+						var _sampB = _samples[_knn[1]];
+						var _sampC = _samples[_knn[2]];
+						Vector3 _weights;
+						Vector3 _dir = _sampA.direction;
+
+						if (Triangle.GetBarycentricCoords(out _weights, _sampA.position, _sampB.position, _sampC.position, _worldPos))
+						{
+							_dir = (_sampA.direction * _weights.x) + (_sampB.direction * _weights.y) + (_sampC.direction * _weights.z);
+							_dir = _dir.normalized;
+						}
+
+						_clr.r = -_dir.x * 0.5f + 0.5f;
+						_clr.g = -_dir.z * 0.5f + 0.5f;
+						_clr.b = 0.0f;// -_dir.y * 0.5f + 0.5f;
 						
 						_clr.a = 1.0f;
 
-						_inst.cached[_c].direction = _samp.direction;
+						_inst.cached[_c].direction = _dir;
+						
 					}
 #if false
 					// debug uv mapping
