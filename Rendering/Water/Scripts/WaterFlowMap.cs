@@ -15,6 +15,13 @@ namespace MGFX.Rendering
 
 		public Vector2 size = new Vector2(10, 10);
 		public Vector2 resolution = new Vector2(512, 512);
+
+		[RangeAttribute(0, 32)]
+		public int blurSize = 2;
+
+		[RangeAttribute(0, 16)]
+		public int blurIterations = 2;
+
 		public string Filename = "FlowMap.png";
 
 		[HideInInspector]

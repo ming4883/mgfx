@@ -8,9 +8,13 @@ namespace MGFX.Rendering
 	public class WaterFlowMapApply : MonoBehaviour
 	{
 		public WaterFlowMap m_FlowMap;
-		public float m_Cycle = 32.0f;
-		
+
+		public float m_Speed = 2.0f;
+		public float m_Cycle = 64.0f;
+		public float m_Scale = 0.1f;
+
 		private MeshRenderer m_MeshRend;
+		//public Vector4 m_Params;
 		
 		public void OnEnable()
 		{
@@ -48,13 +52,14 @@ namespace MGFX.Rendering
 			var _mtx = m_FlowMap.GetTextureMatrix();
 			var _prm = new Vector4();
 			
-
-			float _halfCycle = m_Cycle * 0.5f;
-			float _rcpCycle = 1.0f / m_Cycle;
-			_prm.x = Frac((Time.time + 0.0f) * _rcpCycle) * m_Cycle;
-			_prm.y = Frac((Time.time + _halfCycle) * _rcpCycle) * m_Cycle;
-			_prm.z = m_Cycle * 0.5f;
+			float _time = (Time.time * m_Speed) / m_Cycle;
+			//_time = 0;
+			_prm.x = Frac(_time);
+			_prm.y = Frac(_time + 0.5f);
+			_prm.z = m_Scale;
 			_prm.w = 0;
+
+			//m_Params = _prm;
 
 			int _idFlowMtx = Shader.PropertyToID("_FlowMapMatrix");
 			int _idFlowPrm = Shader.PropertyToID("_FlowMapParams");
