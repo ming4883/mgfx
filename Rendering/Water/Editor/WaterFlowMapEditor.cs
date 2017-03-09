@@ -159,7 +159,6 @@ namespace MGFX.Rendering
                         if (Triangle.GetBarycentricCoords(out _weights, _sampA.position, _sampB.position, _sampC.position, _worldPos))
                         {
                             _dir = (_sampA.direction * _weights.x) + (_sampB.direction * _weights.y) + (_sampC.direction * _weights.z);
-                            _dir = _dir.normalized;
                         }
 
                         _clr.r = _dir.x * 0.5f + 0.5f;

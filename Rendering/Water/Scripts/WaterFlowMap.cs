@@ -130,7 +130,7 @@ namespace MGFX.Rendering
 
 					WaterFlow.Sample _samp = new WaterFlow.Sample();
 					_samp.position = _pos * (1.0f / _neighbours.Length);
-					_samp.direction = _dir.normalized;
+					_samp.direction = _dir * (1.0f / _neighbours.Length);
 
 					_filteredSamples.Add(_samp);					
 				}

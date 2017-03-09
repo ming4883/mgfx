@@ -14,15 +14,18 @@ namespace MGFX.Rendering
 		public float m_Scale = 0.1f;
 
 		private MeshRenderer m_MeshRend;
+		private float m_Time;
 		//public Vector4 m_Params;
 		
 		public void OnEnable()
 		{
 			m_MeshRend = GetComponent<MeshRenderer>();
+			m_Time = 0;
 		}
 
 		public void Start()
 		{
+			m_Time = 0;
 			ApplyWaterFlowToMaterials();
 		}
 
@@ -33,6 +36,8 @@ namespace MGFX.Rendering
 		public void Update()
 		{
 			//if (Application.isEditor)
+			if (Application.isPlaying)
+				m_Time += Time.deltaTime;
 			ApplyWaterFlowToMaterials();
 		}
 
@@ -52,7 +57,7 @@ namespace MGFX.Rendering
 			var _mtx = m_FlowMap.GetTextureMatrix();
 			var _prm = new Vector4();
 			
-			float _time = (Time.time * m_Speed) / m_Cycle;
+			float _time = (m_Time * m_Speed) / m_Cycle;
 			//_time = 0;
 			_prm.x = Frac(_time);
 			_prm.y = Frac(_time + 0.5f);

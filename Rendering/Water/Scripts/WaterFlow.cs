@@ -13,6 +13,7 @@ namespace MGFX.Rendering
 			public Vector3 direction;
 		}
 
+		[Range(0, 1)]
 		public float strength = 1;
 
 		public Vector3[] points = new Vector3[] {
@@ -77,7 +78,7 @@ namespace MGFX.Rendering
 				_beg = transform.TransformPoint(_beg);
 				_end = transform.TransformPoint(_end);
 
-				var _dir = (_end - _beg).normalized;
+				var _dir = (_end - _beg).normalized * strength;
 				var _sample = new Sample();
 				_sample.direction = _dir;
 
