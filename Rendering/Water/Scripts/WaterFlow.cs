@@ -13,6 +13,8 @@ namespace MGFX.Rendering
 			public Vector3 direction;
 		}
 
+		public float strength = 1;
+
 		public Vector3[] points = new Vector3[] {
 			new Vector3(0, 0, 0),
 			new Vector3(0, 0, 1),
