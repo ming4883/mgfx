@@ -82,17 +82,31 @@ namespace MGFX.Rendering
 			return _cnt;
 		}
 
+
+		private Dictionary<string, bool> m_GroupToggle = new Dictionary<string, bool>();
+
 		protected bool BeginGroup(string _name)
 		{
-			EditorGUILayout.HelpBox(_name, MessageType.None);
-			EditorGUI.indentLevel++;
-			return true;
+			bool _toggled;
+			if (!m_GroupToggle.TryGetValue(_name, out _toggled))
+				_toggled = true;
+
+			_toggled = EditorGUILayout.Foldout(_toggled, _name, true);
+
+			if (_toggled)
+			{
+				EditorGUI.indentLevel++;
+			}
+			//EditorGUILayout.HelpBox(_name, MessageType.None);
+			m_GroupToggle[_name] = _toggled;
+
+			return _toggled;
 		}
 
 		protected void EndGroup()
 		{
 			EditorGUI.indentLevel--;
-			EditorGUILayout.Space();
+			//EditorGUILayout.Space();
 		}
 	}
 }

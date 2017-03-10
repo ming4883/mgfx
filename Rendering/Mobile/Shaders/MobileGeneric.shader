@@ -382,13 +382,13 @@ void applyLightingFwdBase(inout ShadingContext ctx)
 
 			#if defined(LIGHTMAP_ON)
 			{
-				half bakedAtten = UnitySampleLightMask(d.lightmapUV.xy, ctx.worldPos);
+				half bakedAtten = UnitySampleBakedOcclusion(d.lightmapUV.xy, ctx.worldPos);
 
 				#if SHADING_QUALITY >= SHADING_QUALITY_HIGH
 				{
 					//float fadeDist = UnityComputeShadowFadeDistance(ctx.worldPos, dot(_WorldSpaceCameraPos - ctx.worldPos, UNITY_MATRIX_V[2].xyz));
 					float fadeDist = UnityComputeShadowFadeDistance(ctx.worldPos, -ctx.eyeDepth);
-					bakedAtten = UnityMixRealtimeShadowAndShadowMask(d.atten, bakedAtten, UnityComputeShadowFade(fadeDist));
+					bakedAtten = UnityMixRealtimeAndBakedShadows(d.atten, bakedAtten, UnityComputeShadowFade(fadeDist));
 				}
 				#endif
 
@@ -854,13 +854,13 @@ void applyLightingFwdBase(inout ShadingContext ctx)
 
 			#if defined(LIGHTMAP_ON)
 			{
-				half bakedAtten = UnitySampleLightMask(d.lightmapUV.xy, ctx.worldPos);
+				half bakedAtten = UnitySampleBakedOcclusion(d.lightmapUV.xy, ctx.worldPos);
 
 				#if SHADING_QUALITY >= SHADING_QUALITY_HIGH
 				{
 					//float fadeDist = UnityComputeShadowFadeDistance(ctx.worldPos, dot(_WorldSpaceCameraPos - ctx.worldPos, UNITY_MATRIX_V[2].xyz));
 					float fadeDist = UnityComputeShadowFadeDistance(ctx.worldPos, -ctx.eyeDepth);
-					bakedAtten = UnityMixRealtimeShadowAndShadowMask(d.atten, bakedAtten, UnityComputeShadowFade(fadeDist));
+					bakedAtten = UnityMixRealtimeAndBakedShadows(d.atten, bakedAtten, UnityComputeShadowFade(fadeDist));
 				}
 				#endif
 
@@ -1467,13 +1467,13 @@ void applyLightingFwdBase(inout ShadingContext ctx)
 
 			#if defined(LIGHTMAP_ON)
 			{
-				half bakedAtten = UnitySampleLightMask(d.lightmapUV.xy, ctx.worldPos);
+				half bakedAtten = UnitySampleBakedOcclusion(d.lightmapUV.xy, ctx.worldPos);
 
 				#if SHADING_QUALITY >= SHADING_QUALITY_HIGH
 				{
 					//float fadeDist = UnityComputeShadowFadeDistance(ctx.worldPos, dot(_WorldSpaceCameraPos - ctx.worldPos, UNITY_MATRIX_V[2].xyz));
 					float fadeDist = UnityComputeShadowFadeDistance(ctx.worldPos, -ctx.eyeDepth);
-					bakedAtten = UnityMixRealtimeShadowAndShadowMask(d.atten, bakedAtten, UnityComputeShadowFade(fadeDist));
+					bakedAtten = UnityMixRealtimeAndBakedShadows(d.atten, bakedAtten, UnityComputeShadowFade(fadeDist));
 				}
 				#endif
 
@@ -1939,13 +1939,13 @@ void applyLightingFwdBase(inout ShadingContext ctx)
 
 			#if defined(LIGHTMAP_ON)
 			{
-				half bakedAtten = UnitySampleLightMask(d.lightmapUV.xy, ctx.worldPos);
+				half bakedAtten = UnitySampleBakedOcclusion(d.lightmapUV.xy, ctx.worldPos);
 
 				#if SHADING_QUALITY >= SHADING_QUALITY_HIGH
 				{
 					//float fadeDist = UnityComputeShadowFadeDistance(ctx.worldPos, dot(_WorldSpaceCameraPos - ctx.worldPos, UNITY_MATRIX_V[2].xyz));
 					float fadeDist = UnityComputeShadowFadeDistance(ctx.worldPos, -ctx.eyeDepth);
-					bakedAtten = UnityMixRealtimeShadowAndShadowMask(d.atten, bakedAtten, UnityComputeShadowFade(fadeDist));
+					bakedAtten = UnityMixRealtimeAndBakedShadows(d.atten, bakedAtten, UnityComputeShadowFade(fadeDist));
 				}
 				#endif
 
@@ -2552,13 +2552,13 @@ void applyLightingFwdBase(inout ShadingContext ctx)
 
 			#if defined(LIGHTMAP_ON)
 			{
-				half bakedAtten = UnitySampleLightMask(d.lightmapUV.xy, ctx.worldPos);
+				half bakedAtten = UnitySampleBakedOcclusion(d.lightmapUV.xy, ctx.worldPos);
 
 				#if SHADING_QUALITY >= SHADING_QUALITY_HIGH
 				{
 					//float fadeDist = UnityComputeShadowFadeDistance(ctx.worldPos, dot(_WorldSpaceCameraPos - ctx.worldPos, UNITY_MATRIX_V[2].xyz));
 					float fadeDist = UnityComputeShadowFadeDistance(ctx.worldPos, -ctx.eyeDepth);
-					bakedAtten = UnityMixRealtimeShadowAndShadowMask(d.atten, bakedAtten, UnityComputeShadowFade(fadeDist));
+					bakedAtten = UnityMixRealtimeAndBakedShadows(d.atten, bakedAtten, UnityComputeShadowFade(fadeDist));
 				}
 				#endif
 
