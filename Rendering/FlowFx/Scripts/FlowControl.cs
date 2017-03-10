@@ -4,10 +4,10 @@ using System.Collections.Generic;
 namespace MGFX.Rendering
 {
 	[ExecuteInEditMode]
-	[AddComponentMenu("MGFX/WaterFlowMapApply")]
-	public class WaterFlowMapApply : MonoBehaviour
+	[AddComponentMenu("MGFX/FlowControl")]
+	public class FlowControl : MonoBehaviour
 	{
-		public WaterFlowMap m_FlowMap;
+		public FlowMap m_FlowMap;
 
 		public float m_Speed = 2.0f;
 		public float m_Cycle = 64.0f;

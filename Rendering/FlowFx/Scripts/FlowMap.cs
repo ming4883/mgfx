@@ -4,10 +4,10 @@ using System.Collections.Generic;
 namespace MGFX.Rendering
 {
 	[ExecuteInEditMode]
-	[AddComponentMenu("MGFX/WaterFlowMap")]
-	public class WaterFlowMap : MonoBehaviour
+	[AddComponentMenu("MGFX/FlowMap")]
+	public class FlowMap : MonoBehaviour
 	{
-		public WaterFlow[] flows = new WaterFlow[] {
+		public Flow[] flows = new Flow[] {
 			null
 		};
 
@@ -26,7 +26,7 @@ namespace MGFX.Rendering
 
 		[HideInInspector]
 		[System.NonSerialized]
-		public WaterFlow.Sample[] cached;
+		public Flow.Sample[] cached;
 
 		public void OnEnable()
 		{
@@ -75,9 +75,9 @@ namespace MGFX.Rendering
 			Gizmos.DrawLine(new Vector3( _halfSize.x, 0,-_halfSize.y), new Vector3( _halfSize.x, 0, _halfSize.y));
 		}
 
-		public List<WaterFlow.Sample> GatherSamples(Vector2 _sampleSize)
+		public List<Flow.Sample> GatherSamples(Vector2 _sampleSize)
 		{
-			var _rawSamples = new List<WaterFlow.Sample>();
+			var _rawSamples = new List<Flow.Sample>();
 
 			foreach (var _flow in flows)
 			{
@@ -102,7 +102,7 @@ namespace MGFX.Rendering
 
 			float _range = Mathf.Min(_sampleSize.x, _sampleSize.y);
 
-			var _filteredSamples = new List<WaterFlow.Sample>();
+			var _filteredSamples = new List<Flow.Sample>();
 
 			for (int _it = 0; _it < _rawSamples.Count; ++_it)
 			{
@@ -128,7 +128,7 @@ namespace MGFX.Rendering
 						_processed.Add(_id);
 					}
 
-					WaterFlow.Sample _samp = new WaterFlow.Sample();
+					Flow.Sample _samp = new Flow.Sample();
 					_samp.position = _pos * (1.0f / _neighbours.Length);
 					_samp.direction = _dir * (1.0f / _neighbours.Length);
 

@@ -4,8 +4,8 @@ using System.Collections.Generic;
 namespace MGFX.Rendering
 {
 	[ExecuteInEditMode]
-	[AddComponentMenu("MGFX/WaterFlow")]
-	public class WaterFlow : MonoBehaviour
+	[AddComponentMenu("MGFX/Flow")]
+	public class Flow : MonoBehaviour
 	{
 		public struct Sample
 		{

@@ -3,8 +3,8 @@ using UnityEngine;
 
 namespace MGFX.Rendering
 {
-	[CustomEditor(typeof(WaterFlow))]
-	public class WaterFlowEditor : Editor
+	[CustomEditor(typeof(Flow))]
+	public class FlowEditor : Editor
 	{
 		private static Color m_ConeColor = new Color(0, 1, 1, 0.5f);
 		private static Color m_LineColor = new Color(0, 1, 1, 1.0f);
@@ -32,14 +32,14 @@ namespace MGFX.Rendering
 
 		public void OnSceneGUIPivot()
 		{
-			var _inst = target as WaterFlow;
+			var _inst = target as Flow;
 			var _tran = _inst.transform;
 
 			float _scale = HandleUtility.GetHandleSize(_tran.position);
 
 			Handles.color = m_PivotColor;
 
-			if (Handles.Button(_tran.position, Quaternion.identity, m_HandleSize * _scale, m_PickSize * _scale, Handles.DotCap))
+			if (Handles.Button(_tran.position, Quaternion.identity, m_HandleSize * _scale, m_PickSize * _scale, Handles.DotHandleCap))
 			{
 				m_SelectedIndex = -1;
 			}
@@ -49,7 +49,7 @@ namespace MGFX.Rendering
 
 		public bool OnSceneGUIPoint(int _index)
 		{
-			var _inst = target as WaterFlow;
+			var _inst = target as Flow;
 			var _tran = _inst.transform;
 			var _pt = _inst.points[_index];
 			_pt = _tran.TransformPoint(_pt);
@@ -64,13 +64,13 @@ namespace MGFX.Rendering
 
 				var _dir = _pt - _pt2;
 
-				Handles.ConeCap(0, _pt2 + _dir * 0.75f, Quaternion.FromToRotation(Vector3.forward, _dir), 0.25f * _scale);
+				Handles.ConeHandleCap(0, _pt2 + _dir * 0.75f, Quaternion.FromToRotation(Vector3.forward, _dir), 0.25f * _scale, EventType.Repaint);
 			}
 
 			Handles.color = m_LineColor;
 
 			_scale = _index == 0 ? 2 * _scale : _scale;
-			if (Handles.Button(_pt, Quaternion.identity, m_HandleSize * _scale, m_PickSize * _scale, Handles.DotCap))
+			if (Handles.Button(_pt, Quaternion.identity, m_HandleSize * _scale, m_PickSize * _scale, Handles.DotHandleCap))
 			{
 				m_SelectedIndex = _index;
 			}
@@ -85,7 +85,7 @@ namespace MGFX.Rendering
 
 				if (EditorGUI.EndChangeCheck())
 				{
-					Undo.RecordObject(target, "WaterFlow Move Point");
+					Undo.RecordObject(target, "Flow Move Point");
 					_inst.points[_index] = _tran.InverseTransformPoint(_pt);
 					return true;
 				}
@@ -95,7 +95,7 @@ namespace MGFX.Rendering
 
 		public void OnSceneGUI()
 		{
-			var _inst = target as WaterFlow;
+			var _inst = target as Flow;
 
 			int _numOfPts = _inst.points.Length;
 

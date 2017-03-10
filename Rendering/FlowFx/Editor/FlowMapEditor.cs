@@ -5,8 +5,8 @@ using System.Collections.Generic;
 
 namespace MGFX.Rendering
 {
-    [CustomEditor(typeof(WaterFlowMap))]
-    public class WaterFlowMapEditor : Editor
+    [CustomEditor(typeof(FlowMap))]
+    public class FlowMapEditor : Editor
     {
         private GUIContent kShowSampleText = new GUIContent("Show Samples");
         private GUIContent kBakeText = new GUIContent("Bake");
@@ -32,13 +32,13 @@ namespace MGFX.Rendering
 
             if (GUILayout.Button(kBakeText))
             {
-                Bake(target as WaterFlowMap);
+                Bake(target as FlowMap);
             }
         }
 
         public void OnSceneGUI()
         {
-            var _inst = target as WaterFlowMap;
+            var _inst = target as FlowMap;
 
             Vector2 _offset = _inst.size * -0.5f;
 
@@ -54,10 +54,10 @@ namespace MGFX.Rendering
                 _dv = _inst.transform.TransformVector(_dv);
 
                 Handles.color = m_OffsetUColor;
-                Handles.ConeCap(0, _pt + _du * _scale, Quaternion.FromToRotation(Vector3.forward, _du), _scale);
+                Handles.ConeHandleCap(0, _pt + _du * _scale, Quaternion.FromToRotation(Vector3.forward, _du), _scale, EventType.Repaint);
 
                 Handles.color = m_OffsetVColor;
-                Handles.ConeCap(0, _pt + _dv * _scale, Quaternion.FromToRotation(Vector3.forward, _dv), _scale);
+                Handles.ConeHandleCap(0, _pt + _dv * _scale, Quaternion.FromToRotation(Vector3.forward, _dv), _scale, EventType.Repaint);
             }
 
             if (m_ShowSamples)
@@ -66,7 +66,7 @@ namespace MGFX.Rendering
                 int _th = Mathf.NextPowerOfTwo((int)_inst.resolution.y);
 
                 Vector2 _delta = new Vector2(_inst.size.x / _tw, _inst.size.y / _th);
-                List<WaterFlow.Sample> _samples = _inst.GatherSamples(_delta * _inst.minimumDistance);
+                List<Flow.Sample> _samples = _inst.GatherSamples(_delta * _inst.minimumDistance);
 
                 if (_samples.Count > 0)
                 {
@@ -78,7 +78,7 @@ namespace MGFX.Rendering
                         float _scale = HandleUtility.GetHandleSize(_samp.position) * 0.0625f;
 
                         if (_samp.direction.sqrMagnitude > 0)
-                            Handles.ConeCap(0, _samp.position, Quaternion.FromToRotation(Vector3.forward, _samp.direction), _scale);
+                            Handles.ConeHandleCap(0, _samp.position, Quaternion.FromToRotation(Vector3.forward, _samp.direction), _scale, EventType.Repaint);
                     }
                 }
 
@@ -90,7 +90,7 @@ namespace MGFX.Rendering
                         float _scale = HandleUtility.GetHandleSize(_samp.position) * 0.0625f;
 
                         if (_samp.direction.sqrMagnitude > 0)
-                            Handles.ConeCap(0, _samp.position, Quaternion.FromToRotation(Vector3.forward, _samp.direction), _scale);
+                            Handles.ConeHandleCap(0, _samp.position, Quaternion.FromToRotation(Vector3.forward, _samp.direction), _scale, EventType.Repaint);
                     }
                 }
 
@@ -98,14 +98,14 @@ namespace MGFX.Rendering
 
         } // OnSceneGUI
 
-        private void Bake(WaterFlowMap _inst)
+        private void Bake(FlowMap _inst)
         {
             int _tw = Mathf.NextPowerOfTwo((int)_inst.resolution.x);
             int _th = Mathf.NextPowerOfTwo((int)_inst.resolution.y);
 
             Vector2 _delta = new Vector2(_inst.size.x / _tw, _inst.size.y / _th);
 
-            List<WaterFlow.Sample> _samples = _inst.GatherSamples(_delta * _inst.minimumDistance);
+            List<Flow.Sample> _samples = _inst.GatherSamples(_delta * _inst.minimumDistance);
 
             if (_samples.Count == 0)
                 return;
@@ -127,7 +127,7 @@ namespace MGFX.Rendering
 
             Vector2 _offset = _inst.size * -0.5f + _delta * 0.5f;
 
-            _inst.cached = new WaterFlow.Sample[_tw * _th];
+            _inst.cached = new Flow.Sample[_tw * _th];
             int _c = 0;
 
             for (int _y = 0; _y < _th; ++_y)
@@ -139,7 +139,7 @@ namespace MGFX.Rendering
 
                     _worldPos = _transform.TransformPoint(_worldPos);
 
-                    _inst.cached[_c] = new WaterFlow.Sample()
+                    _inst.cached[_c] = new Flow.Sample()
                     {
                         position = _worldPos,
                         direction = Vector3.zero,
