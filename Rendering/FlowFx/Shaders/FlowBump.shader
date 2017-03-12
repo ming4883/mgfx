@@ -73,7 +73,7 @@
 			half4 flow = tex2D(_FlowMapTex, uv_FlowMap);
 			flow.xyz = (flow.xyz * 2.0 - 1.0);
 
-			half flowStrength = length(flow.xyz);
+			half flowStrength = length(flow.xy);
 			
 			half flowNoise = noiseFBM2(_NoiseTex, IN.uv_MainTex * _FlowMapParams.z);
 			half2 offsets = (_FlowMapParams.xy + flowNoise * 0.0625);
@@ -81,8 +81,8 @@
 
 			offsets *= flowStrength * _FlowMapParams.z;
 			
-			half2 uv_Offset0 = flow.xz * offsets.x;
-			half2 uv_Offset1 = flow.xz * offsets.y;
+			half2 uv_Offset0 = flow.xy * offsets.x;
+			half2 uv_Offset1 = flow.xy * offsets.y;
 			half2 uv_NormalMap = IN.uv_MainTex;
 
 			half3 normal0 = UnpackNormal(tex2D(_NormalMapTex, uv_NormalMap + uv_Offset0));

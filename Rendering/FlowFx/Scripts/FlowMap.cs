@@ -22,6 +22,8 @@ namespace MGFX.Rendering
 		[RangeAttribute(0, 16)]
 		public int blurIterations = 2;
 
+		public Texture2D AlphaMask = null;
+
 		public string Filename = "FlowMap.png";
 
 		[HideInInspector]

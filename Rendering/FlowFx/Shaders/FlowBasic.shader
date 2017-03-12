@@ -47,13 +47,13 @@
 			half4 flow = tex2D(_FlowMapTex, uv_FlowMap);
 			flow.xyz = (flow.xyz * 2.0 - 1.0);
 
-			half flowStrength = length(flow.xyz);
+			half flowStrength = length(flow.xy);
 			
 			half2 offsets = _FlowMapParams.xy;
 			offsets *= flowStrength * _FlowMapParams.z;
 
 			// Albedo comes from a texture tinted by color
-			fixed4 c = tex2D(_MainTex, IN.uv_MainTex + flow.xz * offsets.x) * _Color;
+			fixed4 c = tex2D(_MainTex, IN.uv_MainTex + flow.xy * offsets.x) * _Color;
 			o.Albedo = c.rgb;
 			
 			// Metallic and smoothness come from slider variables

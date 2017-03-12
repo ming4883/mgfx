@@ -110,6 +110,16 @@ namespace MGFX.Rendering
             if (_samples.Count == 0)
                 return;
 
+            Flow.Sample[,] _outputs = new Flow.Sample[_tw, _th];
+            InterpolateSamples(_inst, _samples, _delta, _outputs);
+
+            Texture2D _tex = EncodeToTexture(_inst, _outputs);
+            
+            SaveTexture(_inst, _tex);
+        } // Bake
+
+        private KdTree CreateKdTree(List<Flow.Sample> _samples)
+        {
             KdTree.Entry[] _kdEnt = new KdTree.Entry[_samples.Count];
             for (int _it = 0; _it < _samples.Count; ++_it)
             {
@@ -119,36 +129,35 @@ namespace MGFX.Rendering
             KdTree _kdTree = new KdTree();
             _kdTree.build(_kdEnt);
 
-            var _kqueue = new KdTree.KQueue(3);
+            return _kdTree;
+        }
 
-            Texture2D _tex = new Texture2D(_tw, _th, TextureFormat.ARGB32, false);
-
+        private void InterpolateSamples(FlowMap _inst, List<Flow.Sample> _samples, Vector2 _delta, Flow.Sample[,] _outputs)
+        {
             var _transform = _inst.transform;
+            var _offset = _inst.size * -0.5f + _delta * 0.5f;
 
-            Vector2 _offset = _inst.size * -0.5f + _delta * 0.5f;
+            int _w = _outputs.GetUpperBound(0) + 1;
+            int _h = _outputs.GetUpperBound(1) + 1;
+            
+            KdTree _kdTree = CreateKdTree(_samples);
+            KdTree.KQueue _kqueue = new KdTree.KQueue(3);
 
-            _inst.cached = new Flow.Sample[_tw * _th];
-            int _c = 0;
-
-            for (int _y = 0; _y < _th; ++_y)
+            for (int _y = 0; _y < _h; ++_y)
             {
-                for (int _x = 0; _x < _tw; ++_x)
+                for (int _x = 0; _x < _w; ++_x)
                 {
                     Vector2 _pos = _offset + Vector2.Scale(_delta, new Vector2(_x, _y));
-                    Vector3 _worldPos = new Vector3(_pos.x, 0, _pos.y);
+                    Vector3 _worldPos = _transform.TransformPoint(new Vector3(_pos.x, 0, _pos.y));
 
-                    _worldPos = _transform.TransformPoint(_worldPos);
-
-                    _inst.cached[_c] = new Flow.Sample()
+                    Flow.Sample _outSamp = new Flow.Sample()
                     {
                         position = _worldPos,
                         direction = Vector3.zero,
                     };
 
-                    Color _clr = new Color(0.5f, 0.5f, 0.5f, 0.0f);
-
                     int[] _knn = _kdTree.knearest(_kqueue, _worldPos, 3);
-                    //if (_knn.Length == 1)
+                    if (_knn.Length == 3)
                     {
                         var _sampA = _samples[_knn[0]];
                         var _sampB = _samples[_knn[1]];
@@ -161,15 +170,36 @@ namespace MGFX.Rendering
                             _dir = (_sampA.direction * _weights.x) + (_sampB.direction * _weights.y) + (_sampC.direction * _weights.z);
                         }
 
-                        _clr.r = _dir.x * 0.5f + 0.5f;
-                        _clr.g = _dir.y * 0.5f + 0.5f;
-                        _clr.b = _dir.z * 0.5f + 0.5f;
-
-                        _clr.a = 1.0f;
-
-                        _inst.cached[_c].direction = _dir;
-
+                        _outSamp.direction = _dir;
                     }
+
+                    _outputs[_x, _y] = _outSamp;
+
+                }
+            }
+        }
+
+        private Texture2D EncodeToTexture(FlowMap _inst, Flow.Sample[,] _outputs)
+        {
+            Texture2D _tex = new Texture2D(_outputs.GetUpperBound(0)+1, _outputs.GetUpperBound(1)+1, TextureFormat.ARGB32, false);
+            _inst.cached = new Flow.Sample[_tex.width * _tex.height];
+
+            int _c = 0;
+
+            for (int _y = 0; _y < _tex.height; ++_y)
+            {
+                for (int _x = 0; _x < _tex.width; ++_x)
+                {
+                    _inst.cached[_c] = _outputs[_x, _y];
+
+                    Color _clr = new Color(0.5f, 0.5f, 0.5f, 0.0f);
+                    Vector3 _dir = _outputs[_x, _y].direction;
+
+                    _clr.r = _dir.x * 0.5f + 0.5f;
+                    _clr.g = _dir.z * 0.5f + 0.5f;
+                    //_clr.b = _dir.y * 0.5f + 0.5f;
+                    _clr.b = 0.5f;
+                    _clr.a = 1.0f;
 #if false
 					// debug uv mapping
 					_clr.r = (float)_x / _tw;
@@ -182,19 +212,23 @@ namespace MGFX.Rendering
                 }
             }
 
-            Texture2D _texBlurred = _tex;
-
             if (_inst.blurSize > 0 && _inst.blurIterations > 0)
             {
-                _texBlurred = new Blur().FastBlur(_tex, _inst.blurSize, _inst.blurIterations);
+                Texture2D _texBlurred = new Blur().FastBlur(_tex, _inst.blurSize, _inst.blurIterations);
                 DestroyImmediate(_tex);
+                _tex = _texBlurred;
             }
+            
+            return _tex;
+        }
 
+        private void SaveTexture(FlowMap _inst, Texture2D _tex)
+        {
             Scene _scene = SceneManager.GetActiveScene();
             string _path = System.IO.Path.GetDirectoryName(_scene.path);
             _path = _path + "/" + _inst.Filename;
 
-            System.IO.File.WriteAllBytes(Application.dataPath + _path.Remove(0, 6), _texBlurred.EncodeToPNG());
+            System.IO.File.WriteAllBytes(Application.dataPath + _path.Remove(0, 6), _tex.EncodeToPNG());
 
             AssetDatabase.ImportAsset(_path);
 
@@ -207,5 +241,6 @@ namespace MGFX.Rendering
             _imp.textureCompression = TextureImporterCompression.Uncompressed;
             _imp.SaveAndReimport();
         }
+
     }
 }
