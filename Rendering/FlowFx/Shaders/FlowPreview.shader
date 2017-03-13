@@ -1,6 +1,7 @@
-﻿Shader "MGFX/FlowDisplay" {
+﻿Shader "MGFX/FlowPreview" {
 	Properties {
-		_FlowMapTex ("FlowMap", 2D) = "white" {}
+		[NoScaleOffset] _MainTex ("Albedo (RGB)", 2D) = "white" {}
+		[NoScaleOffset] _FlowMapTex("FlowMap", 2D) = "white" {}
 	}
 	SubShader {
 		Tags { "RenderType"="Opaque" }
@@ -10,16 +11,20 @@
 		// Physically based Standard lighting model, and enable shadows on all light types
 		#pragma surface surf Standard fullforwardshadows
 
-		// Use shader model 3.0 target, to get nicer looking lighting
-		#pragma target 3.0
+		// Use shader model 2.0 target, to get nicer looking lighting
+		#pragma target 2.0
 
-		sampler2D _FlowMapTex;
+		uniform sampler2D _MainTex;
+		uniform half4 _MainTex_TexelSize;
 
 		struct Input {
+			float2 uv_MainTex;
 			float3 worldPos;
 		};
 
-		half4x4 _FlowMapMatrix;
+		uniform sampler2D _FlowMapTex;
+		uniform half4x4 _FlowMapMatrix;
+		uniform half4 _FlowMapParams;
 
 		// Add instancing support for this shader. You need to check 'Enable Instancing' on materials that use the shader.
 		// See https://docs.unity3d.com/Manual/GPUInstancing.html for more information about instancing.
@@ -31,12 +36,21 @@
 		void surf (Input IN, inout SurfaceOutputStandard o) {
 
 			half2 uv_FlowMap = mul(_FlowMapMatrix, half4(IN.worldPos, 1)).xy;
+			half4 flow = tex2D(_FlowMapTex, uv_FlowMap);
+			flow.xyz = (flow.xyz * 2.0 - 1.0);
+
+			half flowStrength = length(flow.xy);
+			
+			half2 offsets = _FlowMapParams.xy;
+			offsets *= flowStrength * _FlowMapParams.z;
+
 			// Albedo comes from a texture tinted by color
-			fixed4 c = tex2D (_FlowMapTex, uv_FlowMap);
+			fixed4 c = tex2D(_MainTex, (-IN.uv_MainTex) + flow.xy * offsets.x);
 			o.Albedo = c.rgb;
+			
 			// Metallic and smoothness come from slider variables
-			o.Metallic = 0.0f;
-			o.Smoothness = 1.0f;
+			o.Metallic = 0;
+			o.Smoothness = 0;
 			o.Alpha = c.a;
 		}
 		ENDCG
