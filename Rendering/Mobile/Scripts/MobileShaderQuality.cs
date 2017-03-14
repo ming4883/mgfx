@@ -21,5 +21,7 @@ namespace MGFX.Rendering
 		{
 			return Shader.globalMaximumLOD == (int)_quality;
 		}
+		public static int PID_VertexAnimRotateAxis = Shader.PropertyToID("_VertexAnimRotateAxis");
+		public static int PID_VertexAnimRotateAngle = Shader.PropertyToID("_VertexAnimRotateAngle");
 	}
 }
