@@ -10,6 +10,10 @@ Shader "MGFX/Mobile/GenericDS"
 [Toggle(_REFLECTION_PROBES_ON)] _ReflectionProbesOn("Enable Reflection Probes", Int) = 0
 _ReflectionIntensity ("Reflection Intensity", Range(0,8)) = 1.0
 
+[Toggle(_VERTEX_ANIM_ROTATE_ON)] _VertexAnimRotateOn("Enable Vertex Rotation", Int) = 0
+[PerRendererData] _VertexAnimRotateAxis ("Rotate Axis", Vector) = (0.0, 1.0, 0.0, 0.0)
+[PerRendererData] _VertexAnimRotateAngle ("Rotate Angle", Vector) = (1.0, 0.0, 0.0, 0.0)
+
 [NoScaleOffset] _GIAlbedoTex ("GI Albedo Tex", 2D) = "white" {}
 [HDR] _GIAlbedoColor ("GI Albedo Color", Color) = (1.0, 1.0, 1.0, 0.0)
 
@@ -64,6 +68,23 @@ _MatCapIntensity ("MatCapIntensity", Range(0,4)) = 1.0
 #define SHADING_QUALITY_HIGH	2
 
 			
+float4 animMakeQuat(float3 axis, float angle)
+{ 
+  float4 qr;
+  float half_angle = angle * (0.5 * 3.14159 / 180.0);
+  qr.xyz = axis.xyz * sin(half_angle);
+  qr.w = cos(half_angle);
+  return qr;
+}
+
+float3 animRotatePosition(float3 position, float3 axis, float angle)
+{ 
+  float4 q = animMakeQuat(axis, angle);
+  float3 v = position.xyz;
+  return v + 2.0 * cross(q.xyz, cross(q.xyz, v) + q.w * v);
+}
+
+			
 		#pragma target 3.0
 		#define SHADING_QUALITY SHADING_QUALITY_HIGH
 	
@@ -107,8 +128,9 @@ half2 matCapUV(half3 worldNormal, half3 worldViewDir)
 	#define SHADING_QUALITY SHADING_QUALITY_LOW
 #endif
 
+///
 /// override shading feature for quaity
-
+///
 #if _REALTIME_LIGHTING_ON
 	#if SHADING_QUALITY < SHADING_QUALITY_MEDIUM
 		#undef _REALTIME_LIGHTING_ON
@@ -130,7 +152,8 @@ half2 matCapUV(half3 worldNormal, half3 worldViewDir)
 	#endif
 #endif
 
-/// Vertex
+///
+/// Structs
 ///
 struct appdata
 {
@@ -168,7 +191,40 @@ struct v2f
 	float4 pos : SV_POSITION;
 };
 
+/// Uniforms
+uniform float4 _VertexAnimRotateAxis;
+uniform float4 _VertexAnimRotateAngle; // scale, offset
 
+uniform sampler2D _MainTex;
+uniform float4 _MainTex_ST;
+
+uniform float4 _Color;
+
+#if _REFLECTION_PROBES_ON
+uniform float _ReflectionIntensity;
+#endif
+
+#if _GI_IRRADIANCE_ON
+uniform float _GIIrradianceIntensity;
+#endif
+
+#if _NORMAL_MAP_ON
+uniform sampler2D _NormalMapTex;
+#endif
+
+#if _DIFFUSE_LUT_ON
+uniform sampler2D _DiffuseLUTTex;
+#endif
+
+#if _MATCAP_ON
+uniform sampler2D _MatCapTex;
+uniform float _MatCapIntensity;
+#endif
+
+
+///
+/// Vertex
+///
 inline half4 VertexGIForward(appdata v, float3 posWorld, half3 normalWorld)
 {
 	half4 ambientOrLightmapUV = 0;
@@ -197,11 +253,22 @@ inline half4 VertexGIForward(appdata v, float3 posWorld, half3 normalWorld)
 v2f vert (appdata v)
 {
 	v2f o = (v2f)0;
-	o.pos = UnityObjectToClipPos(v.vertex);
+
+	float4 vertexPos = v.vertex;
+
+	#if _VERTEX_ANIM_ROTATE_ON
+	{
+		float3 rotAxis = normalize(_VertexAnimRotateAxis.xyz);
+		float rotAngle = _VertexAnimRotateAngle.x * _Time.y + _VertexAnimRotateAngle.y;
+		vertexPos.xyz = animRotatePosition(vertexPos.xyz, rotAxis, rotAngle);
+	}
+	#endif
+
+	o.pos = UnityObjectToClipPos(vertexPos);
 	o.vcolor = v.vcolor;
 	o.uv = float4(v.texcoord0.xy, v.texcoord1.xy);
 
-	o.worldPosAndZ.xyz = mul(unity_ObjectToWorld, v.vertex).xyz;
+	o.worldPosAndZ.xyz = mul(unity_ObjectToWorld, vertexPos).xyz;
 
 	float3 worldNormal = UnityObjectToWorldNormal(v.normal);
 
@@ -238,32 +305,6 @@ v2f vert (appdata v)
 ///
 /// Fragment
 ///
-uniform sampler2D _MainTex;
-uniform float4 _MainTex_ST;
-
-uniform float4 _Color;
-
-#if _REFLECTION_PROBES_ON
-uniform float _ReflectionIntensity;
-#endif
-
-#if _GI_IRRADIANCE_ON
-uniform float _GIIrradianceIntensity;
-#endif
-
-#if _NORMAL_MAP_ON
-uniform sampler2D _NormalMapTex;
-#endif
-
-#if _DIFFUSE_LUT_ON
-uniform sampler2D _DiffuseLUTTex;
-#endif
-
-#if _MATCAP_ON
-uniform sampler2D _MatCapTex;
-uniform float _MatCapIntensity;
-#endif
-
 struct ShadingContext
 {
 	half3 worldNormal;
@@ -533,6 +574,7 @@ half4 frag_add(v2f i, fixed vface : VFACE) : SV_Target
 
 			#pragma multi_compile_fwdbase
 
+			#pragma shader_feature _VERTEX_ANIM_ROTATE_ON
 			#pragma shader_feature _REALTIME_LIGHTING_ON
 			#pragma shader_feature _REFLECTION_PROBES_ON
 			#pragma shader_feature _GI_IRRADIANCE_ON
@@ -568,6 +610,23 @@ half4 frag_add(v2f i, fixed vface : VFACE) : SV_Target
 #define SHADING_QUALITY_HIGH	2
 
 			
+float4 animMakeQuat(float3 axis, float angle)
+{ 
+  float4 qr;
+  float half_angle = angle * (0.5 * 3.14159 / 180.0);
+  qr.xyz = axis.xyz * sin(half_angle);
+  qr.w = cos(half_angle);
+  return qr;
+}
+
+float3 animRotatePosition(float3 position, float3 axis, float angle)
+{ 
+  float4 q = animMakeQuat(axis, angle);
+  float3 v = position.xyz;
+  return v + 2.0 * cross(q.xyz, cross(q.xyz, v) + q.w * v);
+}
+
+			
 		#pragma target 3.0
 		#define SHADING_QUALITY SHADING_QUALITY_HIGH
 	
@@ -579,8 +638,9 @@ half4 frag_add(v2f i, fixed vface : VFACE) : SV_Target
 	#define SHADING_QUALITY SHADING_QUALITY_LOW
 #endif
 
+///
 /// override shading feature for quaity
-
+///
 #if _REALTIME_LIGHTING_ON
 	#if SHADING_QUALITY < SHADING_QUALITY_MEDIUM
 		#undef _REALTIME_LIGHTING_ON
@@ -602,7 +662,8 @@ half4 frag_add(v2f i, fixed vface : VFACE) : SV_Target
 	#endif
 #endif
 
-/// Vertex
+///
+/// Structs
 ///
 struct appdata
 {
@@ -640,7 +701,40 @@ struct v2f
 	float4 pos : SV_POSITION;
 };
 
+/// Uniforms
+uniform float4 _VertexAnimRotateAxis;
+uniform float4 _VertexAnimRotateAngle; // scale, offset
 
+uniform sampler2D _MainTex;
+uniform float4 _MainTex_ST;
+
+uniform float4 _Color;
+
+#if _REFLECTION_PROBES_ON
+uniform float _ReflectionIntensity;
+#endif
+
+#if _GI_IRRADIANCE_ON
+uniform float _GIIrradianceIntensity;
+#endif
+
+#if _NORMAL_MAP_ON
+uniform sampler2D _NormalMapTex;
+#endif
+
+#if _DIFFUSE_LUT_ON
+uniform sampler2D _DiffuseLUTTex;
+#endif
+
+#if _MATCAP_ON
+uniform sampler2D _MatCapTex;
+uniform float _MatCapIntensity;
+#endif
+
+
+///
+/// Vertex
+///
 inline half4 VertexGIForward(appdata v, float3 posWorld, half3 normalWorld)
 {
 	half4 ambientOrLightmapUV = 0;
@@ -669,11 +763,22 @@ inline half4 VertexGIForward(appdata v, float3 posWorld, half3 normalWorld)
 v2f vert (appdata v)
 {
 	v2f o = (v2f)0;
-	o.pos = UnityObjectToClipPos(v.vertex);
+
+	float4 vertexPos = v.vertex;
+
+	#if _VERTEX_ANIM_ROTATE_ON
+	{
+		float3 rotAxis = normalize(_VertexAnimRotateAxis.xyz);
+		float rotAngle = _VertexAnimRotateAngle.x * _Time.y + _VertexAnimRotateAngle.y;
+		vertexPos.xyz = animRotatePosition(vertexPos.xyz, rotAxis, rotAngle);
+	}
+	#endif
+
+	o.pos = UnityObjectToClipPos(vertexPos);
 	o.vcolor = v.vcolor;
 	o.uv = float4(v.texcoord0.xy, v.texcoord1.xy);
 
-	o.worldPosAndZ.xyz = mul(unity_ObjectToWorld, v.vertex).xyz;
+	o.worldPosAndZ.xyz = mul(unity_ObjectToWorld, vertexPos).xyz;
 
 	float3 worldNormal = UnityObjectToWorldNormal(v.normal);
 
@@ -710,32 +815,6 @@ v2f vert (appdata v)
 ///
 /// Fragment
 ///
-uniform sampler2D _MainTex;
-uniform float4 _MainTex_ST;
-
-uniform float4 _Color;
-
-#if _REFLECTION_PROBES_ON
-uniform float _ReflectionIntensity;
-#endif
-
-#if _GI_IRRADIANCE_ON
-uniform float _GIIrradianceIntensity;
-#endif
-
-#if _NORMAL_MAP_ON
-uniform sampler2D _NormalMapTex;
-#endif
-
-#if _DIFFUSE_LUT_ON
-uniform sampler2D _DiffuseLUTTex;
-#endif
-
-#if _MATCAP_ON
-uniform sampler2D _MatCapTex;
-uniform float _MatCapIntensity;
-#endif
-
 struct ShadingContext
 {
 	half3 worldNormal;
@@ -1005,6 +1084,7 @@ half4 frag_add(v2f i, fixed vface : VFACE) : SV_Target
 			
 			#pragma multi_compile_fwdadd_fullshadows
 
+			#pragma shader_feature _VERTEX_ANIM_ROTATE_ON
 			#pragma shader_feature _REALTIME_LIGHTING_ON
 			#pragma shader_feature _NORMAL_MAP_ON
 			#pragma shader_feature _DIFFUSE_LUT_ON
@@ -1149,6 +1229,23 @@ float4 frag_shadowcaster( v2f_shadowcaster i ) : SV_Target
 #define SHADING_QUALITY_HIGH	2
 
 			
+float4 animMakeQuat(float3 axis, float angle)
+{ 
+  float4 qr;
+  float half_angle = angle * (0.5 * 3.14159 / 180.0);
+  qr.xyz = axis.xyz * sin(half_angle);
+  qr.w = cos(half_angle);
+  return qr;
+}
+
+float3 animRotatePosition(float3 position, float3 axis, float angle)
+{ 
+  float4 q = animMakeQuat(axis, angle);
+  float3 v = position.xyz;
+  return v + 2.0 * cross(q.xyz, cross(q.xyz, v) + q.w * v);
+}
+
+			
 		#pragma target 2.0
 		#define SHADING_QUALITY SHADING_QUALITY_MEDIUM
 	
@@ -1192,8 +1289,9 @@ half2 matCapUV(half3 worldNormal, half3 worldViewDir)
 	#define SHADING_QUALITY SHADING_QUALITY_LOW
 #endif
 
+///
 /// override shading feature for quaity
-
+///
 #if _REALTIME_LIGHTING_ON
 	#if SHADING_QUALITY < SHADING_QUALITY_MEDIUM
 		#undef _REALTIME_LIGHTING_ON
@@ -1215,7 +1313,8 @@ half2 matCapUV(half3 worldNormal, half3 worldViewDir)
 	#endif
 #endif
 
-/// Vertex
+///
+/// Structs
 ///
 struct appdata
 {
@@ -1253,7 +1352,40 @@ struct v2f
 	float4 pos : SV_POSITION;
 };
 
+/// Uniforms
+uniform float4 _VertexAnimRotateAxis;
+uniform float4 _VertexAnimRotateAngle; // scale, offset
 
+uniform sampler2D _MainTex;
+uniform float4 _MainTex_ST;
+
+uniform float4 _Color;
+
+#if _REFLECTION_PROBES_ON
+uniform float _ReflectionIntensity;
+#endif
+
+#if _GI_IRRADIANCE_ON
+uniform float _GIIrradianceIntensity;
+#endif
+
+#if _NORMAL_MAP_ON
+uniform sampler2D _NormalMapTex;
+#endif
+
+#if _DIFFUSE_LUT_ON
+uniform sampler2D _DiffuseLUTTex;
+#endif
+
+#if _MATCAP_ON
+uniform sampler2D _MatCapTex;
+uniform float _MatCapIntensity;
+#endif
+
+
+///
+/// Vertex
+///
 inline half4 VertexGIForward(appdata v, float3 posWorld, half3 normalWorld)
 {
 	half4 ambientOrLightmapUV = 0;
@@ -1282,11 +1414,22 @@ inline half4 VertexGIForward(appdata v, float3 posWorld, half3 normalWorld)
 v2f vert (appdata v)
 {
 	v2f o = (v2f)0;
-	o.pos = UnityObjectToClipPos(v.vertex);
+
+	float4 vertexPos = v.vertex;
+
+	#if _VERTEX_ANIM_ROTATE_ON
+	{
+		float3 rotAxis = normalize(_VertexAnimRotateAxis.xyz);
+		float rotAngle = _VertexAnimRotateAngle.x * _Time.y + _VertexAnimRotateAngle.y;
+		vertexPos.xyz = animRotatePosition(vertexPos.xyz, rotAxis, rotAngle);
+	}
+	#endif
+
+	o.pos = UnityObjectToClipPos(vertexPos);
 	o.vcolor = v.vcolor;
 	o.uv = float4(v.texcoord0.xy, v.texcoord1.xy);
 
-	o.worldPosAndZ.xyz = mul(unity_ObjectToWorld, v.vertex).xyz;
+	o.worldPosAndZ.xyz = mul(unity_ObjectToWorld, vertexPos).xyz;
 
 	float3 worldNormal = UnityObjectToWorldNormal(v.normal);
 
@@ -1323,32 +1466,6 @@ v2f vert (appdata v)
 ///
 /// Fragment
 ///
-uniform sampler2D _MainTex;
-uniform float4 _MainTex_ST;
-
-uniform float4 _Color;
-
-#if _REFLECTION_PROBES_ON
-uniform float _ReflectionIntensity;
-#endif
-
-#if _GI_IRRADIANCE_ON
-uniform float _GIIrradianceIntensity;
-#endif
-
-#if _NORMAL_MAP_ON
-uniform sampler2D _NormalMapTex;
-#endif
-
-#if _DIFFUSE_LUT_ON
-uniform sampler2D _DiffuseLUTTex;
-#endif
-
-#if _MATCAP_ON
-uniform sampler2D _MatCapTex;
-uniform float _MatCapIntensity;
-#endif
-
 struct ShadingContext
 {
 	half3 worldNormal;
@@ -1618,6 +1735,7 @@ half4 frag_add(v2f i, fixed vface : VFACE) : SV_Target
 
 			#pragma multi_compile_fwdbase
 
+			#pragma shader_feature _VERTEX_ANIM_ROTATE_ON
 			#pragma shader_feature _REALTIME_LIGHTING_ON
 			#pragma shader_feature _REFLECTION_PROBES_ON
 			#pragma shader_feature _GI_IRRADIANCE_ON
@@ -1653,6 +1771,23 @@ half4 frag_add(v2f i, fixed vface : VFACE) : SV_Target
 #define SHADING_QUALITY_HIGH	2
 
 			
+float4 animMakeQuat(float3 axis, float angle)
+{ 
+  float4 qr;
+  float half_angle = angle * (0.5 * 3.14159 / 180.0);
+  qr.xyz = axis.xyz * sin(half_angle);
+  qr.w = cos(half_angle);
+  return qr;
+}
+
+float3 animRotatePosition(float3 position, float3 axis, float angle)
+{ 
+  float4 q = animMakeQuat(axis, angle);
+  float3 v = position.xyz;
+  return v + 2.0 * cross(q.xyz, cross(q.xyz, v) + q.w * v);
+}
+
+			
 		#pragma target 2.0
 		#define SHADING_QUALITY SHADING_QUALITY_MEDIUM
 	
@@ -1664,8 +1799,9 @@ half4 frag_add(v2f i, fixed vface : VFACE) : SV_Target
 	#define SHADING_QUALITY SHADING_QUALITY_LOW
 #endif
 
+///
 /// override shading feature for quaity
-
+///
 #if _REALTIME_LIGHTING_ON
 	#if SHADING_QUALITY < SHADING_QUALITY_MEDIUM
 		#undef _REALTIME_LIGHTING_ON
@@ -1687,7 +1823,8 @@ half4 frag_add(v2f i, fixed vface : VFACE) : SV_Target
 	#endif
 #endif
 
-/// Vertex
+///
+/// Structs
 ///
 struct appdata
 {
@@ -1725,7 +1862,40 @@ struct v2f
 	float4 pos : SV_POSITION;
 };
 
+/// Uniforms
+uniform float4 _VertexAnimRotateAxis;
+uniform float4 _VertexAnimRotateAngle; // scale, offset
 
+uniform sampler2D _MainTex;
+uniform float4 _MainTex_ST;
+
+uniform float4 _Color;
+
+#if _REFLECTION_PROBES_ON
+uniform float _ReflectionIntensity;
+#endif
+
+#if _GI_IRRADIANCE_ON
+uniform float _GIIrradianceIntensity;
+#endif
+
+#if _NORMAL_MAP_ON
+uniform sampler2D _NormalMapTex;
+#endif
+
+#if _DIFFUSE_LUT_ON
+uniform sampler2D _DiffuseLUTTex;
+#endif
+
+#if _MATCAP_ON
+uniform sampler2D _MatCapTex;
+uniform float _MatCapIntensity;
+#endif
+
+
+///
+/// Vertex
+///
 inline half4 VertexGIForward(appdata v, float3 posWorld, half3 normalWorld)
 {
 	half4 ambientOrLightmapUV = 0;
@@ -1754,11 +1924,22 @@ inline half4 VertexGIForward(appdata v, float3 posWorld, half3 normalWorld)
 v2f vert (appdata v)
 {
 	v2f o = (v2f)0;
-	o.pos = UnityObjectToClipPos(v.vertex);
+
+	float4 vertexPos = v.vertex;
+
+	#if _VERTEX_ANIM_ROTATE_ON
+	{
+		float3 rotAxis = normalize(_VertexAnimRotateAxis.xyz);
+		float rotAngle = _VertexAnimRotateAngle.x * _Time.y + _VertexAnimRotateAngle.y;
+		vertexPos.xyz = animRotatePosition(vertexPos.xyz, rotAxis, rotAngle);
+	}
+	#endif
+
+	o.pos = UnityObjectToClipPos(vertexPos);
 	o.vcolor = v.vcolor;
 	o.uv = float4(v.texcoord0.xy, v.texcoord1.xy);
 
-	o.worldPosAndZ.xyz = mul(unity_ObjectToWorld, v.vertex).xyz;
+	o.worldPosAndZ.xyz = mul(unity_ObjectToWorld, vertexPos).xyz;
 
 	float3 worldNormal = UnityObjectToWorldNormal(v.normal);
 
@@ -1795,32 +1976,6 @@ v2f vert (appdata v)
 ///
 /// Fragment
 ///
-uniform sampler2D _MainTex;
-uniform float4 _MainTex_ST;
-
-uniform float4 _Color;
-
-#if _REFLECTION_PROBES_ON
-uniform float _ReflectionIntensity;
-#endif
-
-#if _GI_IRRADIANCE_ON
-uniform float _GIIrradianceIntensity;
-#endif
-
-#if _NORMAL_MAP_ON
-uniform sampler2D _NormalMapTex;
-#endif
-
-#if _DIFFUSE_LUT_ON
-uniform sampler2D _DiffuseLUTTex;
-#endif
-
-#if _MATCAP_ON
-uniform sampler2D _MatCapTex;
-uniform float _MatCapIntensity;
-#endif
-
 struct ShadingContext
 {
 	half3 worldNormal;
@@ -2090,6 +2245,7 @@ half4 frag_add(v2f i, fixed vface : VFACE) : SV_Target
 			
 			#pragma multi_compile_fwdadd_fullshadows
 
+			#pragma shader_feature _VERTEX_ANIM_ROTATE_ON
 			#pragma shader_feature _REALTIME_LIGHTING_ON
 			#pragma shader_feature _NORMAL_MAP_ON
 			#pragma shader_feature _DIFFUSE_LUT_ON
@@ -2234,6 +2390,23 @@ float4 frag_shadowcaster( v2f_shadowcaster i ) : SV_Target
 #define SHADING_QUALITY_HIGH	2
 
 			
+float4 animMakeQuat(float3 axis, float angle)
+{ 
+  float4 qr;
+  float half_angle = angle * (0.5 * 3.14159 / 180.0);
+  qr.xyz = axis.xyz * sin(half_angle);
+  qr.w = cos(half_angle);
+  return qr;
+}
+
+float3 animRotatePosition(float3 position, float3 axis, float angle)
+{ 
+  float4 q = animMakeQuat(axis, angle);
+  float3 v = position.xyz;
+  return v + 2.0 * cross(q.xyz, cross(q.xyz, v) + q.w * v);
+}
+
+			
 		#pragma target 2.0
 		#define SHADING_QUALITY SHADING_QUALITY_LOW
 	
@@ -2277,8 +2450,9 @@ half2 matCapUV(half3 worldNormal, half3 worldViewDir)
 	#define SHADING_QUALITY SHADING_QUALITY_LOW
 #endif
 
+///
 /// override shading feature for quaity
-
+///
 #if _REALTIME_LIGHTING_ON
 	#if SHADING_QUALITY < SHADING_QUALITY_MEDIUM
 		#undef _REALTIME_LIGHTING_ON
@@ -2300,7 +2474,8 @@ half2 matCapUV(half3 worldNormal, half3 worldViewDir)
 	#endif
 #endif
 
-/// Vertex
+///
+/// Structs
 ///
 struct appdata
 {
@@ -2338,7 +2513,40 @@ struct v2f
 	float4 pos : SV_POSITION;
 };
 
+/// Uniforms
+uniform float4 _VertexAnimRotateAxis;
+uniform float4 _VertexAnimRotateAngle; // scale, offset
 
+uniform sampler2D _MainTex;
+uniform float4 _MainTex_ST;
+
+uniform float4 _Color;
+
+#if _REFLECTION_PROBES_ON
+uniform float _ReflectionIntensity;
+#endif
+
+#if _GI_IRRADIANCE_ON
+uniform float _GIIrradianceIntensity;
+#endif
+
+#if _NORMAL_MAP_ON
+uniform sampler2D _NormalMapTex;
+#endif
+
+#if _DIFFUSE_LUT_ON
+uniform sampler2D _DiffuseLUTTex;
+#endif
+
+#if _MATCAP_ON
+uniform sampler2D _MatCapTex;
+uniform float _MatCapIntensity;
+#endif
+
+
+///
+/// Vertex
+///
 inline half4 VertexGIForward(appdata v, float3 posWorld, half3 normalWorld)
 {
 	half4 ambientOrLightmapUV = 0;
@@ -2367,11 +2575,22 @@ inline half4 VertexGIForward(appdata v, float3 posWorld, half3 normalWorld)
 v2f vert (appdata v)
 {
 	v2f o = (v2f)0;
-	o.pos = UnityObjectToClipPos(v.vertex);
+
+	float4 vertexPos = v.vertex;
+
+	#if _VERTEX_ANIM_ROTATE_ON
+	{
+		float3 rotAxis = normalize(_VertexAnimRotateAxis.xyz);
+		float rotAngle = _VertexAnimRotateAngle.x * _Time.y + _VertexAnimRotateAngle.y;
+		vertexPos.xyz = animRotatePosition(vertexPos.xyz, rotAxis, rotAngle);
+	}
+	#endif
+
+	o.pos = UnityObjectToClipPos(vertexPos);
 	o.vcolor = v.vcolor;
 	o.uv = float4(v.texcoord0.xy, v.texcoord1.xy);
 
-	o.worldPosAndZ.xyz = mul(unity_ObjectToWorld, v.vertex).xyz;
+	o.worldPosAndZ.xyz = mul(unity_ObjectToWorld, vertexPos).xyz;
 
 	float3 worldNormal = UnityObjectToWorldNormal(v.normal);
 
@@ -2408,32 +2627,6 @@ v2f vert (appdata v)
 ///
 /// Fragment
 ///
-uniform sampler2D _MainTex;
-uniform float4 _MainTex_ST;
-
-uniform float4 _Color;
-
-#if _REFLECTION_PROBES_ON
-uniform float _ReflectionIntensity;
-#endif
-
-#if _GI_IRRADIANCE_ON
-uniform float _GIIrradianceIntensity;
-#endif
-
-#if _NORMAL_MAP_ON
-uniform sampler2D _NormalMapTex;
-#endif
-
-#if _DIFFUSE_LUT_ON
-uniform sampler2D _DiffuseLUTTex;
-#endif
-
-#if _MATCAP_ON
-uniform sampler2D _MatCapTex;
-uniform float _MatCapIntensity;
-#endif
-
 struct ShadingContext
 {
 	half3 worldNormal;
@@ -2703,6 +2896,7 @@ half4 frag_add(v2f i, fixed vface : VFACE) : SV_Target
 
 			#pragma multi_compile_fwdbase
 
+			#pragma shader_feature _VERTEX_ANIM_ROTATE_ON
 			#pragma shader_feature _REALTIME_LIGHTING_ON
 			#pragma shader_feature _REFLECTION_PROBES_ON
 			#pragma shader_feature _GI_IRRADIANCE_ON

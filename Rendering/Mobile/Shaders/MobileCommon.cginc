@@ -6,8 +6,9 @@
 	#define SHADING_QUALITY SHADING_QUALITY_LOW
 #endif
 
+///
 /// override shading feature for quaity
-
+///
 #if _REALTIME_LIGHTING_ON
 	#if SHADING_QUALITY < SHADING_QUALITY_MEDIUM
 		#undef _REALTIME_LIGHTING_ON
@@ -29,7 +30,8 @@
 	#endif
 #endif
 
-/// Vertex
+///
+/// Structs
 ///
 struct appdata
 {
@@ -67,7 +69,40 @@ struct v2f
 	float4 pos : SV_POSITION;
 };
 
+/// Uniforms
+uniform float4 _VertexAnimRotateAxis;
+uniform float4 _VertexAnimRotateAngle; // scale, offset
 
+uniform sampler2D _MainTex;
+uniform float4 _MainTex_ST;
+
+uniform float4 _Color;
+
+#if _REFLECTION_PROBES_ON
+uniform float _ReflectionIntensity;
+#endif
+
+#if _GI_IRRADIANCE_ON
+uniform float _GIIrradianceIntensity;
+#endif
+
+#if _NORMAL_MAP_ON
+uniform sampler2D _NormalMapTex;
+#endif
+
+#if _DIFFUSE_LUT_ON
+uniform sampler2D _DiffuseLUTTex;
+#endif
+
+#if _MATCAP_ON
+uniform sampler2D _MatCapTex;
+uniform float _MatCapIntensity;
+#endif
+
+
+///
+/// Vertex
+///
 inline half4 VertexGIForward(appdata v, float3 posWorld, half3 normalWorld)
 {
 	half4 ambientOrLightmapUV = 0;
@@ -96,11 +131,22 @@ inline half4 VertexGIForward(appdata v, float3 posWorld, half3 normalWorld)
 v2f vert (appdata v)
 {
 	v2f o = (v2f)0;
-	o.pos = UnityObjectToClipPos(v.vertex);
+
+	float4 vertexPos = v.vertex;
+
+	#if _VERTEX_ANIM_ROTATE_ON
+	{
+		float3 rotAxis = normalize(_VertexAnimRotateAxis.xyz);
+		float rotAngle = _VertexAnimRotateAngle.x * _Time.y + _VertexAnimRotateAngle.y;
+		vertexPos.xyz = animRotatePosition(vertexPos.xyz, rotAxis, rotAngle);
+	}
+	#endif
+
+	o.pos = UnityObjectToClipPos(vertexPos);
 	o.vcolor = v.vcolor;
 	o.uv = float4(v.texcoord0.xy, v.texcoord1.xy);
 
-	o.worldPosAndZ.xyz = mul(unity_ObjectToWorld, v.vertex).xyz;
+	o.worldPosAndZ.xyz = mul(unity_ObjectToWorld, vertexPos).xyz;
 
 	float3 worldNormal = UnityObjectToWorldNormal(v.normal);
 
@@ -137,32 +183,6 @@ v2f vert (appdata v)
 ///
 /// Fragment
 ///
-uniform sampler2D _MainTex;
-uniform float4 _MainTex_ST;
-
-uniform float4 _Color;
-
-#if _REFLECTION_PROBES_ON
-uniform float _ReflectionIntensity;
-#endif
-
-#if _GI_IRRADIANCE_ON
-uniform float _GIIrradianceIntensity;
-#endif
-
-#if _NORMAL_MAP_ON
-uniform sampler2D _NormalMapTex;
-#endif
-
-#if _DIFFUSE_LUT_ON
-uniform sampler2D _DiffuseLUTTex;
-#endif
-
-#if _MATCAP_ON
-uniform sampler2D _MatCapTex;
-uniform float _MatCapIntensity;
-#endif
-
 struct ShadingContext
 {
 	half3 worldNormal;

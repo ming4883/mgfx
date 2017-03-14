@@ -86,7 +86,7 @@ fixed4 frag(v2f i) : SV_Target
     half2 flowOffset = flow.xy * flowStrength * i.color.rg;
 
     fixed4 col = tex2D(_MainTex, i.texcoord + flowOffset);
-    col.a = flow.a * i.color.a;
+    col.a *= flow.a * i.color.a;
 
     UNITY_APPLY_FOG_COLOR(i.fogCoord, col, fixed4(col.rgb,0)); // fog towards black due to our blend mode
     return col;

@@ -6,6 +6,10 @@
 [Toggle(_REFLECTION_PROBES_ON)] _ReflectionProbesOn("Enable Reflection Probes", Int) = 0
 _ReflectionIntensity ("Reflection Intensity", Range(0,8)) = 1.0
 
+[Toggle(_VERTEX_ANIM_ROTATE_ON)] _VertexAnimRotateOn("Enable Vertex Rotation", Int) = 0
+[PerRendererData] _VertexAnimRotateAxis ("Rotate Axis", Vector) = (0.0, 1.0, 0.0, 0.0)
+[PerRendererData] _VertexAnimRotateAngle ("Rotate Angle", Vector) = (5.0, 0.0, 0.0, 0.0)
+
 [NoScaleOffset] _GIAlbedoTex ("GI Albedo Tex", 2D) = "white" {}
 [HDR] _GIAlbedoColor ("GI Albedo Color", Color) = (1.0, 1.0, 1.0, 0.0)
 
