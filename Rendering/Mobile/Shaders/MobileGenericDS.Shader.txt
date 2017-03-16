@@ -35,5 +35,29 @@
 	{% endcapture %}
 	{% unityasset ./MobileGenericDS.SubShader.txt %}
 
+	// ---------------------
+	// Debug Reflection
+	{% assign _LOD = "20" %}
+	{% assign _FORWARD_ADD_PASS = true %}
+	{% capture _CG_HEADER %}
+		#pragma target 3.0
+		#define DEBUG_REFLECTION
+		#define SHADING_QUALITY SHADING_QUALITY_HIGH
+	{% endcapture %}
+	{% unityasset ./MobileGenericDS.SubShader.txt %}
+
+	// ---------------------
+	// Debug Lighting
+	{% assign _LOD = "10" %}
+	{% assign _FORWARD_ADD_PASS = true %}
+	{% capture _CG_HEADER %}
+		#pragma target 3.0
+		#define DEBUG_LIGHTING
+		#define SHADING_QUALITY SHADING_QUALITY_HIGH
+	{% endcapture %}
+	{% unityasset ./MobileGenericDS.SubShader.txt %}
+
+	// ---------------------
+	// UI
 	CustomEditor "MGFX.Rendering.MobileGenericUI"
 }

@@ -71,12 +71,13 @@ struct v2f
 
 /// Uniforms
 uniform float4 _VertexAnimRotateAxis;
-uniform float4 _VertexAnimRotateAngle; // scale, offset
+uniform float4 _VertexAnimTime; // scale, offset
 
 uniform sampler2D _MainTex;
 uniform float4 _MainTex_ST;
 
 uniform float4 _Color;
+uniform float4 _ShadowColor;
 
 #if _REFLECTION_PROBES_ON
 uniform float _ReflectionIntensity;
@@ -103,7 +104,7 @@ uniform float _MatCapIntensity;
 ///
 /// Vertex
 ///
-inline half4 VertexGIForward(appdata v, float3 posWorld, half3 normalWorld)
+inline half4 vertGIForward(appdata v, float3 posWorld, half3 normalWorld)
 {
 	half4 ambientOrLightmapUV = 0;
 	// Static lightmaps
@@ -133,12 +134,14 @@ v2f vert (appdata v)
 	v2f o = (v2f)0;
 
 	float4 vertexPos = v.vertex;
+	float3 vertexNormal = v.normal;
 
 	#if _VERTEX_ANIM_ROTATE_ON
 	{
 		float3 rotAxis = normalize(_VertexAnimRotateAxis.xyz);
-		float rotAngle = _VertexAnimRotateAngle.x * _Time.y + _VertexAnimRotateAngle.y;
-		vertexPos.xyz = animRotatePosition(vertexPos.xyz, rotAxis, rotAngle);
+		float rotAngle = _VertexAnimTime.x * _Time.y + _VertexAnimTime.y;
+		vertexPos.xyz = animRotateVector3(vertexPos.xyz, rotAxis, rotAngle);
+		vertexNormal.xyz = animRotateVector3(vertexNormal.xyz, rotAxis, rotAngle);
 	}
 	#endif
 
@@ -148,7 +151,7 @@ v2f vert (appdata v)
 
 	o.worldPosAndZ.xyz = mul(unity_ObjectToWorld, vertexPos).xyz;
 
-	float3 worldNormal = UnityObjectToWorldNormal(v.normal);
+	float3 worldNormal = UnityObjectToWorldNormal(vertexNormal);
 
 	#if _NORMAL_MAP_ON
 	{
@@ -172,7 +175,7 @@ v2f vert (appdata v)
 	}
 	#endif
 
-	o.ambientOrLightmapUV = VertexGIForward(v, o.worldPosAndZ.xyz, o.worldNormal);
+	o.ambientOrLightmapUV = vertGIForward(v, o.worldPosAndZ.xyz, worldNormal);
 
 	COMPUTE_EYEDEPTH(o.worldPosAndZ.w);
 	// compute shadows data
@@ -251,7 +254,7 @@ void shadingContext(inout ShadingContext ctx, in v2f i, in fixed vface)
 	ctx.result = half4(0, 0, 0, ctx.albedo.a);
 }
 
-UnityLight MainLight ()
+UnityLight lightGetMain()
 {
 	UnityLight l;
 
@@ -264,7 +267,7 @@ void applyLightingFwdBase(inout ShadingContext ctx)
 {
 	#if _REALTIME_LIGHTING_ON
 	{
-		UnityLight light = MainLight();
+		UnityLight light = lightGetMain();
 
 		half ndotl = dot(ctx.worldNormal, light.dir);
 
@@ -301,23 +304,40 @@ void applyLightingFwdBase(inout ShadingContext ctx)
 
 			#if defined(LIGHTMAP_ON)
 			{
-				half bakedAtten = UnitySampleBakedOcclusion(d.lightmapUV.xy, ctx.worldPos);
-
-				#if SHADING_QUALITY >= SHADING_QUALITY_HIGH
+				#if UNITY_VERSION < 560
 				{
-					//float fadeDist = UnityComputeShadowFadeDistance(ctx.worldPos, dot(_WorldSpaceCameraPos - ctx.worldPos, UNITY_MATRIX_V[2].xyz));
-					float fadeDist = UnityComputeShadowFadeDistance(ctx.worldPos, -ctx.eyeDepth);
-					bakedAtten = UnityMixRealtimeAndBakedShadows(d.atten, bakedAtten, UnityComputeShadowFade(fadeDist));
+					#if SHADING_QUALITY >= SHADING_QUALITY_HIGH
+					{
+						half3 lmap = DecodeLightmap(UNITY_SAMPLE_TEX2D(unity_Lightmap, d.lightmapUV.xy));
+						half lmapShadow = smoothstep(0.5, 0.75, Luminance(lmap));
+						d.atten = lmapShadow * d.atten;
+					}
+					#endif
+				}
+				#else
+				{
+					half bakedAtten = UnitySampleBakedOcclusion(d.lightmapUV.xy, ctx.worldPos);
+
+					#if SHADING_QUALITY >= SHADING_QUALITY_HIGH
+					{
+						//float fadeDist = UnityComputeShadowFadeDistance(ctx.worldPos, dot(_WorldSpaceCameraPos - ctx.worldPos, UNITY_MATRIX_V[2].xyz));
+						float fadeDist = UnityComputeShadowFadeDistance(ctx.worldPos, -ctx.eyeDepth);
+						bakedAtten = UnityMixRealtimeAndBakedShadows(d.atten, bakedAtten, UnityComputeShadowFade(fadeDist));
+					}
+					#endif
+
+					d.atten = bakedAtten;
 				}
 				#endif
-
-				d.atten = bakedAtten;
 			}
 			#endif
 
 			UnityGI gi = UnityGI_Base(d, 1.0, ctx.worldNormal);
 
 			diff += gi.indirect.diffuse + gi.light.color * ndotl;
+
+			half shadowTint = lerp(1, d.atten, _ShadowColor.a);
+			diff = lerp(_ShadowColor.rgb, diff, shadowTint);
 
 			ctx.occlusion = saturate(Luminance(gi.indirect.diffuse));
 		}
@@ -327,19 +347,29 @@ void applyLightingFwdBase(inout ShadingContext ctx)
 		}
 		#endif
 
-		ctx.result.rgb = ctx.albedo.rgb * diff;
+		ctx.result.rgb = diff;
 	}
 	#else // _REALTIME_LIGHTING_ON
 	{
 		#if _GI_IRRADIANCE_ON
 		{
-			ctx.result.rgb = ctx.albedo * ctx.shadow + unity_AmbientSky;
+			ctx.result.rgb = ctx.shadow * unity_AmbientSky;
 		}
 		#else // _GI_IRRADIANCE_ON
 		{
-			ctx.result.rgb = ctx.albedo * ctx.shadow;
+			ctx.result.rgb = ctx.shadow;
 		}
 		#endif
+	}
+	#endif
+
+	#if defined(DEBUG_LIGHTING)
+	{
+		// do nothing
+	}
+	#else
+	{
+		ctx.result.rgb *= ctx.albedo.rgb;
 	}
 	#endif
 }
@@ -356,8 +386,16 @@ void applyLightingFwdAdd(inout ShadingContext ctx)
 		ndotl = saturate(ndotl) * ctx.shadow;
 	}
 	#endif
-	
-	ctx.result.rgb += ctx.albedo * ndotl * _LightColor0.rgb;
+
+	#if defined(DEBUG_LIGHTING)
+	{
+		ctx.result.rgb += ndotl * _LightColor0.rgb;
+	}
+	#else
+	{
+		ctx.result.rgb += ctx.albedo * ndotl * _LightColor0.rgb;
+	}
+	#endif
 }
 
 void applyMatcap(inout ShadingContext ctx)
@@ -383,7 +421,12 @@ void applyMatcap(inout ShadingContext ctx)
 			matCap.rgb *= ctx.albedo.rgb;
 		}
 		#endif
-		ctx.result.rgb += matCap;
+
+		#if !defined(DEBUG_LIGHTING)
+		{
+			ctx.result.rgb += matCap;
+		}
+		#endif
 	}
 	#endif
 }
@@ -412,7 +455,27 @@ void applyReflectionProbes(inout ShadingContext ctx)
 		fren = saturate(fren);
 		fren = saturate(1 - fren * fren + 0.25) * ctx.occlusion;
 		
-		ctx.result.rgb = lerp(ctx.result.rgb, (half3)refl.rgb * _ReflectionIntensity, ctx.albedo.a * fren);
+		#if defined(DEBUG_REFLECTION)
+		{
+			ctx.result.rgb = (half3)refl.rgb * _ReflectionIntensity * ctx.albedo.a;
+		}
+		#else
+		{
+			#if !defined(DEBUG_LIGHTING)
+			{
+				ctx.result.rgb = lerp(ctx.result.rgb, (half3)refl.rgb * _ReflectionIntensity, ctx.albedo.a * fren);
+			}
+			#endif
+		}
+		#endif
+	}
+#else
+	{
+		#if defined(DEBUG_REFLECTION)
+		{
+			ctx.result.rgb = 0;
+		}
+		#endif
 	}
 #endif
 }

@@ -5,6 +5,7 @@
 		Tags
 		{ 
 			"RenderType"="Opaque"
+			"DisableBatching"="True"
 		}
 
 		Pass
@@ -17,14 +18,15 @@
 			Cull Back
 
 			CGPROGRAM
-			{% unityasset ../../Base/Shaders/MGFXBase.cginc %}
-			{% unityasset ../../Base/Shaders/MGFXAnim.cginc %}
+			{% unityasset ../../Base/Shaders/MinvBase.cginc %}
+			{% unityasset ../../Base/Shaders/MinvAnim.cginc %}
 			{{ _CG_HEADER }}
-			{% unityasset ../../Base/Shaders/MGFXMatCap.cginc %}
+			{% unityasset ../../Base/Shaders/MinvMatCap.cginc %}
 			{% unityasset./MobileCommon.cginc %}
 			
 			#pragma multi_compile_fwdbase
 
+			#pragma shader_feature _VERTEX_ANIM_ROTATE_ON
 			#pragma shader_feature _REALTIME_LIGHTING_ON
 			#pragma shader_feature _REFLECTION_PROBES_ON
 			#pragma shader_feature _GI_IRRADIANCE_ON
@@ -53,13 +55,14 @@
 			Cull Back
 
 			CGPROGRAM
-			{% unityasset ../../Base/Shaders/MGFXBase.cginc %}
-			{% unityasset ../../Base/Shaders/MGFXAnim.cginc %}
+			{% unityasset ../../Base/Shaders/MinvBase.cginc %}
+			{% unityasset ../../Base/Shaders/MinvAnim.cginc %}
 			{{ _CG_HEADER }}
 			{% unityasset./MobileCommon.cginc %}
 			
 			#pragma multi_compile_fwdadd_fullshadows
 
+			#pragma shader_feature _VERTEX_ANIM_ROTATE_ON
 			#pragma shader_feature _REALTIME_LIGHTING_ON
 			#pragma shader_feature _NORMAL_MAP_ON
 			#pragma shader_feature _DIFFUSE_LUT_ON
@@ -96,7 +99,7 @@
 			Cull Back
 
 			CGPROGRAM
-			{% unityasset ../../Base/Shaders/MGFXShadowCaster.cginc %}
+			{% unityasset ../../Base/Shaders/MinvShadowCaster.cginc %}
 			ENDCG
 		}
 	}

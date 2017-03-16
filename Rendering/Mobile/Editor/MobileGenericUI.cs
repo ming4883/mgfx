@@ -12,6 +12,9 @@ namespace MGFX.Rendering
 
 		[MaterialProperty("_Color")]
 		protected MaterialProperty m_Color;
+		
+		[MaterialProperty("_ShadowColor")]
+		protected MaterialProperty m_ShadowColor;
 
 		[MaterialProperty("_RealtimeLightingOn", "_REALTIME_LIGHTING_ON")]
 		protected MaterialProperty m_RealtimeLightingOn;
@@ -21,15 +24,6 @@ namespace MGFX.Rendering
 
 		[MaterialProperty("_ReflectionIntensity")]
 		protected MaterialProperty m_ReflectionIntensity;
-
-		[MaterialProperty("_VertexAnimRotateOn", "_VERTEX_ANIM_ROTATE_ON")]
-		protected MaterialProperty m_VertexAnimRotateOn;
-
-		[MaterialProperty("_VertexAnimRotateAxis")]
-		protected MaterialProperty m_VertexAnimRotateAxis;
-
-		[MaterialProperty("_VertexAnimRotateAngle")]
-		protected MaterialProperty m_VertexAnimRotateAngle;
 
 		[MaterialProperty("_GIAlbedoTex")]
 		protected MaterialProperty m_GIAlbedoTex;
@@ -81,7 +75,6 @@ namespace MGFX.Rendering
 			FindProperties(this, _properties);
 
 			DoGeneral(_materialEditor);
-			DoVertexAnimation(_materialEditor);
 			DoGI(_materialEditor);
 			DoNormalMap(_materialEditor);
 			DoMatCap(_materialEditor);
@@ -95,6 +88,7 @@ namespace MGFX.Rendering
 
 			_materialEditor.TextureProperty(m_MainTex, "Main Texture (RGB)");
 			_materialEditor.ShaderProperty(m_Color, "Color");
+			_materialEditor.ShaderProperty(m_ShadowColor, "Shadow Color");
 
 			DoKeyword(_materialEditor, m_RealtimeLightingOn, "Use Lighting");
 
@@ -103,20 +97,6 @@ namespace MGFX.Rendering
 				_materialEditor.ShaderProperty(m_ReflectionIntensity, "Reflection Intensity");
 			}
 			
-			EndGroup();
-		}
-
-		protected void DoVertexAnimation(MaterialEditor _materialEditor)
-		{
-			if (!BeginGroup("VS Animation"))
-				return;
-
-			if (DoKeyword(_materialEditor, m_VertexAnimRotateOn, "Use VS Rotation"))
-			{
-				_materialEditor.ShaderProperty(m_VertexAnimRotateAxis, "Axis (XYZ)");
-				_materialEditor.ShaderProperty(m_VertexAnimRotateAngle, "Angle (Scale, Offset)");
-			}
-
 			EndGroup();
 		}
 
@@ -137,6 +117,7 @@ namespace MGFX.Rendering
 				if (m_GIAlbedoTex.textureValue == null)
 					m_GIAlbedoTex.textureValue = m_MainTex.textureValue;
 
+				
 				_materialEditor.ShaderProperty (m_GIAlbedoTex, "GI Albedo Tex");
 				_materialEditor.ShaderProperty (m_GIAlbedoColor, "GI Albedo Color");
 				_materialEditor.ShaderProperty (m_GIEmissionTex, "GI Emission Tex");

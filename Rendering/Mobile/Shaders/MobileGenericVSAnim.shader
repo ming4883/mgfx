@@ -1,4 +1,4 @@
-Shader "MGFX/Mobile/GenericDS"
+Shader "MGFX/Mobile/GenericVSAnim"
 {
 	Properties
 	{
@@ -37,7 +37,7 @@ _GIIrradianceIntensity ("Irradiance Intensity", Range(0,8)) = 1.0
 _MatCapIntensity ("MatCapIntensity", Range(0,4)) = 1.0
 
 	}
-
+	
 	// ---------------------
 	// High Quality
 	
@@ -50,6 +50,7 @@ _MatCapIntensity ("MatCapIntensity", Range(0,4)) = 1.0
 		Tags
 		{ 
 			"RenderType"="Opaque"
+			"DisableBatching"="True"
 		}
 
 		Pass
@@ -59,7 +60,7 @@ _MatCapIntensity ("MatCapIntensity", Range(0,4)) = 1.0
 				"LightMode"="ForwardBase"
 			}
 
-			Cull Off
+			Cull Back
 
 			CGPROGRAM
 			#include "UnityCG.cginc"
@@ -652,9 +653,10 @@ half4 frag_add(v2f i, fixed vface : VFACE) : SV_Target
 
 	return ctx.result;
 }
-
+			
 			#pragma multi_compile_fwdbase
 
+			#pragma shader_feature _VERTEX_ANIM_ROTATE_ON
 			#pragma shader_feature _REALTIME_LIGHTING_ON
 			#pragma shader_feature _REFLECTION_PROBES_ON
 			#pragma shader_feature _GI_IRRADIANCE_ON
@@ -680,7 +682,7 @@ half4 frag_add(v2f i, fixed vface : VFACE) : SV_Target
 			ZWrite Off
 			ZTest LEqual
 			Blend One One
-			Cull Off
+			Cull Back
 
 			CGPROGRAM
 			#include "UnityCG.cginc"
@@ -1244,6 +1246,7 @@ half4 frag_add(v2f i, fixed vface : VFACE) : SV_Target
 			
 			#pragma multi_compile_fwdadd_fullshadows
 
+			#pragma shader_feature _VERTEX_ANIM_ROTATE_ON
 			#pragma shader_feature _REALTIME_LIGHTING_ON
 			#pragma shader_feature _NORMAL_MAP_ON
 			#pragma shader_feature _DIFFUSE_LUT_ON
@@ -1329,7 +1332,7 @@ float4 frag_meta (v2f_meta i) : SV_Target
 				"LightMode" = "ShadowCaster"
 			}
 
-			Cull Off
+			Cull Back
 
 			CGPROGRAM
 			#pragma vertex vert_shadowcaster
@@ -1369,6 +1372,7 @@ float4 frag_shadowcaster( v2f_shadowcaster i ) : SV_Target
 		Tags
 		{ 
 			"RenderType"="Opaque"
+			"DisableBatching"="True"
 		}
 
 		Pass
@@ -1378,7 +1382,7 @@ float4 frag_shadowcaster( v2f_shadowcaster i ) : SV_Target
 				"LightMode"="ForwardBase"
 			}
 
-			Cull Off
+			Cull Back
 
 			CGPROGRAM
 			#include "UnityCG.cginc"
@@ -1971,9 +1975,10 @@ half4 frag_add(v2f i, fixed vface : VFACE) : SV_Target
 
 	return ctx.result;
 }
-
+			
 			#pragma multi_compile_fwdbase
 
+			#pragma shader_feature _VERTEX_ANIM_ROTATE_ON
 			#pragma shader_feature _REALTIME_LIGHTING_ON
 			#pragma shader_feature _REFLECTION_PROBES_ON
 			#pragma shader_feature _GI_IRRADIANCE_ON
@@ -1999,7 +2004,7 @@ half4 frag_add(v2f i, fixed vface : VFACE) : SV_Target
 			ZWrite Off
 			ZTest LEqual
 			Blend One One
-			Cull Off
+			Cull Back
 
 			CGPROGRAM
 			#include "UnityCG.cginc"
@@ -2563,6 +2568,7 @@ half4 frag_add(v2f i, fixed vface : VFACE) : SV_Target
 			
 			#pragma multi_compile_fwdadd_fullshadows
 
+			#pragma shader_feature _VERTEX_ANIM_ROTATE_ON
 			#pragma shader_feature _REALTIME_LIGHTING_ON
 			#pragma shader_feature _NORMAL_MAP_ON
 			#pragma shader_feature _DIFFUSE_LUT_ON
@@ -2648,7 +2654,7 @@ float4 frag_meta (v2f_meta i) : SV_Target
 				"LightMode" = "ShadowCaster"
 			}
 
-			Cull Off
+			Cull Back
 
 			CGPROGRAM
 			#pragma vertex vert_shadowcaster
@@ -2688,6 +2694,7 @@ float4 frag_shadowcaster( v2f_shadowcaster i ) : SV_Target
 		Tags
 		{ 
 			"RenderType"="Opaque"
+			"DisableBatching"="True"
 		}
 
 		Pass
@@ -2697,7 +2704,7 @@ float4 frag_shadowcaster( v2f_shadowcaster i ) : SV_Target
 				"LightMode"="ForwardBase"
 			}
 
-			Cull Off
+			Cull Back
 
 			CGPROGRAM
 			#include "UnityCG.cginc"
@@ -3290,9 +3297,10 @@ half4 frag_add(v2f i, fixed vface : VFACE) : SV_Target
 
 	return ctx.result;
 }
-
+			
 			#pragma multi_compile_fwdbase
 
+			#pragma shader_feature _VERTEX_ANIM_ROTATE_ON
 			#pragma shader_feature _REALTIME_LIGHTING_ON
 			#pragma shader_feature _REFLECTION_PROBES_ON
 			#pragma shader_feature _GI_IRRADIANCE_ON
@@ -3383,7 +3391,7 @@ float4 frag_meta (v2f_meta i) : SV_Target
 				"LightMode" = "ShadowCaster"
 			}
 
-			Cull Off
+			Cull Back
 
 			CGPROGRAM
 			#pragma vertex vert_shadowcaster
@@ -3423,6 +3431,7 @@ float4 frag_shadowcaster( v2f_shadowcaster i ) : SV_Target
 		Tags
 		{ 
 			"RenderType"="Opaque"
+			"DisableBatching"="True"
 		}
 
 		Pass
@@ -3432,7 +3441,7 @@ float4 frag_shadowcaster( v2f_shadowcaster i ) : SV_Target
 				"LightMode"="ForwardBase"
 			}
 
-			Cull Off
+			Cull Back
 
 			CGPROGRAM
 			#include "UnityCG.cginc"
@@ -4026,9 +4035,10 @@ half4 frag_add(v2f i, fixed vface : VFACE) : SV_Target
 
 	return ctx.result;
 }
-
+			
 			#pragma multi_compile_fwdbase
 
+			#pragma shader_feature _VERTEX_ANIM_ROTATE_ON
 			#pragma shader_feature _REALTIME_LIGHTING_ON
 			#pragma shader_feature _REFLECTION_PROBES_ON
 			#pragma shader_feature _GI_IRRADIANCE_ON
@@ -4054,7 +4064,7 @@ half4 frag_add(v2f i, fixed vface : VFACE) : SV_Target
 			ZWrite Off
 			ZTest LEqual
 			Blend One One
-			Cull Off
+			Cull Back
 
 			CGPROGRAM
 			#include "UnityCG.cginc"
@@ -4619,6 +4629,7 @@ half4 frag_add(v2f i, fixed vface : VFACE) : SV_Target
 			
 			#pragma multi_compile_fwdadd_fullshadows
 
+			#pragma shader_feature _VERTEX_ANIM_ROTATE_ON
 			#pragma shader_feature _REALTIME_LIGHTING_ON
 			#pragma shader_feature _NORMAL_MAP_ON
 			#pragma shader_feature _DIFFUSE_LUT_ON
@@ -4704,7 +4715,7 @@ float4 frag_meta (v2f_meta i) : SV_Target
 				"LightMode" = "ShadowCaster"
 			}
 
-			Cull Off
+			Cull Back
 
 			CGPROGRAM
 			#pragma vertex vert_shadowcaster
@@ -4744,6 +4755,7 @@ float4 frag_shadowcaster( v2f_shadowcaster i ) : SV_Target
 		Tags
 		{ 
 			"RenderType"="Opaque"
+			"DisableBatching"="True"
 		}
 
 		Pass
@@ -4753,7 +4765,7 @@ float4 frag_shadowcaster( v2f_shadowcaster i ) : SV_Target
 				"LightMode"="ForwardBase"
 			}
 
-			Cull Off
+			Cull Back
 
 			CGPROGRAM
 			#include "UnityCG.cginc"
@@ -5347,9 +5359,10 @@ half4 frag_add(v2f i, fixed vface : VFACE) : SV_Target
 
 	return ctx.result;
 }
-
+			
 			#pragma multi_compile_fwdbase
 
+			#pragma shader_feature _VERTEX_ANIM_ROTATE_ON
 			#pragma shader_feature _REALTIME_LIGHTING_ON
 			#pragma shader_feature _REFLECTION_PROBES_ON
 			#pragma shader_feature _GI_IRRADIANCE_ON
@@ -5375,7 +5388,7 @@ half4 frag_add(v2f i, fixed vface : VFACE) : SV_Target
 			ZWrite Off
 			ZTest LEqual
 			Blend One One
-			Cull Off
+			Cull Back
 
 			CGPROGRAM
 			#include "UnityCG.cginc"
@@ -5940,6 +5953,7 @@ half4 frag_add(v2f i, fixed vface : VFACE) : SV_Target
 			
 			#pragma multi_compile_fwdadd_fullshadows
 
+			#pragma shader_feature _VERTEX_ANIM_ROTATE_ON
 			#pragma shader_feature _REALTIME_LIGHTING_ON
 			#pragma shader_feature _NORMAL_MAP_ON
 			#pragma shader_feature _DIFFUSE_LUT_ON
@@ -6025,7 +6039,7 @@ float4 frag_meta (v2f_meta i) : SV_Target
 				"LightMode" = "ShadowCaster"
 			}
 
-			Cull Off
+			Cull Back
 
 			CGPROGRAM
 			#pragma vertex vert_shadowcaster
@@ -6052,8 +6066,8 @@ float4 frag_shadowcaster( v2f_shadowcaster i ) : SV_Target
 			ENDCG
 		}
 	}
-
+	
 	// ---------------------
 	// UI
-	CustomEditor "MGFX.Rendering.MobileGenericUI"
+	CustomEditor "MGFX.Rendering.MobileGenericVSAnimUI"
 }
