@@ -48,13 +48,14 @@ namespace MGFX.Rendering
 
 		protected void ApplyWaterFlowToMaterials()
 		{
-			if (null == m_FlowMap || !m_FlowMap)
-				return;
-
 			if (null == m_MeshRend || !m_MeshRend)
 				return;
 
-			var _mtx = m_FlowMap.GetTextureMatrix();
+			var _mtx = Matrix4x4.identity;
+			
+			if (m_FlowMap != null && m_FlowMap)
+				_mtx = m_FlowMap.GetTextureMatrix();
+
 			var _prm = new Vector4();
 			
 			float _time = (m_Time * m_Speed) / m_Cycle;
