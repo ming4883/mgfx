@@ -1,4 +1,4 @@
-﻿Shader "MGFX/Mobile/GenericDS"
+﻿Shader "Minv/Mobile/GenericDS"
 {
 	Properties
 	{

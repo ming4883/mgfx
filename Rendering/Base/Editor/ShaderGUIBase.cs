@@ -36,14 +36,54 @@ namespace MGFX.Rendering
 
 			bool _on = _prop.floatValue > 0;
 
-			var _mtl = _editor.target as Material;
-
 			if (_on)
-				_mtl.EnableKeyword(_keyword);
+			{
+				foreach(var _tar in _editor.targets)
+				{
+					(_tar as Material).EnableKeyword(_keyword);
+				}
+			}
 			else
-				_mtl.DisableKeyword(_keyword);
+			{
+				foreach(var _tar in _editor.targets)
+				{
+					(_tar as Material).DisableKeyword(_keyword);
+				}
+			}
 
 			return _on;
+		}
+
+		protected void SetOverrideTag(MaterialEditor _editor, string _tagName, string _tagValue)
+		{
+			foreach(var _tar in _editor.targets)
+			{
+				(_tar as Material).SetOverrideTag(_tagName, _tagValue);
+			}
+		}
+
+		protected void SetRenderQueue(MaterialEditor _editor, int _queue)
+		{
+			foreach(var _tar in _editor.targets)
+			{
+				(_tar as Material).renderQueue = _queue;
+			}
+		}
+
+		protected void SetInt(MaterialEditor _editor, string _propName, int _propValue)
+		{
+			foreach(var _tar in _editor.targets)
+			{
+				(_tar as Material).SetInt(_propName, _propValue);
+			}
+		}
+
+		protected void SetFloat(MaterialEditor _editor, string _propName, float _propValue)
+		{
+			foreach(var _tar in _editor.targets)
+			{
+				(_tar as Material).SetFloat(_propName, _propValue);
+			}
 		}
 
 		public static int FindProperties(ShaderGUIBase _inst, MaterialProperty[] _properties)
@@ -82,31 +122,31 @@ namespace MGFX.Rendering
 			return _cnt;
 		}
 
-
-		private Dictionary<string, bool> m_GroupToggle = new Dictionary<string, bool>();
+		private Dictionary<string, bool> m_GroupToggles = new  Dictionary<string, bool>();
 
 		protected bool BeginGroup(string _name)
 		{
 			bool _toggled;
-			if (!m_GroupToggle.TryGetValue(_name, out _toggled))
+			if (!m_GroupToggles.TryGetValue(_name, out _toggled))
 				_toggled = true;
 
-			_toggled = EditorGUILayout.Foldout(_toggled, _name, true);
-
-			if (_toggled)
-			{
-				EditorGUI.indentLevel++;
-			}
+			_toggled = EditorGUILayout.Foldout(_toggled, _name);
+			m_GroupToggles[_name] = _toggled;
 			//EditorGUILayout.HelpBox(_name, MessageType.None);
-			m_GroupToggle[_name] = _toggled;
-
+			EditorGUI.indentLevel++;
+			if (!_toggled)
+			{
+				EndGroup();
+			}
 			return _toggled;
 		}
 
 		protected void EndGroup()
 		{
+			//GUILayout.Box(GUIContent.none, GUILayout.ExpandWidth(true), GUILayout.Height(1.0f));
 			EditorGUI.indentLevel--;
 			//EditorGUILayout.Space();
+			//EditorGUILayout.EndToggleGroup();
 		}
 	}
 }

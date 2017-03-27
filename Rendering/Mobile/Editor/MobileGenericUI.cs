@@ -1,6 +1,6 @@
 ﻿using UnityEngine;
+using UnityEngine.Rendering;
 using UnityEditor;
-using System.Collections.Generic;
 
 namespace MGFX.Rendering
 {
@@ -15,6 +15,12 @@ namespace MGFX.Rendering
 		
 		[MaterialProperty("_ShadowColor")]
 		protected MaterialProperty m_ShadowColor;
+
+		[MaterialProperty("_DecalOn", "_DECAL_ON")]
+		protected MaterialProperty m_DecalOn;
+		
+		[MaterialProperty("_DecalOffset")]
+		protected MaterialProperty m_DecalOffset;
 
 		[MaterialProperty("_RealtimeLightingOn", "_REALTIME_LIGHTING_ON")]
 		protected MaterialProperty m_RealtimeLightingOn;
@@ -75,6 +81,7 @@ namespace MGFX.Rendering
 			FindProperties(this, _properties);
 
 			DoGeneral(_materialEditor);
+			DoDecal(_materialEditor);
 			DoGI(_materialEditor);
 			DoNormalMap(_materialEditor);
 			DoMatCap(_materialEditor);
@@ -100,6 +107,33 @@ namespace MGFX.Rendering
 			EndGroup();
 		}
 
+		protected void DoDecal(MaterialEditor _materialEditor)
+		{
+			if (!BeginGroup("Decal"))
+				return;
+
+			if (DoKeyword(_materialEditor, m_DecalOn, "Is Decal"))
+			{
+				_materialEditor.ShaderProperty(m_DecalOffset, "Decal Offset");
+
+				SetInt(_materialEditor, "_SrcBlend", (int)BlendMode.SrcAlpha);
+				SetInt(_materialEditor, "_DstBlend", (int)BlendMode.OneMinusSrcAlpha);
+				SetInt(_materialEditor, "_ZWrite", 0);
+				SetRenderQueue(_materialEditor, (int)RenderQueue.Transparent);
+				SetOverrideTag(_materialEditor, "RenderType", "Transparent");
+			}
+			else
+			{
+				SetInt(_materialEditor, "_SrcBlend", (int)BlendMode.One);
+				SetInt(_materialEditor, "_DstBlend", (int)BlendMode.Zero);
+				SetInt(_materialEditor, "_ZWrite", 1);
+				SetRenderQueue(_materialEditor, -1);
+				SetOverrideTag(_materialEditor, "RenderType", "");
+			}
+
+			EndGroup();
+		}
+
 		protected void DoGI(MaterialEditor _materialEditor)
 		{
 			if (!BeginGroup("GI"))
@@ -114,9 +148,6 @@ namespace MGFX.Rendering
 
 			if (BeginGroup ("Baking"))
 			{
-				if (m_GIAlbedoTex.textureValue == null)
-					m_GIAlbedoTex.textureValue = m_MainTex.textureValue;
-
 				
 				_materialEditor.ShaderProperty (m_GIAlbedoTex, "GI Albedo Tex");
 				_materialEditor.ShaderProperty (m_GIAlbedoColor, "GI Albedo Color");

@@ -1,4 +1,4 @@
-﻿Shader "MGFX/Mobile/GenericVSAnim"
+﻿Shader "Minv/Mobile/GenericVSAnim"
 {
 	Properties
 	{

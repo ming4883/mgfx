@@ -1,1 +1,1 @@
-{"Templates":["Assets/Lib/MGFX/Rendering/Mobile/Shaders/MobileGeneric.Shader.txt","Assets/Lib/MGFX/Rendering/Mobile/Shaders/MobileGenericDS.Shader.txt","Assets/Lib/MGFX/Rendering/Mobile/Shaders/MobileTransparent.Shader.txt"]}
+{"Templates":["Assets/Lib/MGFX/Rendering/Mobile/Shaders/MobileGeneric.Shader.txt","Assets/Lib/MGFX/Rendering/Mobile/Shaders/MobileGenericDS.Shader.txt","Assets/Lib/MGFX/Rendering/Mobile/Shaders/MobileGenericVSAnim.Shader.txt","Assets/Lib/MGFX/Rendering/Mobile/Shaders/MobileTransparent.Shader.txt"]}

@@ -21,12 +21,12 @@ namespace MGFX.Rendering
 			}
 		}
 
-		private const string kMobileShaderHighQuality = "MGFX/Mobile Shaders/High Quality";
-		private const string kMobileShaderMediumQuality = "MGFX/Mobile Shaders/Medium Quality";
-		private const string kMobileShaderLowQuality = "MGFX/Mobile Shaders/Low Quality";
-		private const string kMobileShaderDebugReflection = "MGFX/Mobile Shaders/Debug-Reflection";
-		private const string kMobileShaderDebugLighting = "MGFX/Mobile Shaders/Debug-Lighting";
-		private const string kMobileForceRefresh = "MGFX/Mobile Shaders/Force Refresh";
+		private const string kMobileShaderHighQuality = "Minv/Mobile Shaders/High Quality";
+		private const string kMobileShaderMediumQuality = "Minv/Mobile Shaders/Medium Quality";
+		private const string kMobileShaderLowQuality = "Minv/Mobile Shaders/Low Quality";
+		private const string kMobileShaderDebugReflection = "Minv/Mobile Shaders/Debug-Reflection";
+		private const string kMobileShaderDebugLighting = "Minv/Mobile Shaders/Debug-Lighting";
+		private const string kMobileForceRefresh = "Minv/Mobile Shaders/Force Refresh";
 
 		public static bool MenuItemQualityUpdate()
 		{
@@ -90,9 +90,9 @@ namespace MGFX.Rendering
 			var _shdStandard = Shader.Find("Standard");
 
 			List<Shader> _shaders = new List<Shader>();
-			_shaders.Add(Shader.Find("MGFX/Mobile/Generic"));
-			_shaders.Add(Shader.Find("MGFX/Mobile/GenericDS"));
-			_shaders.Add(Shader.Find("MGFX/Mobile/Transparent"));
+			_shaders.Add(Shader.Find("Minv/Mobile/Generic"));
+			_shaders.Add(Shader.Find("Minv/Mobile/GenericDS"));
+			_shaders.Add(Shader.Find("Minv/Mobile/Transparent"));
 
 			List<string> _shaderPaths = new List<string>();
 			List<List<Material>> _materials = new List<List<Material>>();

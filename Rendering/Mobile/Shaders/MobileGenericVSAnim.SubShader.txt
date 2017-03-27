@@ -15,6 +15,8 @@
 				"LightMode"="ForwardBase"
 			}
 
+			Blend [_SrcBlend] [_DstBlend]
+			ZWrite [_ZWrite]
 			Cull Back
 
 			CGPROGRAM
@@ -25,7 +27,9 @@
 			{% unityasset./MobileCommon.cginc %}
 			
 			#pragma multi_compile_fwdbase
+			#pragma multi_compile_fog
 
+			#pragma shader_feature _DECAL_ON
 			#pragma shader_feature _VERTEX_ANIM_ROTATE_ON
 			#pragma shader_feature _REALTIME_LIGHTING_ON
 			#pragma shader_feature _REFLECTION_PROBES_ON
@@ -61,7 +65,9 @@
 			{% unityasset./MobileCommon.cginc %}
 			
 			#pragma multi_compile_fwdadd_fullshadows
+			#pragma multi_compile_fog
 
+			#pragma shader_feature _DECAL_ON
 			#pragma shader_feature _VERTEX_ANIM_ROTATE_ON
 			#pragma shader_feature _REALTIME_LIGHTING_ON
 			#pragma shader_feature _NORMAL_MAP_ON
