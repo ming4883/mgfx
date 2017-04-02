@@ -3,11 +3,11 @@ using UnityEngine;
 
 namespace MGFX.Rendering
 {
-	[CustomEditor(typeof(Flow))]
-	public class FlowEditor : Editor
+	[CustomEditor(typeof(FlowPath))]
+	public class FlowPathEditor : Editor
 	{
-		private static Color m_ConeColor = new Color(0, 1, 1, 0.5f);
-		private static Color m_LineColor = new Color(0, 1, 1, 1.0f);
+		private static Color m_ConeColor = new Color(1, 0.25f, 0.25f, 0.5f);
+		private static Color m_LineColor = new Color(1, 0.25f, 0.25f, 1.0f);
 		private static Color m_PivotColor = new Color(1, 1, 1, 1.0f);
 
 		private float m_HandleSize = 0.04f;
@@ -32,7 +32,7 @@ namespace MGFX.Rendering
 
 		public void OnSceneGUIPivot()
 		{
-			var _inst = target as Flow;
+			var _inst = target as FlowPath;
 			var _tran = _inst.transform;
 
 			float _scale = HandleUtility.GetHandleSize(_tran.position);
@@ -49,7 +49,7 @@ namespace MGFX.Rendering
 
 		public bool OnSceneGUIPoint(int _index)
 		{
-			var _inst = target as Flow;
+			var _inst = target as FlowPath;
 			var _tran = _inst.transform;
 			var _pt = _inst.points[_index];
 			_pt = _tran.TransformPoint(_pt);
@@ -95,7 +95,7 @@ namespace MGFX.Rendering
 
 		public void OnSceneGUI()
 		{
-			var _inst = target as Flow;
+			var _inst = target as FlowPath;
 
 			int _numOfPts = _inst.points.Length;
 

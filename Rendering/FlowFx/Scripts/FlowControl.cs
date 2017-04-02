@@ -13,13 +13,12 @@ namespace MGFX.Rendering
 		public float m_Cycle = 64.0f;
 		public float m_Scale = 0.1f;
 
-		private MeshRenderer m_MeshRend;
+		public Renderer[] m_Renderers = new Renderer[] {};
 		private float m_Time;
 		//public Vector4 m_Params;
 		
 		public void OnEnable()
 		{
-			m_MeshRend = GetComponent<MeshRenderer>();
 			m_Time = 0;
 		}
 
@@ -48,7 +47,7 @@ namespace MGFX.Rendering
 
 		protected void ApplyWaterFlowToMaterials()
 		{
-			if (null == m_MeshRend || !m_MeshRend)
+			if (null == m_Renderers || m_Renderers.Length == 0)
 				return;
 
 			var _mtx = Matrix4x4.identity;
@@ -70,11 +69,18 @@ namespace MGFX.Rendering
 			int _idFlowMtx = Shader.PropertyToID("_FlowMapMatrix");
 			int _idFlowPrm = Shader.PropertyToID("_FlowMapParams");
 
-			foreach (var _mtl in m_MeshRend.sharedMaterials)
+			foreach (var _rend in m_Renderers)
 			{
-				_mtl.SetMatrix(_idFlowMtx, _mtx);
-				_mtl.SetVector(_idFlowPrm, _prm);
+				if (null == _rend || !_rend)
+					continue;
+
+				foreach (var _mtl in _rend.sharedMaterials)
+				{
+					_mtl.SetMatrix(_idFlowMtx, _mtx);
+					_mtl.SetVector(_idFlowPrm, _prm);
+				}
 			}
+			
 		}
 	}
 }

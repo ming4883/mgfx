@@ -5,7 +5,7 @@ namespace MGFX.Rendering
 {
 	[ExecuteInEditMode]
 	[AddComponentMenu("MGFX/Flow")]
-	public class Flow : MonoBehaviour
+	public class FlowPath : MonoBehaviour
 	{
 		public struct Sample
 		{
@@ -15,6 +15,8 @@ namespace MGFX.Rendering
 
 		[Range(0, 1)]
 		public float strength = 1;
+
+		public bool loop = false;
 
 		public Vector3[] points = new Vector3[] {
 			new Vector3(0, 0, 0),
@@ -33,7 +35,7 @@ namespace MGFX.Rendering
 		{
 		}
 
-		private static Color m_LineColor = new Color(0.25f, 1.0f, 1.0f, 0.5f);
+		private static Color m_LineColor = new Color(1.0f, 0.25f, 0.25f, 0.75f);
 
 		public void OnDrawGizmos()
 		{
@@ -74,6 +76,27 @@ namespace MGFX.Rendering
 			{
 				var _beg = points[_it - 1];
 				var _end = points[_it];
+
+				_beg = transform.TransformPoint(_beg);
+				_end = transform.TransformPoint(_end);
+
+				var _dir = (_end - _beg).normalized * strength;
+				var _sample = new Sample();
+				_sample.direction = _dir;
+
+				_sample.position = _beg;
+				_outList.Add(_sample);
+
+				_sample.position = _end;
+				_outList.Add(_sample);
+
+				GatherSamples(_outList, _beg, _end, _dir, _delta * _delta);
+			}
+
+			if (loop)
+			{
+				var _beg = points[points.Length - 1];
+				var _end = points[0];
 
 				_beg = transform.TransformPoint(_beg);
 				_end = transform.TransformPoint(_end);

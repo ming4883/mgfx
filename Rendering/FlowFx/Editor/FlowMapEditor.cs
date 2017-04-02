@@ -66,7 +66,7 @@ namespace MGFX.Rendering
                 int _th = Mathf.NextPowerOfTwo((int)_inst.resolution.y);
 
                 Vector2 _delta = new Vector2(_inst.size.x / _tw, _inst.size.y / _th);
-                List<Flow.Sample> _samples = _inst.GatherSamples(_delta * _inst.minimumDistance);
+                List<FlowPath.Sample> _samples = _inst.GatherSamples(_delta * _inst.minimumDistance);
 
                 if (_samples.Count > 0)
                 {
@@ -105,12 +105,12 @@ namespace MGFX.Rendering
 
             Vector2 _delta = new Vector2(_inst.size.x / _tw, _inst.size.y / _th);
 
-            List<Flow.Sample> _samples = _inst.GatherSamples(_delta * _inst.minimumDistance);
+            List<FlowPath.Sample> _samples = _inst.GatherSamples(_delta * _inst.minimumDistance);
 
             if (_samples.Count == 0)
                 return;
 
-            Flow.Sample[,] _outputs = new Flow.Sample[_tw, _th];
+            FlowPath.Sample[,] _outputs = new FlowPath.Sample[_tw, _th];
             InterpolateSamples(_inst, _samples, _delta, _outputs);
 
             Texture2D _tex = EncodeToTexture(_inst, _outputs);
@@ -118,7 +118,7 @@ namespace MGFX.Rendering
             SaveTexture(_inst, _tex);
         } // Bake
 
-        private KdTree CreateKdTree(List<Flow.Sample> _samples)
+        private KdTree CreateKdTree(List<FlowPath.Sample> _samples)
         {
             KdTree.Entry[] _kdEnt = new KdTree.Entry[_samples.Count];
             for (int _it = 0; _it < _samples.Count; ++_it)
@@ -132,7 +132,7 @@ namespace MGFX.Rendering
             return _kdTree;
         }
 
-        private void InterpolateSamples(FlowMap _inst, List<Flow.Sample> _samples, Vector2 _delta, Flow.Sample[,] _outputs)
+        private void InterpolateSamples(FlowMap _inst, List<FlowPath.Sample> _samples, Vector2 _delta, FlowPath.Sample[,] _outputs)
         {
             var _transform = _inst.transform;
             var _offset = _inst.size * -0.5f + _delta * 0.5f;
@@ -150,7 +150,7 @@ namespace MGFX.Rendering
                     Vector2 _pos = _offset + Vector2.Scale(_delta, new Vector2(_x, _y));
                     Vector3 _worldPos = _transform.TransformPoint(new Vector3(_pos.x, 0, _pos.y));
 
-                    Flow.Sample _outSamp = new Flow.Sample()
+                    FlowPath.Sample _outSamp = new FlowPath.Sample()
                     {
                         position = _worldPos,
                         direction = Vector3.zero,
@@ -179,10 +179,10 @@ namespace MGFX.Rendering
             }
         }
 
-        private Texture2D EncodeToTexture(FlowMap _inst, Flow.Sample[,] _outputs)
+        private Texture2D EncodeToTexture(FlowMap _inst, FlowPath.Sample[,] _outputs)
         {
             Texture2D _tex = new Texture2D(_outputs.GetUpperBound(0)+1, _outputs.GetUpperBound(1)+1, TextureFormat.ARGB32, false);
-            _inst.cached = new Flow.Sample[_tex.width * _tex.height];
+            _inst.cached = new FlowPath.Sample[_tex.width * _tex.height];
 
             int _c = 0;
 

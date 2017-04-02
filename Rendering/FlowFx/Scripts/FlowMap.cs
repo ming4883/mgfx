@@ -7,10 +7,6 @@ namespace MGFX.Rendering
 	[AddComponentMenu("MGFX/FlowMap")]
 	public class FlowMap : MonoBehaviour
 	{
-		public Flow[] flows = new Flow[] {
-			null
-		};
-
 		public float minimumDistance = 1.0f;
 
 		public Vector2 size = new Vector2(10, 10);
@@ -28,7 +24,11 @@ namespace MGFX.Rendering
 
 		[HideInInspector]
 		[System.NonSerialized]
-		public Flow.Sample[] cached;
+		public FlowPath.Sample[] cached;
+
+		//[HideInInspector]
+		//[System.NonSerialized]
+		//public Flow[] flows;
 
 		public void OnEnable()
 		{
@@ -42,7 +42,7 @@ namespace MGFX.Rendering
 		{
 		}
 
-		private static Color m_LineColor = new Color(0.25f, 1.0f, 1.0f, 0.5f);
+		private static Color m_LineColor = new Color(1.0f, 0.5f, 0.5f, 0.75f);
 
 		public Matrix4x4 GetTextureMatrix()
 		{
@@ -77,16 +77,17 @@ namespace MGFX.Rendering
 			Gizmos.DrawLine(new Vector3( _halfSize.x, 0,-_halfSize.y), new Vector3( _halfSize.x, 0, _halfSize.y));
 		}
 
-		public List<Flow.Sample> GatherSamples(Vector2 _sampleSize)
+		public List<FlowPath.Sample> GatherSamples(Vector2 _sampleSize)
 		{
-			var _rawSamples = new List<Flow.Sample>();
+			var _flowPaths = GetComponentsInChildren<FlowPath>();
+			var _rawSamples = new List<FlowPath.Sample>();
 
-			foreach (var _flow in flows)
+			foreach (var _flow in _flowPaths)
 			{
 				if (null == _flow || !_flow)
 					continue;
 				
-				_flow.GatherSamples(_rawSamples, _sampleSize);
+				(_flow as FlowPath).GatherSamples(_rawSamples, _sampleSize);
 			}
 
 			KdTree.Entry[] _kdEnt = new KdTree.Entry[_rawSamples.Count];
@@ -104,7 +105,7 @@ namespace MGFX.Rendering
 
 			float _range = Mathf.Min(_sampleSize.x, _sampleSize.y);
 
-			var _filteredSamples = new List<Flow.Sample>();
+			var _filteredSamples = new List<FlowPath.Sample>();
 
 			for (int _it = 0; _it < _rawSamples.Count; ++_it)
 			{
@@ -130,7 +131,7 @@ namespace MGFX.Rendering
 						_processed.Add(_id);
 					}
 
-					Flow.Sample _samp = new Flow.Sample();
+					FlowPath.Sample _samp = new FlowPath.Sample();
 					_samp.position = _pos * (1.0f / _neighbours.Length);
 					_samp.direction = _dir * (1.0f / _neighbours.Length);
 

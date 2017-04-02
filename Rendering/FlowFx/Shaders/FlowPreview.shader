@@ -45,7 +45,7 @@
 			offsets *= flowStrength * _FlowMapParams.z;
 
 			// Albedo comes from a texture tinted by color
-			fixed4 c = tex2D(_MainTex, (-IN.uv_MainTex) + flow.xy * offsets.x);
+			fixed4 c = tex2D(_MainTex, (-IN.uv_MainTex) - flow.xy * offsets.x);
 			o.Albedo = c.rgb;
 			
 			// Metallic and smoothness come from slider variables
