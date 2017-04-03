@@ -37,6 +37,38 @@ namespace MGFX.Rendering
 
 		private static Color m_LineColor = new Color(1.0f, 0.25f, 0.25f, 0.75f);
 
+		public static float GetGizmosSize(Vector3 position)
+		{
+			Camera current = Camera.current;
+			position = Gizmos.matrix.MultiplyPoint(position);
+			float result;
+			if (current)
+			{
+				Transform transform = current.transform;
+				Vector3 position2 = transform.position;
+
+				/*
+				float z = Vector3.Dot(position - position2, transform.TransformDirection(new Vector3(0f, 0f, 1f)));
+				Vector3 a = current.WorldToScreenPoint(position2 + transform.TransformDirection(new Vector3(0f, 0f, z)));
+				Vector3 b = current.WorldToScreenPoint(position2 + transform.TransformDirection(new Vector3(1f, 0f, z)));
+				float magnitude = (a - b).magnitude;
+				result = 80f / Mathf.Max(magnitude, 0.0001f) * Screen.dpi;
+				*/
+				result = Vector3.Distance(position, position2) / 2.0f;
+			}
+			else
+			{
+				result = 20f;
+			}
+			return result;
+		}
+
+		private void OnDrawGizmosPoint(Vector3 _point)
+		{
+			float _s = GetGizmosSize(_point) * 0.04f;
+			Gizmos.DrawCube(_point, new Vector3(_s, _s, _s));
+		}
+
 		public void OnDrawGizmos()
 		{
 			int _numOfPts = points.Length;
@@ -52,6 +84,19 @@ namespace MGFX.Rendering
 				var _beg = points[_it - 1];
 				var _end = points[_it];
 				Gizmos.DrawLine(_beg, _end);
+				OnDrawGizmosPoint(_beg);
+			}
+
+			if (loop)
+			{
+				var _beg = points[_numOfPts - 1];
+				var _end = points[0];
+				Gizmos.DrawLine(_beg, _end);
+				OnDrawGizmosPoint(_beg);
+			}
+			else
+			{
+				OnDrawGizmosPoint(points[_numOfPts - 1]);
 			}
 		}
 

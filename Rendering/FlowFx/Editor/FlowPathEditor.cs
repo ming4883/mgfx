@@ -47,7 +47,7 @@ namespace MGFX.Rendering
 			Tools.hidden = m_SelectedIndex != -1;
 		}
 
-		public bool OnSceneGUIPoint(int _index)
+		public bool OnSceneGUIPoint(int _index, int _lastIndex)
 		{
 			var _inst = target as FlowPath;
 			var _tran = _inst.transform;
@@ -57,9 +57,10 @@ namespace MGFX.Rendering
 
 			Handles.color = m_ConeColor;
 
-			if (_index > 0)
+			// draw the flow direction
+			if (_index != _lastIndex)
 			{
-				var _pt2 = _inst.points[_index - 1];
+				var _pt2 = _inst.points[_lastIndex];
 				_pt2 = _tran.TransformPoint(_pt2);
 
 				var _dir = _pt - _pt2;
@@ -69,6 +70,7 @@ namespace MGFX.Rendering
 
 			Handles.color = m_LineColor;
 
+			// check for selection
 			_scale = _index == 0 ? 2 * _scale : _scale;
 			if (Handles.Button(_pt, Quaternion.identity, m_HandleSize * _scale, m_PickSize * _scale, Handles.DotHandleCap))
 			{
@@ -77,6 +79,7 @@ namespace MGFX.Rendering
 
 			Tools.hidden = m_SelectedIndex != -1;
 
+			// enable translation if selected
 			if (_index == m_SelectedIndex)
 			{
 				EditorGUI.BeginChangeCheck();
@@ -102,7 +105,14 @@ namespace MGFX.Rendering
 			if (_numOfPts < 1)
 				return;
 
-			OnSceneGUIPoint(0);
+			if (_inst.loop && _numOfPts > 2)
+			{
+				OnSceneGUIPoint(0, _numOfPts - 1);
+			}
+			else
+			{
+				OnSceneGUIPoint(0, 0);
+			}
 
 			if (_numOfPts < 2)
 				return;
@@ -111,7 +121,7 @@ namespace MGFX.Rendering
 
 			for (int _it = 1; _it < _numOfPts; _it++)
 			{
-				OnSceneGUIPoint(_it);
+				OnSceneGUIPoint(_it, _it - 1);
 			}
 
 			OnSceneGUIPivot();
