@@ -21,7 +21,7 @@ v2f_hdr vertHDR(appdata_img v)
 {
 	v2f_hdr o;
 
-	o.pos = mul(UNITY_MATRIX_MVP, v.vertex);
+	o.pos = UnityObjectToClipPos(v.vertex);
 	o.uv = v.texcoord;
 
 #if UNITY_UV_STARTS_AT_TOP
