@@ -1,8 +1,8 @@
 using UnityEngine;
 
-namespace MGFX
+namespace MGFX.Rendering
 {
-    public static class Triangle
+    public static class Geometry
     {
         public static Vector3 ProjectToPlane(Vector3 _pt, Plane _plane)
         {
@@ -51,5 +51,24 @@ namespace MGFX
 
             return true;
         }
+
+        public static bool GetBounds(GameObject _root, out Bounds _bounds)
+        {
+            var _rends = _root.GetComponentsInChildren<Renderer>();
+            if (_rends.Length == 0)
+            {
+                _bounds = new Bounds();
+                return false;
+            }
+
+            _bounds = _rends[0].bounds;
+
+            for (int _i = 1; _i < _rends.Length; ++_i)
+                _bounds.Encapsulate(_rends[_i].bounds);
+
+            return true;
+        }
     }
+
+    
 }

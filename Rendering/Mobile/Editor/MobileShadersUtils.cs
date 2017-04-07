@@ -21,12 +21,12 @@ namespace MGFX.Rendering
 			}
 		}
 
-		private const string kMobileShaderHighQuality = "Minv/Mobile Shaders/High Quality";
-		private const string kMobileShaderMediumQuality = "Minv/Mobile Shaders/Medium Quality";
-		private const string kMobileShaderLowQuality = "Minv/Mobile Shaders/Low Quality";
-		private const string kMobileShaderDebugReflection = "Minv/Mobile Shaders/Debug-Reflection";
-		private const string kMobileShaderDebugLighting = "Minv/Mobile Shaders/Debug-Lighting";
-		private const string kMobileForceRefresh = "Minv/Mobile Shaders/Force Refresh";
+		private const string kMobileShaderHighQuality = "MGFX/Mobile Shaders/High Quality";
+		private const string kMobileShaderMediumQuality = "MGFX/Mobile Shaders/Medium Quality";
+		private const string kMobileShaderLowQuality = "MGFX/Mobile Shaders/Low Quality";
+		private const string kMobileShaderDebugReflection = "MGFX/Mobile Shaders/Debug-Reflection";
+		private const string kMobileShaderDebugLighting = "MGFX/Mobile Shaders/Debug-Lighting";
+		private const string kMobileForceRefresh = "MGFX/Mobile Shaders/Force Refresh";
 
 		public static bool MenuItemQualityUpdate()
 		{

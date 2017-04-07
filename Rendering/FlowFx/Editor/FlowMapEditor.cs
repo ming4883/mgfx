@@ -165,7 +165,7 @@ namespace MGFX.Rendering
                         Vector3 _weights;
                         Vector3 _dir = _sampA.direction;
 
-                        if (Triangle.GetBarycentricCoords(out _weights, _sampA.position, _sampB.position, _sampC.position, _worldPos))
+                        if (Geometry.GetBarycentricCoords(out _weights, _sampA.position, _sampB.position, _sampC.position, _worldPos))
                         {
                             _dir = (_sampA.direction * _weights.x) + (_sampB.direction * _weights.y) + (_sampC.direction * _weights.z);
                         }

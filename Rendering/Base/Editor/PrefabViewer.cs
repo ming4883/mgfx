@@ -137,14 +137,10 @@ namespace MGFX.Rendering
 			// Zoom extends
 			if (_cam)
 			{
-				var _rends = _inst.GetComponentsInChildren<Renderer>();
-				if (_rends.Length > 0)
+				Bounds _bounds;
+
+				if (Geometry.GetBounds(_inst, out _bounds))
 				{
-					Bounds _bounds = _rends[0].bounds;
-
-					for (int _i = 1; _i < _rends.Length; ++_i)
-						_bounds.Encapsulate(_rends[_i].bounds);
-
 					Log.I("zoom extends {0}", _bounds);
 					var _ext = _bounds.extents.magnitude;
 					
