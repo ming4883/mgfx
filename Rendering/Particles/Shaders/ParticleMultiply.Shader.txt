@@ -1,4 +1,4 @@
-﻿Shader "Minv/Particles/Multiply" {
+﻿Shader "MMGFXParticles/Multiply" {
 	Properties {
 		{% unityasset Plugins/MIRendering/Particles/Shaders/Particle.Properties.txt %}
 	}

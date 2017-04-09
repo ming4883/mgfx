@@ -1,4 +1,4 @@
-﻿Shader "Minv/Mobile/Generic"
+﻿Shader "MMGFXMobile/Generic"
 {
 	Properties
 	{

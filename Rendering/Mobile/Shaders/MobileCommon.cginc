@@ -16,6 +16,13 @@
 	#endif
 #endif
 
+#if _COMPOSITE_ON
+	#if SHADING_QUALITY < SHADING_QUALITY_HIGH
+		#undef _COMPOSITE_ON
+		#define _COMPOSITE_ON 0
+	#endif
+#endif
+
 #if _NORMAL_MAP_ON
 	#if SHADING_QUALITY < SHADING_QUALITY_HIGH
 		#undef _NORMAL_MAP_ON
@@ -33,22 +40,44 @@
 ///
 /// Structs
 ///
-struct appdata
-{
-	float4 vertex : POSITION;
-	float3 normal : NORMAL;
-	float4 vcolor : COLOR;
-	float2 texcoord0 : TEXCOORD0;
-	float2 texcoord1 : TEXCOORD1;
-	
-#if defined(DYNAMICLIGHTMAP_ON)
-	float2 dlmapcoord : TEXCOORD2;
-#endif
+#if _COMPOSITE_ON
+	struct appdata
+	{
+		float4 vertex : POSITION;
+		float3 normal : NORMAL;
+		float4 vcolor : COLOR;
+		float2 texcrdCh1 : TEXCOORD0; // channel1
+		float2 texcrdCh2 : TEXCOORD1; // channel2
+		float2 texcrdLmap : TEXCOORD2; // lightmap
+		
+	#if defined(DYNAMICLIGHTMAP_ON)
+		float2 dlmapcoord : TEXCOORD3;
+	#endif
 
-#if _NORMAL_MAP_ON
-	float4 tangent : TANGENT;
-#endif
-};
+	#if _NORMAL_MAP_ON
+		float4 tangent : TANGENT;
+	#endif
+	};
+
+#else // _COMPOSITE_ON
+
+	struct appdata
+	{
+		float4 vertex : POSITION;
+		float3 normal : NORMAL;
+		float4 vcolor : COLOR;
+		float2 texcrdCh1 : TEXCOORD0; // channel1
+		float2 texcrdLmap : TEXCOORD1; // lightmap
+		
+	#if defined(DYNAMICLIGHTMAP_ON)
+		float2 dlmapcoord : TEXCOORD2;
+	#endif
+
+	#if _NORMAL_MAP_ON
+		float4 tangent : TANGENT;
+	#endif
+	};
+#endif // _COMPOSITE_ON
 
 struct v2f
 {
@@ -84,6 +113,11 @@ uniform float4 _MainTex_ST;
 uniform float4 _Color;
 uniform float4 _ShadowColor;
 
+#if _COMPOSITE_ON
+uniform sampler2D _CompositeTex;
+uniform float4 _CompositeNoise;
+#endif
+
 #if _REFLECTION_PROBES_ON
 uniform float _ReflectionIntensity;
 #endif
@@ -115,7 +149,7 @@ inline half4 vertGIForward(appdata v, float3 posWorld, half3 normalWorld)
 	// Static lightmaps
 	#ifdef LIGHTMAP_ON
 	{
-		ambientOrLightmapUV.xy = v.texcoord1.xy * unity_LightmapST.xy + unity_LightmapST.zw;
+		ambientOrLightmapUV.xy = v.texcrdLmap.xy * unity_LightmapST.xy + unity_LightmapST.zw;
 		ambientOrLightmapUV.zw = 0;
 	}
 	#elif UNITY_SHOULD_SAMPLE_SH
@@ -169,7 +203,13 @@ v2f vert (appdata v)
 	#endif
 
 	o.vcolor = v.vcolor;
-	o.uv = float4(v.texcoord0.xy, v.texcoord1.xy);
+	o.uv = v.texcrdCh1.xyxy;
+
+	#if _COMPOSITE_ON
+	{
+		o.uv.zw = v.texcrdCh2.xy;
+	}
+	#endif
 
 	o.worldPosAndZ.xyz = mul(unity_ObjectToWorld, vertexPos).xyz;
 
@@ -216,6 +256,7 @@ struct ShadingContext
 	half eyeDepth;
 	half4 uv;
 	half4 ambientOrLightmapUV;
+	half4 vcolor;
 	half4 albedo;
 	half occlusion;
 	fixed vface;
@@ -233,7 +274,21 @@ void shadingContext(inout ShadingContext ctx, in v2f i, in fixed vface)
 	ctx.sv_pos = i.pos;
 	ctx.uv = i.uv;
 	ctx.vface = vface > 0 ? 1.0 : -1.0;
-	ctx.albedo = tex2D(_MainTex, i.uv.xy) * _Color;
+	ctx.vcolor = i.vcolor;
+	ctx.albedo = tex2D(_MainTex, i.uv.xy);
+
+	#if _COMPOSITE_ON
+	{
+		half blendWeight = i.vcolor.a;
+		#if _COMPOSITE_NOISE_ON
+		{
+			blendWeight = 1 - blendWeight;
+		}
+		#endif
+		ctx.albedo = lerp(ctx.albedo, tex2D(_CompositeTex, i.uv.zw), blendWeight);
+	}
+	#endif
+
 	ctx.occlusion = 1.0;
 	ctx.ambientOrLightmapUV = i.ambientOrLightmapUV;
 	ctx.shadow = 1.0;

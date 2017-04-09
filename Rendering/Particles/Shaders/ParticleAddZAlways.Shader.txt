@@ -1,4 +1,4 @@
-﻿Shader "Minv/Particles/AddZAlways" {
+﻿Shader "MMGFXParticles/AddZAlways" {
 	Properties {
 		{% unityasset Plugins/MIRendering/Particles/Shaders/Particle.Properties.txt %}
 	}

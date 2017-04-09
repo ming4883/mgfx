@@ -31,6 +31,18 @@ namespace MGFX.Rendering
 		[MaterialProperty("_ReflectionIntensity")]
 		protected MaterialProperty m_ReflectionIntensity;
 
+		[MaterialProperty("_CompositeOn", "_COMPOSITE_ON")]
+		protected MaterialProperty m_CompositeOn;
+
+		[MaterialProperty("_CompositeTex")]
+		protected MaterialProperty m_CompositeTex;
+
+		[MaterialProperty("_CompositeNoiseOn", "_COMPOSITE_NOISE_ON")]
+		protected MaterialProperty m_CompositeNoiseOn;
+
+		[MaterialProperty("_CompositeNoise")]
+		protected MaterialProperty m_CompositeNoise;
+
 		[MaterialProperty("_GIAlbedoTex")]
 		protected MaterialProperty m_GIAlbedoTex;
 
@@ -82,6 +94,7 @@ namespace MGFX.Rendering
 
 			DoGeneral(_materialEditor);
 			DoDecal(_materialEditor);
+			DoComposite(_materialEditor);
 			DoGI(_materialEditor);
 			DoNormalMap(_materialEditor);
 			DoMatCap(_materialEditor);
@@ -129,6 +142,24 @@ namespace MGFX.Rendering
 				SetInt(_materialEditor, "_ZWrite", 1);
 				SetRenderQueue(_materialEditor, -1);
 				SetOverrideTag(_materialEditor, "RenderType", "");
+			}
+
+			EndGroup();
+		}
+
+		protected void DoComposite(MaterialEditor _materialEditor)
+		{
+			if (!BeginGroup("Composite"))
+				return;
+
+			if (DoKeyword(_materialEditor, m_CompositeOn, "Composite"))
+			{
+				_materialEditor.ShaderProperty(m_CompositeTex, "Composite Texture");
+
+				if (DoKeyword(_materialEditor, m_CompositeNoiseOn, "Noise"))
+				{
+					_materialEditor.ShaderProperty(m_CompositeNoise, "Scale & Stength");
+				}
 			}
 
 			EndGroup();

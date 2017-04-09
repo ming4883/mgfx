@@ -1,4 +1,4 @@
-﻿Shader "Minv/Mobile/Transparent"
+﻿Shader "MMGFXMobile/Transparent"
 {
 	Properties
 	{

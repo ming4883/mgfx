@@ -90,9 +90,9 @@ namespace MGFX.Rendering
 			var _shdStandard = Shader.Find("Standard");
 
 			List<Shader> _shaders = new List<Shader>();
-			_shaders.Add(Shader.Find("Minv/Mobile/Generic"));
-			_shaders.Add(Shader.Find("Minv/Mobile/GenericDS"));
-			_shaders.Add(Shader.Find("Minv/Mobile/Transparent"));
+			_shaders.Add(Shader.Find("MGFX/Mobile/Generic"));
+			_shaders.Add(Shader.Find("MGFX/Mobile/GenericDS"));
+			_shaders.Add(Shader.Find("MGFX/Mobile/Transparent"));
 
 			List<string> _shaderPaths = new List<string>();
 			List<List<Material>> _materials = new List<List<Material>>();

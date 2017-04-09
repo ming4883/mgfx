@@ -17,6 +17,11 @@ _ReflectionIntensity ("Reflection Intensity", Range(0,8)) = 1.0
 [PerRendererData] _VertexAnimRotateAxis ("Rotate Axis", Vector) = (1.0, 0.0, 0.0, 0.0)
 [PerRendererData] _VertexAnimTime ("Time", Vector) = (90.0, 0.0, 0.0, 0.0)
 
+[Toggle(_COMPOSITE_ON)] _CompositeOn("Enable Texture Composition", Int) = 0
+[NoScaleOffset] _CompositeTex ("Composite Tex", 2D) = "white" {}
+[Toggle(_COMPOSITE_NOISE_ON)] _CompositeNoiseOn("Enable Composition Noise", Int) = 0
+_CompositeNoise ("Noise Scale", Vector) = (1.0, 1.0, 1.0, 0.5)
+
 [NoScaleOffset] _GIAlbedoTex ("GI Albedo Tex", 2D) = "white" {}
 [HDR] _GIAlbedoColor ("GI Albedo Color", Color) = (1.0, 1.0, 1.0, 0.0)
 

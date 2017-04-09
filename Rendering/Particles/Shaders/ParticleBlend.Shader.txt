@@ -1,4 +1,4 @@
-﻿Shader "Minv/Particles/Blend" {
+﻿Shader "MMGFXParticles/Blend" {
 	Properties {
 		{% unityasset Plugins/MIRendering/Particles/Shaders/Particle.Properties.txt %}
 	}
