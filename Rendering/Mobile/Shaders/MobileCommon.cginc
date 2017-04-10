@@ -115,7 +115,7 @@ uniform float4 _ShadowColor;
 
 #if _COMPOSITE_ON
 uniform sampler2D _CompositeTex;
-uniform float4 _CompositeNoise;
+uniform float _CompositeErosion;
 #endif
 
 #if _REFLECTION_PROBES_ON
@@ -280,12 +280,19 @@ void shadingContext(inout ShadingContext ctx, in v2f i, in fixed vface)
 	#if _COMPOSITE_ON
 	{
 		half blendWeight = i.vcolor.a;
-		#if _COMPOSITE_NOISE_ON
+		blendWeight = blendWeight * blendWeight * (3 - 2 * blendWeight);
+
+		half4 composite = tex2D(_CompositeTex, i.uv.zw);
+		#if _COMPOSITE_EROSION_ON
 		{
-			blendWeight = 1 - blendWeight;
+			half noise = saturate(dot(composite.rgba, 0.25));
+			noise = noise * 2 - 1;
+			noise = noise * (1- blendWeight);
+			blendWeight = saturate(blendWeight + noise * _CompositeErosion);
 		}
 		#endif
-		ctx.albedo = lerp(ctx.albedo, tex2D(_CompositeTex, i.uv.zw), blendWeight);
+		
+		ctx.albedo = lerp(ctx.albedo, composite, blendWeight);
 	}
 	#endif
 

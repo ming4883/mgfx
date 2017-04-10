@@ -37,11 +37,11 @@ namespace MGFX.Rendering
 		[MaterialProperty("_CompositeTex")]
 		protected MaterialProperty m_CompositeTex;
 
-		[MaterialProperty("_CompositeNoiseOn", "_COMPOSITE_NOISE_ON")]
-		protected MaterialProperty m_CompositeNoiseOn;
+		[MaterialProperty("_CompositeErosionOn", "_COMPOSITE_EROSION_ON")]
+		protected MaterialProperty m_CompositeErosionOn;
 
-		[MaterialProperty("_CompositeNoise")]
-		protected MaterialProperty m_CompositeNoise;
+		[MaterialProperty("_CompositeErosion")]
+		protected MaterialProperty m_CompositeErosion;
 
 		[MaterialProperty("_GIAlbedoTex")]
 		protected MaterialProperty m_GIAlbedoTex;
@@ -156,9 +156,9 @@ namespace MGFX.Rendering
 			{
 				_materialEditor.ShaderProperty(m_CompositeTex, "Composite Texture");
 
-				if (DoKeyword(_materialEditor, m_CompositeNoiseOn, "Noise"))
+				if (DoKeyword(_materialEditor, m_CompositeErosionOn, "Erosion"))
 				{
-					_materialEditor.ShaderProperty(m_CompositeNoise, "Scale & Stength");
+					_materialEditor.ShaderProperty(m_CompositeErosion, "Erosion Stength");
 				}
 			}
 

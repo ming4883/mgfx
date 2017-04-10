@@ -29,7 +29,7 @@
 			#pragma multi_compile_fog
 
 			#pragma shader_feature _COMPOSITE_ON
-			#pragma shader_feature _COMPOSITE_NOISE_ON
+			#pragma shader_feature _COMPOSITE_EROSION_ON
 			#pragma shader_feature _DECAL_ON
 			#pragma shader_feature _REALTIME_LIGHTING_ON
 			#pragma shader_feature _REFLECTION_PROBES_ON
@@ -68,7 +68,7 @@
 			#pragma multi_compile_fog
 
 			#pragma shader_feature _COMPOSITE_ON
-			#pragma shader_feature _COMPOSITE_NOISE_ON
+			#pragma shader_feature _COMPOSITE_EROSION_ON
 			#pragma shader_feature _DECAL_ON
 			#pragma shader_feature _REALTIME_LIGHTING_ON
 			#pragma shader_feature _NORMAL_MAP_ON
