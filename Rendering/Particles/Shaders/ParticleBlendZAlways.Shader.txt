@@ -1,6 +1,6 @@
-﻿Shader "MMGFXParticles/BlendZAlways" {
+﻿Shader "MGFX/Particles/BlendZAlways" {
 	Properties {
-		{% unityasset Plugins/MIRendering/Particles/Shaders/Particle.Properties.txt %}
+		{% unityasset ./Particle.Properties.txt %}
 	}
 
 	Category {
@@ -13,9 +13,9 @@
 		SubShader {
 			Pass {
 				CGPROGRAM
-				{% unityasset Plugins/MIRendering/Base/Shaders/Base.cginc %}
-				{% unityasset Plugins/MIRendering/Particles/Shaders/Particle.cginc %}
-				{% unityasset Plugins/MIRendering/Particles/Shaders/ParticleBlend.cginc %}
+				{% unityasset ../../Base/Shaders/Base.cginc %}
+				{% unityasset ./Particle.cginc %}
+				{% unityasset ./ParticleBlend.cginc %}
 				ENDCG 
 			}
 		}	

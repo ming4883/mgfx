@@ -1,6 +1,6 @@
-﻿Shader "MMGFXParticles/MultiplyZAlways" {
+﻿Shader "MGFX/Particles/MultiplyZAlways" {
 	Properties {
-		{% unityasset Plugins/MIRendering/Particles/Shaders/Particle.Properties.txt %}
+		{% unityasset ./Particle.Properties.txt %}
 	}
 
 	Category {
@@ -13,9 +13,9 @@
 		SubShader {
 			Pass {
 				CGPROGRAM
-				{% unityasset Plugins/MIRendering/Base/Shaders/Base.cginc %}
-				{% unityasset Plugins/MIRendering/Particles/Shaders/Particle.cginc %}
-				{% unityasset Plugins/MIRendering/Particles/Shaders/ParticleMultiply.cginc %}
+				{% unityasset ../../Base/Shaders/Base.cginc %}
+				{% unityasset ./Particle.cginc %}
+				{% unityasset ./ParticleMultiply.cginc %}
 				ENDCG 
 			}
 		}	

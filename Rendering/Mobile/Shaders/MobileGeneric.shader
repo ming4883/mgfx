@@ -1,4 +1,4 @@
-Shader "MMGFXMobile/Generic"
+Shader "MGFX/Mobile/Generic"
 {
 	Properties
 	{

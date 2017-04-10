@@ -1,4 +1,4 @@
-Shader "MMGFXMobile/Transparent"
+Shader "MGFX/Mobile/Transparent"
 {
 	Properties
 	{
