@@ -7,6 +7,7 @@ namespace MGFX.Rendering
 		High = 300,
 		Medium = 200,
 		Low = 100,
+		DebugVertexAlpha = 30,
 		DebugReflection = 20,
 		DebugLighting = 10,
 	}

@@ -24,6 +24,7 @@ namespace MGFX.Rendering
 		private const string kMobileShaderHighQuality = "MGFX/Mobile Shaders/High Quality";
 		private const string kMobileShaderMediumQuality = "MGFX/Mobile Shaders/Medium Quality";
 		private const string kMobileShaderLowQuality = "MGFX/Mobile Shaders/Low Quality";
+		private const string kMobileShaderDebugVertexAlpha = "MGFX/Mobile Shaders/Debug-VertexAlpha";
 		private const string kMobileShaderDebugReflection = "MGFX/Mobile Shaders/Debug-Reflection";
 		private const string kMobileShaderDebugLighting = "MGFX/Mobile Shaders/Debug-Lighting";
 		private const string kMobileForceRefresh = "MGFX/Mobile Shaders/Force Refresh";
@@ -35,6 +36,7 @@ namespace MGFX.Rendering
 				Menu.SetChecked(kMobileShaderHighQuality, MobileShaderContol.IsUsingQuality(MobileShaderQuality.High));
 				Menu.SetChecked(kMobileShaderMediumQuality, MobileShaderContol.IsUsingQuality(MobileShaderQuality.Medium));
 				Menu.SetChecked(kMobileShaderLowQuality, MobileShaderContol.IsUsingQuality(MobileShaderQuality.Low));
+				Menu.SetChecked(kMobileShaderDebugVertexAlpha, MobileShaderContol.IsUsingQuality(MobileShaderQuality.DebugVertexAlpha));
 				Menu.SetChecked(kMobileShaderDebugReflection, MobileShaderContol.IsUsingQuality(MobileShaderQuality.DebugReflection));
 				Menu.SetChecked(kMobileShaderDebugLighting, MobileShaderContol.IsUsingQuality(MobileShaderQuality.DebugLighting));
 			}
@@ -68,17 +70,24 @@ namespace MGFX.Rendering
 			MenuItemQualityUpdate();
 		}
 
-		[MenuItem(kMobileShaderDebugReflection, false, 1101)]
+		[MenuItem(kMobileShaderDebugLighting, false, 1101)]
+		public static void MenuItemDebugLighting()
+		{
+			MobileShaderContol.SetQuality(MobileShaderQuality.DebugLighting);
+			MenuItemQualityUpdate();
+		}
+
+		[MenuItem(kMobileShaderDebugReflection, false, 1102)]
 		public static void MenuItemDebugReflection()
 		{
 			MobileShaderContol.SetQuality(MobileShaderQuality.DebugReflection);
 			MenuItemQualityUpdate();
 		}
 
-		[MenuItem(kMobileShaderDebugLighting, false, 1102)]
-		public static void MenuItemDebugLighting()
+		[MenuItem(kMobileShaderDebugVertexAlpha, false, 1103)]
+		public static void MenuItemDebugVertexAlpha()
 		{
-			MobileShaderContol.SetQuality(MobileShaderQuality.DebugLighting);
+			MobileShaderContol.SetQuality(MobileShaderQuality.DebugVertexAlpha);
 			MenuItemQualityUpdate();
 		}
 

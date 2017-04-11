@@ -286,8 +286,10 @@ void shadingContext(inout ShadingContext ctx, in v2f i, in fixed vface)
 		#if _COMPOSITE_EROSION_ON
 		{
 			half noise = saturate(dot(composite.rgba, 0.25));
-			noise = noise * 2 - 1;
-			noise = noise * (1- blendWeight);
+			half noise2 = saturate(dot(ctx.albedo.rgba, 0.25));
+			//noise = smoothstep(noise2 * 0.25, noise2 * 0.5, noise);
+			noise = noise - (noise2 * 2 - 1);
+			noise = noise * blendWeight;
 			blendWeight = saturate(blendWeight + noise * _CompositeErosion);
 		}
 		#endif
@@ -649,6 +651,12 @@ half4 frag_base(v2f i, fixed vface : VFACE) : SV_Target
 	#if _REALTIME_LIGHTING_ON
 	{
 		UNITY_APPLY_FOG(i.fogCoord, ctx.result);
+	}
+	#endif
+
+	#if defined(DEBUG_VERTEXALPHA)
+	{
+		ctx.result = half4(ctx.vcolor.aaa, 1);
 	}
 	#endif
 	
