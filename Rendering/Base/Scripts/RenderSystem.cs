@@ -163,7 +163,12 @@ namespace MGFX.Rendering
 
 				this.Cam.CopyFrom(_cam);
 				this.Cam.depthTextureMode = DepthTextureMode.None;
+				
+#if UNITY_5_6_OR_NEWER
 				this.Cam.allowHDR = false;
+#else
+				this.Cam.hdr = false;
+#endif
 				this.Cam.renderingPath = RenderingPath.VertexLit;
 				this.Cam.clearFlags = CameraClearFlags.Color;
 				this.Cam.rect = new Rect(0, 0, 1, 1);

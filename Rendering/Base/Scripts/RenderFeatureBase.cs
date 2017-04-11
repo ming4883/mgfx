@@ -195,7 +195,20 @@ namespace MGFX.Rendering
 		protected RenderTexture GrabFrameBuffer(RenderSystem _system, Camera _cam, CommandBuffer _commands, Material _mtl, int _pass)
 		{
 			var _camBuffers = _system.CameraBuffers;
-			var _camBuf = _camBuffers.AllocForPostProc(_cam, kFrameBufferName, _cam.allowHDR ? RenderTextureFormat.ARGBHalf : RenderTextureFormat.ARGB32, RenderTextureReadWrite.Default);
+			RenderTextureFormat _fmt =  RenderTextureFormat.ARGB32;
+
+#if UNITY_5_6_OR_NEWER
+			if (_cam.allowHDR)
+			{
+				_fmt = RenderTextureFormat.ARGBHalf;
+			}
+#else
+			if (_cam.hdr)
+			{
+				_fmt = RenderTextureFormat.ARGBHalf;
+			}
+#endif
+			var _camBuf = _camBuffers.AllocForPostProc(_cam, kFrameBufferName, _fmt, RenderTextureReadWrite.Default);
 			_camBuf.Rtt.filterMode = FilterMode.Point;
 
 
