@@ -47,8 +47,8 @@
 		float3 normal : NORMAL;
 		float4 vcolor : COLOR;
 		float2 texcrdCh1 : TEXCOORD0; // channel1
-		float2 texcrdCh2 : TEXCOORD1; // channel2
-		float2 texcrdLmap : TEXCOORD2; // lightmap
+		float2 texcrdLmap : TEXCOORD1; // lightmap
+		float2 texcrdCh3 : TEXCOORD2; // channel3
 		
 	#if defined(DYNAMICLIGHTMAP_ON)
 		float2 dlmapcoord : TEXCOORD3;
@@ -207,7 +207,7 @@ v2f vert (appdata v)
 
 	#if _COMPOSITE_ON
 	{
-		o.uv.zw = v.texcrdCh2.xy;
+		o.uv.zw = v.texcrdCh3.xy;
 	}
 	#endif
 
