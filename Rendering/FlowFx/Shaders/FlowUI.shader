@@ -97,16 +97,14 @@ Shader "MGFX/FlowUI"
 
 			uniform sampler2D _MainTex;
 			uniform sampler2D _FlowMapTex;
-			uniform half4 _FlowMapParams;
 
 			fixed4 frag(v2f IN) : SV_Target
 			{
 				half4 flow = tex2D(_FlowMapTex, IN.texcoord);
 				flow.xyz = (flow.xyz * 2.0 - 1.0);
-				half flowStrength = length(flow.xy);
 
-				half4 color = (tex2D(_MainTex, IN.texcoord + flow.xy * frac(_Time.y * 0.25)) + _TextureSampleAdd) * IN.color;
-				
+				half4 color = (tex2D(_MainTex, IN.texcoord + flow.xy * IN.color.xy) + _TextureSampleAdd);
+				color.a *= IN.color.a;
 				color.a *= UnityGet2DClipping(IN.worldPosition.xy, _ClipRect);
 				
 				#ifdef UNITY_UI_ALPHACLIP
