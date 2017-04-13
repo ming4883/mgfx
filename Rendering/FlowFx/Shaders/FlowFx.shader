@@ -2,6 +2,9 @@
 	Properties {
         _MainTex ("Main Texture", 2D) = "white" {}
         [NoScaleOffset] _FlowMapTex("FlowMap", 2D) = "white" {}
+		_FlowLayer1 ("Layer1", Float) = 0
+		_FlowLayer2 ("Layer2", Float) = 1
+		_FlowBlending ("Blending", Range(0, 1)) = 0.5
 	}
 
 	Category {
@@ -22,10 +25,13 @@
 #include "UnityCG.cginc"
 
 uniform sampler2D _MainTex;
+uniform float4 _MainTex_TexelSize;
 uniform float4 _MainTex_ST;
 
 uniform sampler2D _FlowMapTex;
-uniform half4 _FlowMapParams;
+uniform half _FlowLayer1;
+uniform half _FlowLayer2;
+uniform half _FlowBlending;
 
 struct appdata_t {
 	float4 vertex : POSITION;
@@ -53,15 +59,10 @@ fixed4 frag(v2f i) : SV_Target
 	flow.xyz = (flow.xyz * 2.0 - 1.0);
 	half flowStrength = length(flow.xy);
 
-    half2 flowOffset = _FlowMapParams.xy;
-	half flowLerp = abs(0.5 - flowOffset.x) * 2.0;
+    fixed4 col1 = tex2D(_MainTex, i.texcoord + flow.xy * _FlowLayer1 * _MainTex_TexelSize.xy);
+	fixed4 col2 = tex2D(_MainTex, i.texcoord + flow.xy * _FlowLayer2 * _MainTex_TexelSize.xy);
 
-	flowOffset *= flowStrength * _FlowMapParams.z;
-
-    fixed4 col1 = tex2D(_MainTex, i.texcoord + flow.xy * flowOffset.x);
-	fixed4 col2 = tex2D(_MainTex, i.texcoord + flow.xy * flowOffset.y);
-
-	fixed4 col = lerp(col1, col2, flowLerp);
+	fixed4 col = lerp(col1, col2, saturate(_FlowBlending));
     col.a *= flow.a;
 
     UNITY_APPLY_FOG_COLOR(i.fogCoord, col, fixed4(col.rgb,0)); // fog towards black due to our blend mode
